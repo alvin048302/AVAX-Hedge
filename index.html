@@ -263,7 +263,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole CL200 · Hyperliquid</div>
+        <div class="hdr-sub">Blackhole CL200 · Hyperliquid · AI live analysis</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -575,7 +575,7 @@ User LP context:
 - HL position: ${dir}
 - Pool: Blackhole CL200 WAVAX/USDC on Avalanche
 
-Search for today's AVAX: price, RSI, MACD, EMA20/50/200, support levels, resistance levels, BTC trend, Fear & Greed index.
+Search for today's AVAX price from CoinMarketCap or MetaMask price page (these are fastest). Also search for AVAX RSI, MACD, EMA20/50/200, support levels, resistance levels, BTC trend, Fear & Greed index. IMPORTANT: For price, prefer CoinMarketCap or real-time sources over CoinGecko which can lag.
 
 Return this exact JSON:
 {
@@ -611,7 +611,7 @@ Return this exact JSON:
     {"n":3,"c":"red","t":"Crash hedge: SHORT $500 · 1× confirm open","b":"TP $5.57 · SL $11.55."},
     {"n":4,"c":"green","t":"Trade: LONG $1,000 · 2× on HL","b":"Entry $9.85 · TP1 $10.50 · TP2 $12.00 · SL $9.00"}
   ],
-  "sources": ["CoinGecko","CoinCodex","Blockchain.news"]
+  "sources": ["CoinMarketCap","Blockchain.news","CoinCodex"]
 }`;
 
   try{
