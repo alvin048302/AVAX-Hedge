@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111316">
+<title>AVAX Hedge Calc</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500&display=swap');
+:root{
+  --bg:#111316;--s1:#1a1d21;--s2:#21252a;--s3:#282d33;
+  --l1:#2e3338;--l2:#383e45;
+  --t1:#f0f2f5;--t2:#9aa3ad;--t3:#555e67;
+  --up:#26a65b;--ups:rgba(38,166,91,.12);--upb:rgba(38,166,91,.28);
+  --dn:#e0483a;--dns:rgba(224,72,58,.12);--dnb:rgba(224,72,58,.28);
+  --ac:#3b7ef6;--acs:rgba(59,126,246,.12);--acb:rgba(59,126,246,.28);
+  --wa:#d97706;--was:rgba(217,119,6,.12);--wab:rgba(217,119,6,.28);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{height:100%;font-size:16px}
+body{background:var(--bg);color:var(--t1);font-family:'Inter',system-ui,sans-serif;min-height:100vh;padding-bottom:72px;-webkit-font-smoothing:antialiased;line-height:1.5}
+.page{display:none}.page.active{display:block}
+/* TABBAR */
+.tabbar{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(17,19,22,.96);border-top:1px solid var(--l1);display:flex;padding-bottom:env(safe-area-inset-bottom,0px);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px)}
+.tb{flex:1;display:flex;flex-direction:column;align-items:center;padding:9px 0 7px;gap:3px;border:none;background:none;color:var(--t3);font-size:10px;font-weight:500;letter-spacing:.3px;cursor:pointer;transition:color .15s;font-family:'Inter',sans-serif}
+.tb.on{color:var(--ac)}.tb svg{width:20px;height:20px}
+/* HEADER */
+.phdr{padding:56px 18px 14px;border-bottom:1px solid var(--l1)}
+.phdr-title{font-size:20px;font-weight:700;letter-spacing:-.3px}
+.phdr-title span{color:var(--ac)}
+.phdr-sub{font-size:12px;color:var(--t3);margin-top:3px;font-family:'Roboto Mono',monospace}
+.phdr-time{float:right;font-family:'Roboto Mono',monospace;font-size:11px;color:var(--t3);margin-top:6px}
+/* SECTION */
+.sec{padding:16px 16px 0}
+.slbl{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--t3);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.slbl::after{content:'';flex:1;height:1px;background:var(--l1)}
+/* CARD */
+.card{background:var(--s1);border:1px solid var(--l1);border-radius:14px;overflow:hidden;margin-bottom:10px}
+.cb{padding:14px}
+/* FIELD */
+.field{margin-bottom:12px}.field:last-child{margin-bottom:0}
+.flbl{font-size:11px;font-weight:600;color:var(--t2);letter-spacing:.3px;margin-bottom:5px;display:flex;align-items:center;justify-content:space-between}
+.fhint{font-size:10px;color:var(--t3);font-weight:400}
+input[type=number],input[type=text],select{width:100%;background:var(--s2);border:1.5px solid var(--l2);border-radius:10px;padding:11px 13px;font-size:15px;font-family:'Roboto Mono',monospace;color:var(--t1);outline:none;-webkit-appearance:none;appearance:none;transition:border-color .15s}
+input:focus,select:focus{border-color:var(--ac);background:var(--s3)}
+input::placeholder{color:var(--t3);font-size:14px}
+input[type=number]{-moz-appearance:textfield}
+input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23555e67'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px}
+select option{background:var(--s2)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+/* HINT */
+.hbar{background:var(--acs);border:1px solid var(--acb);border-radius:8px;padding:9px 12px;margin-bottom:12px;font-family:'Roboto Mono',monospace;font-size:11px;color:var(--t2);line-height:1.7;display:none}
+.hbar b{color:var(--ac)}
+/* BUTTONS */
+.btn-p{width:100%;background:var(--ac);border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;color:#fff;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;-webkit-appearance:none}
+.btn-p:active{opacity:.85}
+.btn-g{background:var(--s2);border:1.5px solid var(--l2);border-radius:10px;padding:10px 16px;font-size:13px;font-weight:600;color:var(--t2);cursor:pointer;font-family:'Inter',sans-serif;-webkit-appearance:none}
+.btn-g:active{opacity:.7}
+.btn-g.red{border-color:var(--dnb);color:var(--dn)}
+.btn-g.grn{border-color:var(--upb);color:var(--up)}
+/* STATUS */
+.status{border-radius:14px;padding:14px 16px;display:flex;align-items:flex-start;gap:12px;border:1.5px solid;margin-bottom:10px}
+.s-ok{background:var(--ups);border-color:var(--upb)}
+.s-dn{background:var(--dns);border-color:var(--dnb)}
+.s-hi{background:var(--acs);border-color:var(--acb)}
+.s-wa{background:var(--was);border-color:var(--wab)}
+.s-ico{font-size:22px;flex-shrink:0;line-height:1}
+.s-ttl{font-size:14px;font-weight:700;line-height:1.2}
+.s-ok .s-ttl{color:var(--up)}.s-dn .s-ttl{color:var(--dn)}.s-hi .s-ttl{color:var(--ac)}.s-wa .s-ttl{color:var(--wa)}
+.s-msg{font-size:12px;color:var(--t2);margin-top:4px;line-height:1.4}
+/* RANGE BAR */
+.rbar{margin:2px 0 6px}
+.rbar-n{display:flex;justify-content:space-between;font-family:'Roboto Mono',monospace;font-size:10px;color:var(--t3);margin-bottom:5px}
+.rbar-n .mid{color:var(--wa)}
+.rbar-t{height:5px;background:var(--s3);border-radius:3px;position:relative}
+.rbar-bg{position:absolute;inset:0;border-radius:3px;background:linear-gradient(90deg,var(--dn),var(--wa),var(--up),var(--ac));opacity:.22}
+.rbar-pin{position:absolute;top:50%;transform:translate(-50%,-50%);width:13px;height:13px;border-radius:50%;background:var(--t1);border:2px solid var(--dn);box-shadow:0 0 8px rgba(224,72,58,.4);transition:left .3s,border-color .3s;z-index:2}
+.rbar-cap{text-align:center;font-family:'Roboto Mono',monospace;font-size:10px;color:var(--t2);margin-top:6px}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.metric{background:var(--s1);border:1px solid var(--l1);border-radius:14px;padding:12px 13px}
+.m-lbl{font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--t3);margin-bottom:5px}
+.m-val{font-family:'Roboto Mono',monospace;font-size:17px;font-weight:500;line-height:1;margin-bottom:3px}
+.m-val.up{color:var(--up)}.m-val.dn{color:var(--dn)}.m-val.ac{color:var(--ac)}.m-val.wa{color:var(--wa)}.m-val.w{color:var(--t1)}
+.m-sub{font-size:10px;color:var(--t3);line-height:1.3}
+/* ORDER CARDS */
+.ocard{border-radius:14px;padding:13px 14px;margin-bottom:8px;border:1.5px solid}
+.oc-sh{background:var(--dns);border-color:var(--dnb)}
+.oc-lg{background:var(--ups);border-color:var(--upb)}
+.oc-tr{background:var(--acs);border-color:var(--acb)}
+.oc-wa{background:var(--was);border-color:var(--wab)}
+.oc-t{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;margin-bottom:10px}
+.oc-sh .oc-t{color:var(--dn)}.oc-lg .oc-t{color:var(--up)}.oc-tr .oc-t{color:var(--ac)}.oc-wa .oc-t{color:var(--wa)}
+.or{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px}
+.or:last-child{border-bottom:none}
+.or-k{color:var(--t2)}.or-v{font-family:'Roboto Mono',monospace;font-weight:500;color:var(--t1)}
+.or-v.up{color:var(--up)}.or-v.dn{color:var(--dn)}.or-v.ac{color:var(--ac)}.or-v.wa{color:var(--wa)}
+/* DATA TABLE */
+.dt{width:100%;border-collapse:collapse}
+.dt td{padding:9px 14px;border-bottom:1px solid rgba(46,51,56,.7);font-size:12px;vertical-align:top}
+.dt tr:last-child td{border-bottom:none}
+.dt td:first-child{color:var(--t2);font-family:'Roboto Mono',monospace;font-size:10px;width:48%}
+.dt td:last-child{font-family:'Roboto Mono',monospace;font-weight:500;text-align:right}
+.up{color:var(--up)}.dn{color:var(--dn)}.ac{color:var(--ac)}.wa{color:var(--wa)}.w{color:var(--t1)}
+/* STEPS */
+.step{display:flex;gap:11px;padding:11px 0;border-bottom:1px solid rgba(46,51,56,.6);align-items:flex-start}
+.step:last-child{border-bottom:none}
+.sn{width:24px;height:24px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;margin-top:1px}
+.sn-r{background:var(--dn)}.sn-g{background:var(--up)}.sn-b{background:var(--ac)}.sn-a{background:var(--wa)}
+.st-t{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:2px}
+.st-b{font-size:12px;color:var(--t2);line-height:1.5}
+.st-b code{font-family:'Roboto Mono',monospace;font-size:11px;background:var(--s3);border:1px solid var(--l2);padding:1px 5px;border-radius:4px;color:var(--ac)}
+.st-b .u{color:var(--up);font-weight:600}.st-b .d{color:var(--dn);font-weight:600}.st-b .a{color:var(--wa);font-weight:600}
+/* REBALANCE */
+.rebbox{background:var(--was);border:1.5px solid var(--wab);border-radius:14px;padding:13px 14px;margin-bottom:10px}
+.reb-t{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--wa);margin-bottom:10px}
+.rr{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(217,119,6,.12);font-size:13px}
+.rr:last-child{border-bottom:none}
+.rr span:first-child{color:var(--t2)}.rr span:last-child{font-family:'Roboto Mono',monospace;font-weight:500;color:var(--t1)}
+/* LOG FORM */
+.logbox{background:var(--ups);border:1.5px solid var(--upb);border-radius:14px;padding:14px;margin-bottom:10px}
+.lb-t{font-size:9px;font-weight:700;letter-spacing:1.8px;text-transform:uppercase;color:var(--up);margin-bottom:12px}
+/* JOURNAL */
+.kpi-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.kpi{background:var(--s1);border:1px solid var(--l1);border-radius:14px;padding:12px 13px}
+.kpi-l{font-size:9px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--t3);margin-bottom:4px}
+.kpi-v{font-family:'Roboto Mono',monospace;font-size:20px;font-weight:500}
+.kpi-s{font-size:10px;color:var(--t3);margin-top:2px}
+.jcard{background:var(--s1);border:1px solid var(--l1);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.jh{display:flex;justify-content:space-between;align-items:center;padding:10px 13px;background:var(--s2);border-bottom:1px solid var(--l1)}
+.jd{font-family:'Roboto Mono',monospace;font-size:10px;color:var(--t3)}
+.badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:5px;letter-spacing:.3px}
+.b-up{background:var(--ups);color:var(--up);border:1px solid var(--upb)}
+.b-dn{background:var(--dns);color:var(--dn);border:1px solid var(--dnb)}
+.b-ac{background:var(--acs);color:var(--ac);border:1px solid var(--acb)}
+.jbody{padding:11px 13px}
+.jr{display:flex;justify-content:space-between;align-items:center;padding:4px 0;border-bottom:1px solid rgba(46,51,56,.5);font-size:12px}
+.jr:last-child{border-bottom:none}
+.jr span:first-child{color:var(--t2)}.jr span:last-child{font-family:'Roboto Mono',monospace;font-weight:500}
+/* CHART */
+.cw{height:130px;position:relative}
+canvas{display:block;width:100%!important;height:100%!important}
+.ce{display:flex;align-items:center;justify-content:center;height:130px;font-size:11px;color:var(--t3);font-family:'Roboto Mono',monospace}
+/* GUIDE */
+.gt{font-size:16px;font-weight:700;color:var(--t1);margin-bottom:10px;margin-top:4px}
+.gi{font-size:13px;color:var(--t2);line-height:1.6;margin-bottom:12px}
+.gs{display:flex;gap:12px;padding:12px 14px;background:var(--s1);border:1px solid var(--l1);border-radius:14px;margin-bottom:8px}
+.gsn{width:26px;height:26px;border-radius:8px;flex-shrink:0;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;margin-top:1px}
+.gs-t{font-size:13px;font-weight:600;margin-bottom:3px}
+.gs-b{font-size:12px;color:var(--t2);line-height:1.5}
+.gs-b code{font-family:'Roboto Mono',monospace;font-size:11px;background:var(--s3);border:1px solid var(--l2);padding:1px 5px;border-radius:4px;color:var(--ac)}
+.gs-b b{color:var(--t1);font-weight:600}
+.rt{width:100%;border-collapse:collapse;margin-bottom:8px}
+.rt th{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--t3);padding:8px 12px;background:var(--s2);border-bottom:1px solid var(--l1);text-align:left}
+.rt td{padding:8px 12px;border-bottom:1px solid rgba(46,51,56,.6);font-size:12px}
+.rt tr:last-child td{border-bottom:none}
+.rt td:first-child{color:var(--t2);font-family:'Roboto Mono',monospace;font-size:11px}
+.rt td:last-child{color:var(--t1);font-weight:500}
+.cl{border-radius:10px;padding:11px 13px;margin-bottom:10px;font-size:12px;line-height:1.5;border-left:3px solid}
+.cl.info{background:var(--acs);border-color:var(--ac);color:var(--t2)}
+.cl.warn{background:var(--was);border-color:var(--wa);color:var(--t2)}
+.cl.good{background:var(--ups);border-color:var(--up);color:var(--t2)}
+.cl b{font-weight:600;color:var(--t1)}
+/* SYNC */
+.syncbar{display:flex;align-items:center;gap:8px;padding:10px 13px;background:var(--s1);border:1px solid var(--l1);border-radius:10px;margin-bottom:10px;font-size:12px;color:var(--t3)}
+.sdot{width:6px;height:6px;border-radius:50%;background:var(--wa);flex-shrink:0}
+.sdot.ok{background:var(--up)}.sdot.err{background:var(--dn)}
+/* TOAST */
+.toast{position:fixed;bottom:82px;left:50%;transform:translateX(-50%);background:var(--s3);border:1px solid var(--l2);border-radius:10px;padding:9px 18px;font-size:13px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none;font-family:'Inter',sans-serif}
+.toast.show{opacity:1}
+.toast.ok{color:var(--up);border-color:var(--upb)}
+.toast.err{color:var(--dn);border-color:var(--dnb)}
+/* EMPTY */
+.empty{text-align:center;padding:36px 20px}
+.empty .ico{font-size:32px;margin-bottom:10px}
+.empty p{font-size:13px;color:var(--t3);line-height:1.5}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+
+<!-- CALC PAGE -->
+<div id="pg-calc" class="page active">
+  <div class="phdr">
+    <span class="phdr-time" id="clock">--:--</span>
+    <div class="phdr-title">AVAX LP <span>+ Hedge</span></div>
+    <div class="phdr-sub">Blackhole · Hyperliquid</div>
+  </div>
+  <div class="sec">
+    <div class="slbl">LP Position</div>
+    <div class="card cb">
+      <div class="g2">
+        <div class="field"><div class="flbl">AVAX Price <span class="fhint">USD</span></div><input type="number" id="i_px" inputmode="decimal" placeholder="9.82" step="0.01" oninput="onPC()"></div>
+        <div class="field"><div class="flbl">APY <span class="fhint">%</span></div><input type="number" id="i_apy" inputmode="decimal" placeholder="150" value="150" step="1"></div>
+      </div>
+      <div class="g2">
+        <div class="field"><div class="flbl">AVAX in LP</div><input type="number" id="i_avax" inputmode="decimal" placeholder="250" step="0.1"></div>
+        <div class="field"><div class="flbl">USDC in LP</div><input type="number" id="i_usdc" inputmode="decimal" placeholder="2700" step="1"></div>
+      </div>
+      <div class="g2">
+        <div class="field"><div class="flbl">Range Low</div><input type="number" id="i_lo" inputmode="decimal" placeholder="9.30" step="0.01" oninput="onPC()"></div>
+        <div class="field"><div class="flbl">Range High</div><input type="number" id="i_hi" inputmode="decimal" placeholder="10.30" step="0.01" oninput="onPC()"></div>
+      </div>
+      <div class="field"><div class="flbl">LP Entry Price <span class="fhint">when opened</span></div><input type="number" id="i_entry" inputmode="decimal" placeholder="9.82" step="0.01"></div>
+      <div id="hbar" class="hbar"></div>
+    </div>
+    <div class="slbl">Hyperliquid</div>
+    <div class="card cb">
+      <div class="g3">
+        <div class="field"><div class="flbl">Margin $</div><input type="number" id="i_mg" inputmode="decimal" placeholder="1000" value="1000" step="50"></div>
+        <div class="field"><div class="flbl">Leverage</div><select id="i_lv"><option value="2">2x</option><option value="3" selected>3x</option><option value="5">5x</option></select></div>
+        <div class="field"><div class="flbl">Fund %/8h</div><input type="number" id="i_fund" inputmode="decimal" placeholder="0.01" value="0.01" step="0.001"></div>
+      </div>
+      <div class="g2">
+        <div class="field"><div class="flbl">Active Side</div><select id="i_dir"><option value="none">None open</option><option value="short">Short</option><option value="long">Long</option></select></div>
+        <div class="field"><div class="flbl">Size (notional $)</div><input type="number" id="i_sz" inputmode="decimal" placeholder="0" value="0" step="10"></div>
+      </div>
+      <div class="g2">
+        <div class="field"><div class="flbl">Position Entry $</div><input type="number" id="i_pe" inputmode="decimal" placeholder="9.82" step="0.01"></div>
+        <div class="field"><div class="flbl">Unrealised P&L $</div><input type="number" id="i_upnl" inputmode="decimal" placeholder="0" value="0" step="1"></div>
+      </div>
+    </div>
+    <button class="btn-p" onclick="calculate()" style="margin-bottom:18px">Calculate Position</button>
+  </div>
+  <div id="results" style="display:none">
+    <div class="sec">
+      <div id="sc"></div>
+      <div class="card cb" style="margin-bottom:10px">
+        <div class="rbar">
+          <div class="rbar-n"><span id="rb-lo">-</span><span class="mid" id="rb-mid">-</span><span id="rb-hi">-</span></div>
+          <div class="rbar-t"><div class="rbar-bg"></div><div class="rbar-pin" id="rb-p" style="left:50%"></div></div>
+          <div class="rbar-cap" id="rb-c">-</div>
+        </div>
+      </div>
+      <div class="metrics">
+        <div class="metric"><div class="m-lbl">Action</div><div class="m-val ac" id="m-act">-</div><div class="m-sub" id="m-act-s">-</div></div>
+        <div class="metric"><div class="m-lbl">Daily Fees</div><div class="m-val wa" id="m-fee">-</div><div class="m-sub" id="m-fee-s">-</div></div>
+        <div class="metric"><div class="m-lbl">Hedge P&L</div><div class="m-val" id="m-hp">-</div><div class="m-sub" id="m-hp-s">-</div></div>
+        <div class="metric"><div class="m-lbl">Net vs Unhedged</div><div class="m-val" id="m-net">-</div><div class="m-sub" id="m-net-s">-</div></div>
+      </div>
+      <div class="slbl">Hyperliquid Orders</div>
+      <div id="hlo"></div>
+      <div id="rebw"></div>
+      <div class="slbl">Tonight's Actions</div>
+      <div class="card cb"><div id="steps"></div></div>
+      <div class="slbl">Fee Breakdown</div>
+      <div class="card"><table class="dt">
+        <tr><td>Daily (70% uptime)</td><td id="fd" class="up">-</td></tr>
+        <tr><td>Weekly</td><td id="fw" class="up">-</td></tr>
+        <tr><td>Monthly</td><td id="fm" class="up">-</td></tr>
+        <tr><td>Yearly</td><td id="fy" class="up">-</td></tr>
+        <tr><td>Funding (monthly)</td><td id="ff">-</td></tr>
+        <tr><td>Liquidation price</td><td id="fliq" class="wa">-</td></tr>
+      </table></div>
+      <div id="logw" style="display:none">
+        <div class="slbl">Log This Rebalance</div>
+        <div class="logbox">
+          <div class="lb-t">Record Rebalance Event</div>
+          <div class="g2">
+            <div class="field"><div class="flbl">LP Before $</div><input type="number" id="lf-b" inputmode="decimal" placeholder="5155" step="1"></div>
+            <div class="field"><div class="flbl">LP After $</div><input type="number" id="lf-a" inputmode="decimal" placeholder="4992" step="1"></div>
+          </div>
+          <div class="g2">
+            <div class="field"><div class="flbl">HL Profit $</div><input type="number" id="lf-hl" inputmode="decimal" placeholder="296" step="1"></div>
+            <div class="field"><div class="flbl">Fees Since Last $</div><input type="number" id="lf-fe" inputmode="decimal" placeholder="42" step="1"></div>
+          </div>
+          <div class="g2" style="margin-bottom:10px">
+            <div class="field"><div class="flbl">New Range Low</div><input type="number" id="lf-nlo" inputmode="decimal" step="0.01"></div>
+            <div class="field"><div class="flbl">New Range High</div><input type="number" id="lf-nhi" inputmode="decimal" step="0.01"></div>
+          </div>
+          <button class="btn-g grn" style="width:100%" onclick="logReb()">+ Save Entry</button>
+        </div>
+      </div>
+      <div style="height:8px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- JOURNAL PAGE -->
+<div id="pg-journal" class="page">
+  <div class="phdr"><div class="phdr-title">P&L <span>Journal</span></div><div class="phdr-sub">Rebalance history</div></div>
+  <div class="sec">
+    <div id="sbar" class="syncbar"><div class="sdot" id="sdot"></div><span id="stxt">Local only</span></div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="kpi-l">Total Fees</div><div class="kpi-v up" id="jfees">$0</div><div class="kpi-s">All time</div></div>
+      <div class="kpi"><div class="kpi-l">Hedge P&L</div><div class="kpi-v" id="jhedge">$0</div><div class="kpi-s">Realised</div></div>
+      <div class="kpi"><div class="kpi-l">Net P&L</div><div class="kpi-v" id="jnet">$0</div><div class="kpi-s">Fees + hedge</div></div>
+      <div class="kpi"><div class="kpi-l">Rebalances</div><div class="kpi-v ac" id="jcnt">0</div><div class="kpi-s">Events</div></div>
+    </div>
+    <div class="slbl">LP Value</div>
+    <div class="card cb"><div class="cw"><canvas id="c-lp"></canvas><div class="ce" id="ce-lp">Log events to see chart</div></div></div>
+    <div class="slbl">Cumulative P&L</div>
+    <div class="card cb"><div class="cw"><canvas id="c-pnl"></canvas><div class="ce" id="ce-pnl">Log events to see chart</div></div></div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn-g" style="flex:1" onclick="syncSheets()">Sync Sheets</button>
+      <button class="btn-g" style="flex:1" onclick="exportCSV()">Export CSV</button>
+      <button class="btn-g red" onclick="doClear()">Clear</button>
+    </div>
+    <div class="slbl">History</div>
+    <div id="jents"><div class="empty"><div class="ico">📋</div><p>No rebalances logged yet.<br>Complete the calculator<br>and log each event.</p></div></div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- GUIDE PAGE -->
+<div id="pg-guide" class="page">
+  <div class="phdr"><div class="phdr-title">How to <span>Use</span></div><div class="phdr-sub">Step-by-step guide</div></div>
+  <div class="sec">
+
+    <div class="gt">What this calculator does</div>
+    <div class="gi">You run two simultaneous positions: a Concentrated Liquidity LP on Blackhole (Avalanche) paired with a directional perpetual hedge on Hyperliquid. Each evening you enter tonight's figures and get exact instructions — whether to hold, flip the hedge direction, or rebalance the LP into a new price range.</div>
+    <div class="cl info"><b>Goal:</b> Earn continuous LP fees while hedge profits fund range resets whenever AVAX moves out of band. Never be out of range longer than one evening.</div>
+
+    <div class="gt" style="margin-top:16px">What to key in each night</div>
+
+    <div class="gs"><div class="gsn">1</div><div><div class="gs-t">AVAX Price</div><div class="gs-b">Check on Hyperliquid or CoinGecko. Enter the current live price. <b>This drives every calculation below it.</b></div></div></div>
+    <div class="gs"><div class="gsn">2</div><div><div class="gs-t">AVAX in LP and USDC in LP</div><div class="gs-b">Open Blackhole, go to your LP position. It shows current token amounts. Enter both. <b>Below range:</b> you will see only AVAX and zero USDC. <b>Above range:</b> only USDC and zero AVAX.</div></div></div>
+    <div class="gs"><div class="gsn">3</div><div><div class="gs-t">Range Low and Range High</div><div class="gs-b">Your current LP price boundaries from Blackhole. On first setup use price minus 5.11% for low and price plus 4.87% for high. After each rebalance, enter the new range you just set.</div></div></div>
+    <div class="gs"><div class="gsn">4</div><div><div class="gs-t">LP Entry Price</div><div class="gs-b">The AVAX price when you first opened this LP. Used to calculate impermanent loss. Keep the same value until you fully close and reopen the LP.</div></div></div>
+    <div class="gs"><div class="gsn">5</div><div><div class="gs-t">APY</div><div class="gs-b">The current APY shown on Blackhole for your pool. Check it weekly and update. It changes with trading volume. Default is 150%.</div></div></div>
+    <div class="gs"><div class="gsn">6</div><div><div class="gs-t">Margin and Leverage</div><div class="gs-b"><b>Margin = $1,000</b> (capital deposited on Hyperliquid). <b>Leverage = 3x.</b> These stay constant — only change if you deliberately resize the hedge.</div></div></div>
+    <div class="gs"><div class="gsn">7</div><div><div class="gs-t">Funding Rate</div><div class="gs-b">On Hyperliquid, select AVAX-PERP, look for the <b>Funding</b> rate near the order panel. It shows something like <code>0.0125%</code> per 8 hours. Positive means shorts earn. Enter it here as a decimal number.</div></div></div>
+    <div class="gs"><div class="gsn">8</div><div><div class="gs-t">Active Side, Size and Entry</div><div class="gs-b">Go to Hyperliquid Positions. Select Short or Long. Enter the notional size in USD and the price you opened the trade at. If nothing is open, select None.</div></div></div>
+    <div class="gs"><div class="gsn">9</div><div><div class="gs-t">Unrealised P&L</div><div class="gs-b">Optional. Your current open profit or loss shown on Hyperliquid Positions panel. Positive or negative number. Leave at zero if unsure — the calculator estimates it from your entry price.</div></div></div>
+
+    <div class="gt" style="margin-top:16px">What the calculator generates</div>
+    <div class="cl good"><b>Status banner</b> — In Range (fees running), Below Range (100% AVAX no fees), Above Range (100% USDC no fees), or Warning (approaching boundary).</div>
+    <div class="cl good"><b>Range bar</b> — shows where price sits inside your range. Left half means SHORT zone. Right half means LONG zone.</div>
+    <div class="cl good"><b>Hyperliquid Orders</b> — exact orders: direction, entry, AVAX size, margin, leverage, Take Profit price, Stop Loss price. Copy directly into Hyperliquid.</div>
+    <div class="cl good"><b>Trigger Order</b> — dormant order to set before leaving. When your TP fires, this auto-opens the opposite position without you needing to be online.</div>
+    <div class="cl good"><b>Rebalance Box</b> — only appears when LP is out of range. Shows new range, exact AVAX to sell or buy, and what to deposit.</div>
+    <div class="cl good"><b>Tonight's Actions</b> — numbered steps for your exact situation tonight. Follow them in order.</div>
+    <div class="cl good"><b>Log Rebalance</b> — form appears when out of range. Records the event to Journal with full P&L breakdown.</div>
+
+    <div class="gt" style="margin-top:16px">Key trading rules</div>
+    <div class="card" style="margin-bottom:10px"><table class="rt">
+      <tr><th>Situation</th><th>What to do</th></tr>
+      <tr><td>Price at or below midpoint</td><td style="color:var(--dn)">Open SHORT</td></tr>
+      <tr><td>Price above midpoint</td><td style="color:var(--up)">Open LONG</td></tr>
+      <tr><td>Short Take Profit level</td><td>Range Low minus Range Width</td></tr>
+      <tr><td>Long Take Profit level</td><td>Range High plus Range Width</td></tr>
+      <tr><td>Short Stop Loss level</td><td>Range High minus 20% of width</td></tr>
+      <tr><td>Long Stop Loss level</td><td>Range Low plus 20% of width</td></tr>
+      <tr><td>When TP fires</td><td style="color:var(--up)">Rebalance LP now</td></tr>
+      <tr><td>When SL fires</td><td style="color:var(--wa)">Flip to opposite direction</td></tr>
+      <tr><td>AVAX still falling</td><td style="color:var(--dn)">Do NOT rebalance yet</td></tr>
+      <tr><td>Price sideways 48 hours</td><td style="color:var(--up)">Safe to rebalance</td></tr>
+    </table></div>
+    <div class="cl warn"><b>Most important rule:</b> Never rebalance LP into a still-falling market. Wait for the Short TP to fire first. That is your confirmation that the market has moved far enough. Only then rebalance.</div>
+
+    <div class="gt" style="margin-top:16px">Daily routine</div>
+    <div class="gs"><div class="gsn" style="background:var(--wa)">AM</div><div><div class="gs-t">Morning — 5 minutes</div><div class="gs-b">Check AVAX price. Confirm LP is in range. Verify TP and SL are set on Hyperliquid. Set trigger order for today's price level. Done until evening.</div></div></div>
+    <div class="gs"><div class="gsn" style="background:var(--ac)">PM</div><div><div class="gs-t">Evening — 10 to 30 minutes</div><div class="gs-b">Enter tonight's figures, tap Calculate, follow action steps in order. In range takes 10 minutes. Out of range with rebalance takes 20 to 30 minutes.</div></div></div>
+    <div class="gs"><div class="gsn" style="background:var(--up)">WK</div><div><div class="gs-t">Weekly — 10 minutes</div><div class="gs-b">Review Journal tab. Check cumulative P&L and total fees. Update APY if Blackhole shows a new rate. Sync to Google Sheets for backup.</div></div></div>
+
+    <div class="gt" style="margin-top:16px">Google Sheets sync URL</div>
+    <div class="gs"><div class="gsn">1</div><div><div class="gs-t">Deploy Apps Script</div><div class="gs-b">In Google Sheets: Extensions, Apps Script, paste the <code>appsscript.gs</code> code, Deploy as Web App, set access to Anyone, copy the URL.</div></div></div>
+    <div class="field"><div class="flbl">Apps Script Web App URL</div>
+      <input type="text" id="gs-url" placeholder="https://script.google.com/macros/s/.../exec" style="font-size:12px;padding:10px 12px;margin-bottom:8px">
+      <button class="btn-g grn" style="width:100%" onclick="saveGsUrl()">Save Sheets URL</button>
+    </div>
+    <div style="height:8px"></div>
+  </div>
+</div>
+
+<!-- TAB BAR -->
+<nav class="tabbar">
+  <button class="tb on" onclick="showPg('calc',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
+    Calc
+  </button>
+  <button class="tb" onclick="showPg('journal',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+    Journal
+  </button>
+  <button class="tb" onclick="showPg('guide',this)">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+    Guide
+  </button>
+</nav>
+
+<script>
+const SK='avax_hv4',GK='avax_gs_url';
+const $=id=>document.getElementById(id);
+const pv=n=>parseFloat(n)||0;
+const f2=(n,d=2)=>'$'+Math.abs(pv(n)).toFixed(d);
+const fs=(n,d=2)=>((pv(n)>=0?'+$':'\u2212$')+Math.abs(pv(n)).toFixed(d));
+function se(id,v,c){const e=$(id);if(!e)return;if(v!==null)e.textContent=v;if(c!==undefined)e.className=c||'';}
+
+function tick(){
+  const n=new Date(),s=new Date(n.getTime()+(8*60-n.getTimezoneOffset())*60000);
+  const p=v=>String(v).padStart(2,'0');
+  $('clock').textContent=`${p(s.getUTCHours())}:${p(s.getUTCMinutes())} SGT`;
+}
+setInterval(tick,1000);tick();
+
+function showPg(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tb').forEach(b=>b.classList.remove('on'));
+  $('pg-'+id).classList.add('active');btn.classList.add('on');
+  window.scrollTo(0,0);
+  if(id==='journal')renderJ();
+}
+
+function toast(msg,t='ok'){
+  const el=$('toast');el.textContent=msg;el.className='toast show '+t;
+  setTimeout(()=>el.className='toast',2400);
+}
+
+function onPC(){
+  const px=pv($('i_px').value),lo=pv($('i_lo').value),hi=pv($('i_hi').value);
+  const h=$('hbar');
+  if(px>0&&lo>0&&hi>0){
+    const mid=((lo+hi)/2).toFixed(2),w=(hi-lo).toFixed(2);
+    const sTP=(lo-pv(w)).toFixed(2),lTP=(hi+pv(w)).toFixed(2);
+    const sSL=(hi-pv(w)*0.2).toFixed(2),lSL=(lo+pv(w)*0.2).toFixed(2);
+    h.style.display='block';
+    h.innerHTML=`Mid <b>$${mid}</b> &nbsp;Width <b>$${w}</b><br>Short TP <b>$${sTP}</b> &nbsp;SL <b>$${sSL}</b><br>Long TP <b>$${lTP}</b> &nbsp;SL <b>$${lSL}</b>`;
+  } else h.style.display='none';
+}
+
+function calculate(){
+  const px=pv($('i_px').value),avax=pv($('i_avax').value),usdc=pv($('i_usdc').value);
+  const lo=pv($('i_lo').value),hi=pv($('i_hi').value),ent=pv($('i_entry').value)||px;
+  const apy=pv($('i_apy').value)||150,mg=pv($('i_mg').value)||1000,lev=pv($('i_lv').value)||3;
+  const fund=pv($('i_fund').value)||0,dir=$('i_dir').value;
+  const sz=pv($('i_sz').value),pe=pv($('i_pe').value)||px,upnl=pv($('i_upnl').value);
+  if(!px||!lo||!hi){toast('Enter price, range low and high','err');return;}
+  const notl=mg*lev,avN=avax*px,lpT=avN+usdc,mid=(lo+hi)/2,w=hi-lo;
+  const inR=px>=lo&&px<=hi,belR=px<lo,aboR=px>hi;
+  const pct=inR?(px-lo)/w:(belR?0:1);
+  const wLo=inR&&px<(lo+w*0.2),wHi=inR&&px>(hi-w*0.2);
+  const k=ent>0?px/ent:1,ilP=(2*Math.sqrt(k)/(1+k))-1,ilU=ilP*lpT;
+  let hP=upnl;
+  if(sz>0&&pe>0&&dir!=='none') hP=dir==='short'?sz*(pe-px)/pe:sz*(px-pe)/pe;
+  const netU=hP-ilU;
+  const fD=lpT*(apy/100)/365,fDR=fD*0.7,fW=fDR*7,fM=fDR*30,fY=fDR*365;
+  const fsgn=dir==='short'?(fund>=0?1:-1):(fund>=0?-1:1);
+  const fMo=fund*3*30*notl/100*fsgn;
+  const sTP=(lo-w).toFixed(2),sSL=(hi-w*0.2).toFixed(2);
+  const lTP=(hi+w).toFixed(2),lSL=(lo+w*0.2).toFixed(2);
+  const asz=(notl/px).toFixed(1);
+  const liqP=(pe>0&&dir==='short')?pe*(1+(1/lev)*0.9):px*(1+(1/lev)*0.9);
+  const cDir=(px<=mid||belR)?'short':'long';
+  const wDir=dir!=='none'&&dir!==cDir;
+  const nLo=(px*0.9489).toFixed(2),nHi=(px*1.0487).toFixed(2);
+
+  // Status
+  let sc,ico,ttl,msg;
+  if(belR){sc='s-dn';ico='🔴';ttl='BELOW RANGE';msg=`$${px.toFixed(2)} below $${lo}. LP is 100% AVAX, no fees. Wait for Short TP then rebalance to $${nLo}\u2013$${nHi}.`;}
+  else if(aboR){sc='s-hi';ico='🔵';ttl='ABOVE RANGE';msg=`$${px.toFixed(2)} above $${hi}. LP is 100% USDC, no fees. Buy AVAX and reenter $${nLo}\u2013$${nHi}.`;}
+  else if(wLo){sc='s-wa';ico='\u26a0\ufe0f';ttl='WARNING \u2014 NEAR BOTTOM';msg=`${(pct*100).toFixed(0)}% into range. Approaching $${lo}. Confirm SHORT is open on Hyperliquid.`;}
+  else if(wHi){sc='s-wa';ico='\u26a0\ufe0f';ttl='WARNING \u2014 NEAR TOP';msg=`${(pct*100).toFixed(0)}% into range. Approaching $${hi}. Flip SHORT to LONG on Hyperliquid now.`;}
+  else{sc='s-ok';ico='\u2705';ttl='IN RANGE \u2014 FEES RUNNING';msg=`$${px.toFixed(2)} is ${(pct*100).toFixed(0)}% through range. Earning ~${f2(fDR)}/day. ${px<=mid?'Lower half: SHORT':'Upper half: LONG'}.`;}
+  $('sc').innerHTML=`<div class="status ${sc}"><div class="s-ico">${ico}</div><div><div class="s-ttl">${ttl}</div><div class="s-msg">${msg}</div></div></div>`;
+
+  // Range bar
+  se('rb-lo','$'+lo);se('rb-mid','MID $'+mid.toFixed(2));se('rb-hi','$'+hi);
+  const cp=belR?2:aboR?98:Math.max(2,Math.min(98,pct*100));
+  const pin=$('rb-p');pin.style.left=cp+'%';
+  pin.style.borderColor=px<=mid?'var(--dn)':'var(--up)';
+  pin.style.boxShadow=px<=mid?'0 0 8px rgba(224,72,58,.5)':'0 0 8px rgba(38,166,91,.5)';
+  se('rb-c',inR?`${(pct*100).toFixed(0)}% \u00b7 ${px<=mid?'\u25bc SHORT zone':'\u25b2 LONG zone'}`:(belR?'Below range \u2014 100% AVAX':'Above range \u2014 100% USDC'));
+
+  // Metrics
+  let aT,aC;
+  if(dir==='none'){aT=`OPEN ${cDir.toUpperCase()}`;aC='ac';}
+  else if(wDir){aT=`FLIP \u2192 ${cDir.toUpperCase()}`;aC='wa';}
+  else{const dr=Math.abs(avN-sz);aT=dr>lpT*0.1?'RESIZE':(`HOLD ${dir.toUpperCase()}`);aC=dr>lpT*0.1?'wa':'up';}
+  se('m-act',aT,`m-val ${aC}`);se('m-act-s',`${f2(notl)} \u00b7 ${lev}x \u00b7 ${asz} AVAX`);
+  se('m-fee',f2(fDR),'m-val wa');se('m-fee-s',`${f2(fM)}/mo \u00b7 ${f2(fY)}/yr`);
+  const hC=hP>=0?'up':'dn';se('m-hp',fs(hP),`m-val ${hC}`);se('m-hp-s',dir==='none'?'No position open':'$'+sz+' @ $'+pe.toFixed(2));
+  const nC=netU>=0?'up':'dn';se('m-net',fs(netU),`m-val ${nC}`);se('m-net-s',`IL ${fs(ilU)}`);
+
+  // HL Orders
+  const ho=$('hlo');
+  if(px<=mid||belR){
+    ho.innerHTML=`<div class="ocard oc-sh"><div class="oc-t">\u25bc Short \u2014 Open Now</div>
+    <div class="or"><span class="or-k">Direction</span><span class="or-v dn">SELL / SHORT</span></div>
+    <div class="or"><span class="or-k">Entry price</span><span class="or-v">$${px.toFixed(2)}</span></div>
+    <div class="or"><span class="or-k">Margin</span><span class="or-v">$${mg}</span></div>
+    <div class="or"><span class="or-k">Leverage</span><span class="or-v">${lev}x</span></div>
+    <div class="or"><span class="or-k">Size (AVAX)</span><span class="or-v">${asz} AVAX</span></div>
+    <div class="or"><span class="or-k">Notional</span><span class="or-v">$${notl}</span></div>
+    <div class="or"><span class="or-k">Take Profit</span><span class="or-v up">$${sTP}</span></div>
+    <div class="or"><span class="or-k">Stop Loss</span><span class="or-v wa">$${sSL}</span></div>
+    <div class="or"><span class="or-k">Liquidation</span><span class="or-v wa">$${liqP.toFixed(2)}</span></div>
+    </div>
+    <div class="ocard oc-tr"><div class="oc-t">\u27f3 Trigger \u2014 When Short TP Fires</div>
+    <div class="or"><span class="or-k">At price</span><span class="or-v ac">$${sTP}</span></div>
+    <div class="or"><span class="or-k">Auto-open LONG</span><span class="or-v">$${mg} \u00b7 ${lev}x</span></div>
+    <div class="or"><span class="or-k">Long TP</span><span class="or-v up">$${(parseFloat(sTP)+w).toFixed(2)}</span></div>
+    <div class="or"><span class="or-k">Long SL</span><span class="or-v wa">$${(parseFloat(sTP)+w*0.2).toFixed(2)}</span></div>
+    <div class="or"><span class="or-k">Then</span><span class="or-v ac">Rebalance LP tonight</span></div>
+    </div>`;
+  } else {
+    ho.innerHTML=`<div class="ocard oc-lg"><div class="oc-t">\u25b2 Long \u2014 Open Now</div>
+    <div class="or"><span class="or-k">Direction</span><span class="or-v up">BUY / LONG</span></div>
+    <div class="or"><span class="or-k">Entry price</span><span class="or-v">$${px.toFixed(2)}</span></div>
+    <div class="or"><span class="or-k">Margin</span><span class="or-v">$${mg}</span></div>
+    <div class="or"><span class="or-k">Leverage</span><span class="or-v">${lev}x</span></div>
+    <div class="or"><span class="or-k">Size (AVAX)</span><span class="or-v">${asz} AVAX</span></div>
+    <div class="or"><span class="or-k">Notional</span><span class="or-v">$${notl}</span></div>
+    <div class="or"><span class="or-k">Take Profit</span><span class="or-v up">$${lTP}</span></div>
+    <div class="or"><span class="or-k">Stop Loss</span><span class="or-v wa">$${lSL}</span></div>
+    <div class="or"><span class="or-k">Liquidation</span><span class="or-v wa">$${(px*(1-(1/lev)*0.9)).toFixed(2)}</span></div>
+    </div>
+    <div class="ocard oc-tr"><div class="oc-t">\u27f3 Trigger \u2014 When Long TP Fires</div>
+    <div class="or"><span class="or-k">At price</span><span class="or-v ac">$${lTP}</span></div>
+    <div class="or"><span class="or-k">Auto-open SHORT</span><span class="or-v">$${mg} \u00b7 ${lev}x</span></div>
+    <div class="or"><span class="or-k">Short TP</span><span class="or-v dn">$${(parseFloat(lTP)-w).toFixed(2)}</span></div>
+    <div class="or"><span class="or-k">Short SL</span><span class="or-v wa">$${(parseFloat(lTP)-w*0.2).toFixed(2)}</span></div>
+    <div class="or"><span class="or-k">Then</span><span class="or-v ac">Rebalance LP tonight</span></div>
+    </div>`;
+  }
+
+  // Rebalance
+  const rw=$('rebw');
+  if(!inR){
+    const hp=Math.max(0,hP);
+    let rh=`<div class="slbl">Rebalance Now</div><div class="rebbox"><div class="reb-t">New Range Required</div>`;
+    rh+=`<div class="rr"><span>New range</span><span style="color:var(--ac)">$${nLo} \u2013 $${nHi}</span></div>`;
+    if(belR){
+      const ea=(avax+(usdc/lo)).toFixed(1),sa=(parseFloat(ea)*0.5).toFixed(1);
+      rh+=`<div class="rr"><span>AVAX from exit</span><span>${ea} AVAX</span></div>`;
+      rh+=`<div class="rr"><span>Short profit</span><span style="color:var(--up)">+${f2(hp)}</span></div>`;
+      rh+=`<div class="rr"><span>Sell ${sa} AVAX</span><span>\u2192 ${f2(parseFloat(sa)*px)} USDC</span></div>`;
+      rh+=`<div class="rr"><span>Deposit into LP</span><span>${sa} AVAX + ${f2(parseFloat(sa)*px+hp)}</span></div>`;
+    } else {
+      const tc=lpT+hp,ba=(tc*0.5/px).toFixed(1);
+      rh+=`<div class="rr"><span>USDC from exit</span><span style="color:var(--up)">${f2(lpT)}</span></div>`;
+      rh+=`<div class="rr"><span>Long profit</span><span style="color:var(--up)">+${f2(hp)}</span></div>`;
+      rh+=`<div class="rr"><span>Buy ${ba} AVAX</span><span>${f2(tc*0.5)}</span></div>`;
+      rh+=`<div class="rr"><span>Deposit into LP</span><span>${ba} AVAX + ${f2(tc*0.5)}</span></div>`;
+    }
+    rw.innerHTML=rh+'</div>';
+    $('logw').style.display='block';
+    $('lf-nlo').value=nLo;$('lf-nhi').value=nHi;
+    if(lpT>0)$('lf-b').value=lpT.toFixed(0);
+    if(hP>0)$('lf-hl').value=hP.toFixed(2);
+  } else {rw.innerHTML='';$('logw').style.display='none';}
+
+  // Steps
+  const base=inR?3:5;
+  let ss=[];
+  ss.push({c:'b',n:'1',t:'Confirm price',b:`Verify AVAX at <code>$${px.toFixed(2)}</code> on Hyperliquid before taking any action.`});
+  if(inR){
+    ss.push({c:'g',n:'2',t:'LP is running \u2014 no Blackhole action',b:`Earning ~<span class="u">${f2(fDR)}/day</span>. Leave LP position unchanged.`});
+  } else if(belR){
+    ss.push({c:'r',n:'2',t:'Blackhole: Remove LP 100%',b:`Position \u2192 Remove \u2192 100% \u2192 confirm. Receive ~<span class="d">${(avax+(usdc/lo)).toFixed(1)} AVAX</span> and $0 USDC.`});
+    ss.push({c:'r',n:'3',t:`Sell ${((avax+(usdc/lo))*0.5).toFixed(1)} AVAX at $${px.toFixed(2)}`,b:`Get ~<span class="u">${f2(((avax+(usdc/lo))*0.5)*px)}</span> USDC. Also collect short profit <span class="u">+${f2(Math.max(0,hP))}</span>.`});
+    ss.push({c:'b',n:'4',t:`Blackhole: Open new LP $${nLo} \u2013 $${nHi}`,b:`Deposit roughly 50% AVAX and 50% USDC. Fee earning restarts immediately.`});
+  } else {
+    ss.push({c:'b',n:'2',t:'Blackhole: Remove LP 100%',b:`Receive ~<span class="u">${f2(lpT)} USDC</span> and 0 AVAX.`});
+    ss.push({c:'b',n:'3',t:`Buy ${((lpT*0.5)/px).toFixed(1)} AVAX at $${px.toFixed(2)}`,b:`Spend <span class="u">${f2(lpT*0.5)}</span>. Also collect long profit <span class="u">+${f2(Math.max(0,hP))}</span>.`});
+    ss.push({c:'b',n:'4',t:`Blackhole: Open new LP $${nLo} \u2013 $${nHi}`,b:`Deposit AVAX and remaining USDC. Fees restart.`});
+  }
+  if(dir==='none'){
+    ss.push({c:'r',n:String(base),t:`Hyperliquid: Open ${cDir.toUpperCase()}`,b:`AVAX-PERP \u00b7 <code>${asz} AVAX</code> \u00b7 $${mg} \u00b7 ${lev}x \u00b7 TP <code>$${cDir==='short'?sTP:lTP}</code> \u00b7 SL <code>$${cDir==='short'?sSL:lSL}</code>`});
+  } else if(wDir){
+    ss.push({c:'a',n:String(base),t:`Hyperliquid: Flip ${dir.toUpperCase()} \u2192 ${cDir.toUpperCase()}`,b:`Close ${dir} (P&L <span class="${hP>=0?'u':'d'}">${fs(hP)}</span>). Open ${cDir} \u00b7 TP <code>$${cDir==='short'?sTP:lTP}</code> \u00b7 SL <code>$${cDir==='short'?sSL:lSL}</code>`});
+  } else {
+    ss.push({c:'g',n:String(base),t:`Hyperliquid: ${dir.toUpperCase()} is correct`,b:`Confirm TP <code>$${dir==='short'?sTP:lTP}</code> and SL <code>$${dir==='short'?sSL:lSL}</code> are set.`});
+  }
+  ss.push({c:'b',n:String(base+1),t:'Set trigger order on Hyperliquid',b:cDir==='short'
+    ?`When Short TP fires at <code>$${sTP}</code> \u2192 auto-open Long \u00b7 TP <code>$${(parseFloat(sTP)+w).toFixed(2)}</code> \u00b7 SL <code>$${(parseFloat(sTP)+w*0.2).toFixed(2)}</code>`
+    :`When Long TP fires at <code>$${lTP}</code> \u2192 auto-open Short \u00b7 TP <code>$${(parseFloat(lTP)-w).toFixed(2)}</code> \u00b7 SL <code>$${(parseFloat(lTP)-w*0.2).toFixed(2)}</code>`});
+  if(fund<-0.01) ss.push({c:'a',n:String(base+2),t:'Funding cost is high \u2014 review',b:`Rate ${fund}%/8h costs ~<span class="d">${f2(Math.abs(fMo))}/month</span>. If negative for 3+ days, reduce notional by 50%.`});
+
+  $('steps').innerHTML=ss.map(s=>`<div class="step"><div class="sn sn-${s.c}">${s.n}</div><div><div class="st-t">${s.t}</div><div class="st-b">${s.b}</div></div></div>`).join('');
+
+  const st=(id,v,c)=>{const e=$(id);if(e){e.textContent=v;if(c)e.className=c;}};
+  st('fd',f2(fDR),'up');st('fw',f2(fW),'up');st('fm',f2(fM),'up');st('fy',f2(fY),'up');
+  st('ff',`${fs(fMo)}/mo`,fMo>=0?'up':'dn');st('fliq',f2(liqP),'wa');
+
+  $('results').style.display='block';
+  setTimeout(()=>$('results').scrollIntoView({behavior:'smooth',block:'start'}),80);
+}
+
+// Journal
+function loadJ(){try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return[];}}
+function saveJ(d){try{localStorage.setItem(SK,JSON.stringify(d));}catch{}}
+
+function logReb(){
+  const b=pv($('lf-b').value),a=pv($('lf-a').value),hl=pv($('lf-hl').value),fe=pv($('lf-fe').value);
+  const nlo=pv($('lf-nlo').value),nhi=pv($('lf-nhi').value),px=pv($('i_px').value);
+  if(!b||!a||!px){toast('Fill LP before/after and price','err');return;}
+  const j=loadJ(),prev=j.length?j[0].cum:0,net=hl+fe+(a-b),cum=+(prev+net).toFixed(2);
+  const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
+  const p=v=>String(v).padStart(2,'0');
+  const e={
+    date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
+    price:px,lpBefore:b,lpAfter:a,hlProfit:hl,fees:fe,net:+net.toFixed(2),
+    rangeLow:nlo,rangeHigh:nhi,cum,status:px<nlo?'below':px>nhi?'above':'in'
+  };
+  j.unshift(e);saveJ(j);
+  const gu=localStorage.getItem(GK);if(gu)syncOne(e,gu);
+  toast('Saved','ok');
+  ['lf-b','lf-a','lf-hl','lf-fe'].forEach(id=>$(id).value='');
+}
+
+function renderJ(){
+  const d=loadJ();
+  let tf=0,th=0,tn=0;d.forEach(e=>{tf+=e.fees||0;th+=e.hlProfit||0;tn+=e.net||0;});
+  se('jfees',f2(tf));
+  $('jhedge').textContent=fs(th);$('jhedge').className='kpi-v '+(th>=0?'up':'dn');
+  $('jnet').textContent=fs(tn);$('jnet').className='kpi-v '+(tn>=0?'up':'dn');
+  se('jcnt',String(d.length));
+  if(d.length>=2){
+    const lb=d.map(e=>e.date.slice(5,10)).reverse();
+    drawC('c-lp','ce-lp',lb,d.map(e=>e.lpAfter).reverse(),'#26a65b','rgba(38,166,91,.1)');
+    let r=0;const cv=d.slice().reverse().map(e=>{r+=e.net;return +r.toFixed(2);});
+    drawC('c-pnl','ce-pnl',lb,cv,'#3b7ef6','rgba(59,126,246,.1)');
+  }
+  const el=$('jents');
+  if(!d.length){el.innerHTML='<div class="empty"><div class="ico">\uD83D\uDCCB</div><p>No rebalances logged yet.<br>Complete the calculator<br>and log each event.</p></div>';return;}
+  el.innerHTML=d.map(e=>{
+    const bc=e.status==='in'?'b-up':e.status==='below'?'b-dn':'b-ac';
+    const bt=e.status==='in'?'IN RANGE':e.status==='below'?'BELOW':'ABOVE';
+    return `<div class="jcard"><div class="jh"><span class="jd">${e.date}</span><span class="badge ${bc}">${bt}</span></div>
+    <div class="jbody">
+    <div class="jr"><span>AVAX Price</span><span>$${e.price}</span></div>
+    <div class="jr"><span>New Range</span><span style="color:var(--ac)">$${e.rangeLow}\u2013$${e.rangeHigh}</span></div>
+    <div class="jr"><span>LP Before \u2192 After</span><span>${f2(e.lpBefore)} \u2192 <b style="color:${e.lpAfter>=e.lpBefore?'var(--up)':'var(--dn)'}">${f2(e.lpAfter)}</b></span></div>
+    <div class="jr"><span>HL Profit</span><span style="color:${e.hlProfit>=0?'var(--up)':'var(--dn)'}">${fs(e.hlProfit)}</span></div>
+    <div class="jr"><span>Fees Earned</span><span style="color:var(--up)">+${f2(e.fees)}</span></div>
+    <div class="jr"><span>Net This Event</span><span style="color:${e.net>=0?'var(--up)':'var(--dn)'}"><b>${fs(e.net)}</b></span></div>
+    <div class="jr"><span>Cumulative P&L</span><span style="color:${e.cum>=0?'var(--up)':'var(--dn)'}"><b>${fs(e.cum)}</b></span></div>
+    </div></div>`;
+  }).join('');
+}
+
+function drawC(cid,eid,labels,data,stroke,fill){
+  const c=$(cid),e=$(eid);
+  if(!data||data.length<2){c.style.display='none';e.style.display='flex';return;}
+  c.style.display='block';e.style.display='none';
+  const dpr=Math.min(window.devicePixelRatio||1,2);
+  const w=c.parentElement.clientWidth||300,h=130;
+  c.width=w*dpr;c.height=h*dpr;c.style.width=w+'px';c.style.height=h+'px';
+  const ctx=c.getContext('2d');ctx.scale(dpr,dpr);
+  const pd={t:8,r:8,b:24,l:44};
+  const cw=w-pd.l-pd.r,ch=h-pd.t-pd.b;
+  const mn=Math.min(...data),mx=Math.max(...data),rng=mx-mn||1;
+  const xs=data.length>1?cw/(data.length-1):cw,ys=v=>ch-((v-mn)/rng)*ch;
+  ctx.strokeStyle='rgba(46,51,56,.4)';ctx.lineWidth=1;
+  [0,.5,1].forEach(t=>{const y=pd.t+t*ch;ctx.beginPath();ctx.moveTo(pd.l,y);ctx.lineTo(pd.l+cw,y);ctx.stroke();});
+  ctx.beginPath();ctx.moveTo(pd.l,pd.t+ys(data[0]));
+  data.forEach((v,i)=>ctx.lineTo(pd.l+i*xs,pd.t+ys(v)));
+  ctx.lineTo(pd.l+(data.length-1)*xs,pd.t+ch);ctx.lineTo(pd.l,pd.t+ch);ctx.closePath();
+  ctx.fillStyle=fill;ctx.fill();
+  ctx.beginPath();ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.lineJoin='round';
+  data.forEach((v,i)=>i===0?ctx.moveTo(pd.l,pd.t+ys(v)):ctx.lineTo(pd.l+i*xs,pd.t+ys(v)));
+  ctx.stroke();
+  ctx.fillStyle='rgba(85,94,103,.8)';ctx.font='9px Roboto Mono,monospace';ctx.textAlign='center';
+  const step=Math.max(1,Math.floor(data.length/4));
+  data.forEach((v,i)=>{if(i%step===0)ctx.fillText(labels[i]||'',pd.l+i*xs,h-6);});
+  ctx.textAlign='right';
+  [0,.5,1].forEach(t=>{ctx.fillText('$'+((mn+t*rng)|0),pd.l-4,pd.t+ch-t*ch+3);});
+}
+
+function saveGsUrl(){
+  const url=$('gs-url').value.trim();if(!url){toast('Enter URL first','err');return;}
+  localStorage.setItem(GK,url);updateSB();toast('Saved','ok');
+}
+function updateSB(){
+  const url=localStorage.getItem(GK);
+  const d=$('sdot'),t=$('stxt');
+  if(url){d.className='sdot ok';t.textContent='Sheets connected';}
+  else{d.className='sdot';t.textContent='Local only \u00b7 Add Sheets URL in Guide';}
+  if(url&&$('gs-url'))$('gs-url').value=url;
+}
+async function syncSheets(){
+  const d=loadJ();if(!d.length){toast('No data','err');return;}
+  const url=localStorage.getItem(GK);if(!url){toast('Add Sheets URL in Guide','err');return;}
+  toast('Syncing\u2026','ok');let ok=0;
+  for(const e of d){try{await fetch(url,{method:'POST',body:JSON.stringify(e),headers:{'Content-Type':'application/json'}});ok++;}catch{}}
+  toast(`Synced ${ok} entries`,'ok');
+}
+async function syncOne(e,url){try{await fetch(url,{method:'POST',body:JSON.stringify(e),headers:{'Content-Type':'application/json'}});}catch{}}
+function exportCSV(){
+  const d=loadJ();if(!d.length){toast('No data','err');return;}
+  const h='Date,Price,LP Before,LP After,HL Profit,Fees,Net,Range Low,Range High,Cumulative PnL,Status\n';
+  const rows=d.map(e=>[e.date,e.price,e.lpBefore,e.lpAfter,e.hlProfit,e.fees,e.net,e.rangeLow,e.rangeHigh,e.cum,e.status].join(',')).join('\n');
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h+rows],{type:'text/csv'}));
+  a.download=`avax_hedge_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast('Exported','ok');
+}
+function doClear(){if(confirm('Delete all entries?')){localStorage.removeItem(SK);renderJ();toast('Cleared','ok');}}
+updateSB();
+</script>
+</body>
+</html>
