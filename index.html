@@ -1572,7 +1572,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     <tr><td>BTC trend</td><td><span class="tag ${btcC}">${(a.btc_trend||'—').toUpperCase()} ${a.btc_change?'('+a.btc_change+'%)':''}</span></td></tr>
     <tr><td>ETH trend ${a.btc_trend==='neutral'?'<span style="font-size:9px;color:var(--blue)">← tiebreaker</span>':''}</td><td><span class="tag ${ethC}">${(a.eth_trend||'—').toUpperCase()} ${a.eth_change?'('+a.eth_change+'%)':''}</span></td></tr>
     <tr><td>Funding rate</td><td style="color:${fi?.col}">${_hl?((_hl.funding>=0?'+':'')+fi?.pct+'%/hr'):'—'}</td></tr>
-    <tr><td>OI change</td><td style="font-size:10px">${a.oi_change||oiChange}</td></tr>
+    <tr><td>OI change</td><td style="font-size:10px">${a.oi_change||_oiChange}</td></tr>
     <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Setup Confirmation</td></tr>
     <tr><td>RSI (14)</td><td><span class="tag ${rsiC==='up'?'bull':rsiC==='dn'?'bear':'neut'}">${a.rsi} ${a.rsi>60?'HIGH':a.rsi<40?'LOW':'NEUTRAL'}</span></td></tr>
     <tr><td>MACD</td><td><span class="tag ${macdC}">${(a.macd||'—').toUpperCase()}</span></td></tr>
@@ -1581,7 +1581,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     <tr><td>Confirm score</td><td><span class="tag ${confirmCls}">${a.confirm_score||0}/4 factors</span></td></tr>
     <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Decision</td></tr>
     <tr><td>Veto fired?</td><td><span class="tag ${vetoCls}">${a.veto_fired?'YES — '+a.veto_reason:'NO — clear'}</span></td></tr>
-    <tr><td>Session</td><td style="font-size:10px">${a.session||session}</td></tr>
+    <tr><td>Session</td><td style="font-size:10px">${a.session||_session}</td></tr>
     <tr><td>AVAX falling?</td><td><span class="tag ${a.price_still_falling?'bear':'bull'}">${a.price_still_falling?'YES':'NO'}</span></td></tr>
   </table>`;
 
