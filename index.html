@@ -1330,9 +1330,9 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     // Client-side catch: user's actual range shows near-exit even if AI missed it
     dabClass='dab-lp';
     const distPct=userNearTop?userLpPct:(100-userLpPct);
-    dabCmd=`⚠️ LP NEAR ${userExitDir.toUpperCase()} EXIT — REVIEW NOW`;
-    dabSub=`Price $${px.toFixed(2)} is ${distPct}% through your range ($${userRangeLo.toFixed(2)}–$${userRangeHi.toFixed(2)})`;
-    dabWhy=`Your LP is ${distPct>=95?'extremely close to exiting':'approaching the '+userExitDir+' of its range'}. At ${userLpPct}% through, ${userNearTop?'you hold mostly USDC and will exit if price continues up':'you hold mostly AVAX and will exit if price drops further'}. Consider shifting your range before it exits to avoid forced rebalance at a bad price. ${sig==='long'||sig==='short'?'Trade signal shown below — proceed with caution given LP position.':''}`;
+    dabCmd=`⚠️ LP NEAR ${userExitDir.toUpperCase()} EXIT — REVIEW RANGE FIRST`;
+    dabSub=`Price $${px.toFixed(2)} is ${distPct}% through your range ($${userRangeLo.toFixed(2)}–$${userRangeHi.toFixed(2)}) · Tap button below to get new range`;
+    dabWhy=`LP range action takes priority. At ${userLpPct}% through, ${userNearTop?'you hold mostly USDC and will exit if price rises above $'+userRangeHi.toFixed(2):'you hold mostly AVAX and will exit if price falls below $'+userRangeLo.toFixed(2)}. Get the new range recommendation first, then re-analyse for a trade signal.`;
   } else if(waitLP){
     dabClass='dab-wait';
     dabCmd='WAIT — DO NOT ACT TONIGHT';
@@ -1350,7 +1350,13 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     dabWhy=a.signal_why||'LP is running fine. No trade tonight.';
   } else if(sig==='long'||sig==='short'){
     const isHalfSize=a.entry_size==='mixed';
-    if(conf>=65&&!isHalfSize){
+    // Downgrade to skip if near LP exit + confidence < 65% — LP conflict too high
+    if(userNearExit&&conf<65){
+      dabClass='dab-wait';
+      dabCmd=`SKIP TRADE — LP NEAR EXIT + LOW CONFIDENCE`;
+      dabSub=`${conf}% confidence + LP at ${userLpPct}% through range. Scroll down to shift range first.`;
+      dabWhy=`Signal is ${sig.toUpperCase()} at ${conf}% but your LP is near the ${userExitDir} exit. Opening a new trade while the LP needs attention is high risk. Shift your LP range first (button in LP Range section below), then re-analyse.`;
+    } else if(conf>=65&&!isHalfSize){
       dabClass='dab-go';
       dabCmd=`PLACE ${sig.toUpperCase()} — $1,000 FULL SIZE`;
       dabSub=`${conf}% confidence · Strong conditions · Entry $${(a.entry||px).toFixed(2)}`;
@@ -1363,7 +1369,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       dabCmd=`SKIP TRADE — CONFIDENCE TOO LOW`;
       dabSub=`${conf}% is below 55% threshold. Signal: ${sig.toUpperCase()}.`;
     }
-    dabShowLevels=conf>=55;
+    dabShowLevels=conf>=55&&!(userNearExit&&conf<65);
     dabWhy=a.signal_why||'';
   } else if(sig==='remove_lp'){
     dabClass='dab-wait';
@@ -1398,13 +1404,6 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       ${a.tp2?`<div style="font-size:11px;color:var(--ink3);margin-top:6px">TP2: $${a.tp2.toFixed(2)} · Close remaining 50% there</div>`:''}
       `:''}
       <div class="dab-why">${dabWhy}</div>
-      ${clientOverrideLPWarn?`
-      <button class="lp-shift-btn" id="lp-shift-btn" onclick="runLPShiftAnalysis()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
-        Get New LP Range Recommendation
-      </button>
-      <div id="lp-shift-result"></div>
-      `:''}
     </div>`;
 
   // ── 2. PRICE ──
@@ -1464,6 +1463,13 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     ${userNearExit?`<div style="margin-top:8px;padding:8px 12px;background:var(--rl);border-radius:8px;font-size:11px;font-weight:700;color:var(--red)">⚠️ ${displayPct}% through range — near ${userExitDir} exit. LP will stop earning if price ${userNearTop?'rises above $'+displayHi.toFixed(2):'falls below $'+displayLo.toFixed(2)}.</div>`:''}
     ${daysOut>0?`<div style="margin-top:8px;padding:7px 10px;background:${a.decision.includes('rebalance')?'var(--rl)':'var(--al)'};border-radius:7px;font-size:11px;color:${a.decision.includes('rebalance')?'var(--red)':'var(--amber)'}">LP has been out of range for <b>${daysOut} day${daysOut!==1?'s':''}</b>. ${a.decision.includes('rebalance')?'Rebalance required — see actions above.':'Continue waiting for stabilisation.'}</div>`:''}
     <div class="rh-why">${(()=>{const reg=a.regime||'';if(reg==='uptrend')return'📈 <b>Uptrend</b> — LP selling AVAX into strength. Watch near-exit warning. Shift range or remove LP if breakout sustained above $12+.';if(reg==='downtrend')return'📉 <b>Downtrend</b> — LP accumulating AVAX as price falls. Aligns with long-term hold thesis.';if(reg==='ranging')return'↔️ <b>Ranging market</b> — optimal for LP. Price oscillation generates maximum BLACK emissions.';if(reg==='choppy')return'⚡ <b>Choppy</b> — LP earning but range exits likely. 72h rule active for rebalance decisions.';return'LP earning BLACK emissions. Monitor range nightly.';})()}</div>
+    ${userNearExit?`
+    <button class="lp-shift-btn" id="lp-shift-btn" onclick="runLPShiftAnalysis()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+      Get New LP Range Recommendation
+    </button>
+    <div id="lp-shift-result"></div>
+    `:''}
   </div>`;
 
   // ── 4b. LP NEAR-EXIT / RANGE ACTION ──
