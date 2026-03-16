@@ -560,7 +560,7 @@ const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 // ── CLOCK ──
 function tick(){
-  const n=new Date(),s=new Date(n.getTime()+(8*60-n.getTimezoneOffset())*60000);
+  const n=new Date(),s=new Date(n.getTime()+8*3600*1000);
   const p=v=>String(v).padStart(2,'0');
   $('clock').textContent=`${p(s.getUTCHours())}:${p(s.getUTCMinutes())}\nSGT`;
 }
@@ -736,7 +736,7 @@ async function runAnalysis(){
 
   // ── SGT SESSION TIME (Priority 7) ──
   const now=new Date();
-  const sgtH=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000).getUTCHours();
+  const sgtH=new Date(now.getTime()+8*3600*1000).getUTCHours();
   let session='';
   if(sgtH>=21||sgtH<2)session='US market hours (peak AVAX volume 9pm–2am SGT) — higher conviction signals';
   else if(sgtH>=14&&sgtH<21)session='EU session (moderate volume) — decent signals';
@@ -1441,7 +1441,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   }
 
   // ── 10. TIMESTAMP ──
-  const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
+  const now=new Date(),sgt=new Date(now.getTime()+8*3600*1000);
   const p=v=>String(v).padStart(2,'0');
   $('r-ts').textContent=`Analysis ${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())} SGT`;
   // Show confirm trade button when signal active
@@ -1480,7 +1480,7 @@ function logEvent(){
   const net=+(blackSold+tradePnl).toFixed(2);
   const j=loadJ();
   const prev=j.length?j[0].cum:0;
-  const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
+  const now=new Date(),sgt=new Date(now.getTime()+8*3600*1000);
   const p=v=>String(v).padStart(2,'0');
   // Enrich trade closes with conditions from pending context
   const isTradeClose=['trade_tp1','trade_tp2','trade_sl'].includes(evtType);
@@ -1522,7 +1522,7 @@ function confirmTrade(placed){
   const lpVal=avax>0&&usdc>0&&px>0?(avax*px+usdc):0;
   const blackSold=pv($('i_black')?.value)||0;
   const j=loadJ(); const prev=j.length?j[0].cum:0;
-  const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
+  const now=new Date(),sgt=new Date(now.getTime()+8*3600*1000);
   const p=v=>String(v).padStart(2,'0');
   const dir=_dir||'none';
   const notional=dir!=='none'?1000:0;
@@ -1636,7 +1636,7 @@ Return JSON: {"price_hl":${hlPx.toFixed(2)},"price_source1":9.71,"price_source1_
     const s=raw.indexOf('{'),e2=raw.lastIndexOf('}');
     if(s<0||e2<=s)throw new Error('No JSON');
     const t=JSON.parse(raw.slice(s,e2+1));
-    const now2=new Date(),sgt2=new Date(now2.getTime()+(8*60-now2.getTimezoneOffset())*60000);
+    const now2=new Date(),sgt2=new Date(now2.getTime()+8*3600*1000);
     const p2=v=>String(v).padStart(2,'0');
     const timeEl=$('test-time');if(timeEl)timeEl.textContent=`Tested ${p2(sgt2.getUTCHours())}:${p2(sgt2.getUTCMinutes())} SGT`;
     const cb=(c)=>{const cls=c==='high'?'hi':c==='medium'?'med':'lo';return '<span class="tscore '+cls+'">'+(c||'—').toUpperCase()+'</span>';};
