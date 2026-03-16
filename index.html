@@ -10,248 +10,246 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
 :root{
-  --white:#ffffff;--off:#f7f8fa;--off2:#f0f2f6;--off3:#e8ebf2;
-  --border:#dde1eb;--border2:#c8cedd;
+  --w:#fff;--off:#f7f8fa;--off2:#f0f2f6;--off3:#e8ebf2;
+  --bd:#dde1eb;--bd2:#c8cedd;
   --ink:#111827;--ink2:#374151;--ink3:#6b7280;--ink4:#9ca3af;
-  --blue:#2563eb;--blue-l:#eff6ff;--blue-b:#bfdbfe;
-  --green:#16a34a;--green-l:#f0fdf4;--green-b:#bbf7d0;
-  --red:#dc2626;--red-l:#fef2f2;--red-b:#fecaca;
-  --amber:#d97706;--amber-l:#fffbeb;--amber-b:#fde68a;
-  --shadow:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
-  --shadow-md:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.05);
-  --shadow-lg:0 10px 15px rgba(0,0,0,.07),0 4px 6px rgba(0,0,0,.04);
+  --blue:#2563eb;--bl:#eff6ff;--bb:#bfdbfe;
+  --green:#16a34a;--gl:#f0fdf4;--gb:#bbf7d0;
+  --red:#dc2626;--rl:#fef2f2;--rb:#fecaca;
+  --amber:#d97706;--al:#fffbeb;--ab:#fde68a;
+  --sh:0 1px 3px rgba(0,0,0,.08),0 1px 2px rgba(0,0,0,.04);
+  --shm:0 4px 6px rgba(0,0,0,.07),0 2px 4px rgba(0,0,0,.05);
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{height:100%;font-size:16px}
-body{background:var(--off);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;min-height:100vh;padding-bottom:76px;-webkit-font-smoothing:antialiased;line-height:1.5}
-
-/* NAV */
-.nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.97);border-top:1px solid var(--border);display:flex;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(12px)}
-.nt{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 6px;gap:2px;border:none;background:none;color:var(--ink4);font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color .15s}
-.nt.on{color:var(--blue)}
-.nt svg{width:20px;height:20px;stroke-width:1.8}
-
-/* PAGES */
+html{height:100%}
+body{background:var(--off);color:var(--ink);font-family:'DM Sans',sans-serif;min-height:100vh;padding-bottom:76px;-webkit-font-smoothing:antialiased;line-height:1.5}
 .page{display:none}.page.on{display:block}
-
-/* HEADER */
-.hdr{background:var(--white);border-bottom:1px solid var(--border);padding:52px 20px 16px}
+/* NAV */
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:100;background:rgba(255,255,255,.97);border-top:1px solid var(--bd);display:flex;padding-bottom:env(safe-area-inset-bottom);backdrop-filter:blur(12px)}
+.nt{flex:1;display:flex;flex-direction:column;align-items:center;padding:8px 0 6px;gap:2px;border:none;background:none;color:var(--ink4);font-size:9px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;font-family:'DM Sans',sans-serif;transition:color .15s}
+.nt.on{color:var(--blue)}.nt svg{width:20px;height:20px;stroke-width:1.8}
+/* HDR */
+.hdr{background:var(--w);border-bottom:1px solid var(--bd);padding:52px 20px 16px}
 .hdr-row{display:flex;justify-content:space-between;align-items:flex-end}
-.hdr-title{font-size:22px;font-weight:700;letter-spacing:-.5px;color:var(--ink)}
-.hdr-title span{color:var(--blue)}
+.hdr-title{font-size:22px;font-weight:700;letter-spacing:-.5px}.hdr-title span{color:var(--blue)}
 .hdr-sub{font-size:11px;color:var(--ink4);margin-top:2px;font-family:'DM Mono',monospace}
 .clock{font-family:'DM Mono',monospace;font-size:13px;color:var(--ink3);text-align:right;line-height:1.3}
-
-/* SECTION */
+/* SEC */
 .sec{padding:16px 16px 0}
-.slbl{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;display:flex;align-items:center;gap:8px}
-.slbl::after{content:'';flex:1;height:1px;background:var(--border)}
-
+.slbl{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.slbl::after{content:'';flex:1;height:1px;background:var(--bd)}
 /* CARD */
-.card{background:var(--white);border:1px solid var(--border);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:var(--shadow)}
-.card-p{padding:16px}
-
+.card{background:var(--w);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--sh)}
+.cp{padding:14px}
 /* INPUTS */
-.field{margin-bottom:12px}.field:last-child{margin-bottom:0}
-.flbl{font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:5px;display:flex;justify-content:space-between}
-.fhint{font-size:10px;color:var(--ink4);font-weight:400}
-input,select,textarea{width:100%;background:var(--off);border:1.5px solid var(--border);border-radius:10px;padding:11px 14px;font-size:15px;font-family:'DM Mono',monospace;color:var(--ink);outline:none;-webkit-appearance:none;transition:border-color .15s,background .15s}
-input:focus,select:focus,textarea:focus{border-color:var(--blue);background:var(--white);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
-input::placeholder,textarea::placeholder{color:var(--ink4);font-size:13px}
+.field{margin-bottom:11px}.field:last-child{margin-bottom:0}
+.flbl{font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:flex;justify-content:space-between}
+.fhint{font-size:9px;color:var(--ink4);font-weight:400}
+input,select{width:100%;background:var(--off);border:1.5px solid var(--bd);border-radius:10px;padding:11px 13px;font-size:14px;font-family:'DM Mono',monospace;color:var(--ink);outline:none;-webkit-appearance:none;transition:border-color .15s,background .15s}
+input:focus,select:focus{border-color:var(--blue);background:var(--w);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+input::placeholder{color:var(--ink4);font-size:13px}
 input[type=number]{-moz-appearance:textfield}
 input::-webkit-outer-spin-button,input::-webkit-inner-spin-button{-webkit-appearance:none}
-input[type=password]{letter-spacing:2px}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
-select option{background:var(--white)}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M0 0l6 8 6-8z' fill='%236b7280'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:34px;cursor:pointer}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-
-/* BIG ANALYSE BUTTON */
-.analyse-btn{width:100%;background:var(--blue);border:none;border-radius:14px;padding:17px;font-size:16px;font-weight:700;color:#fff;cursor:pointer;letter-spacing:-.2px;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:4px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 14px rgba(37,99,235,.35)}
-.analyse-btn:active{transform:scale(.98);box-shadow:0 2px 8px rgba(37,99,235,.25)}
-.analyse-btn.loading{background:#3b82f6;pointer-events:none}
-.analyse-btn svg{width:20px;height:20px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+/* LIVE STRIP */
+.live-strip{background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:12px 14px;margin-bottom:10px;box-shadow:var(--sh)}
+.ls-row{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.ls-cell{text-align:center}
+.ls-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:3px}
+.ls-val{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;color:var(--ink)}
+.ls-sub{font-size:9px;color:var(--ink4);margin-top:2px}
+.ls-signal{margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);font-size:11px;font-weight:500}
+/* ANALYSE BTN */
+.abtn{width:100%;background:var(--blue);border:none;border-radius:14px;padding:17px;font-size:16px;font-weight:700;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 14px rgba(37,99,235,.35)}
+.abtn:active{transform:scale(.98)}.abtn.loading{background:#3b82f6;pointer-events:none}
 .spinner{width:20px;height:20px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-
-/* STATUS CARD */
-.status{border-radius:14px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;margin-bottom:12px;border:1px solid}
-.status.ok{background:var(--green-l);border-color:var(--green-b)}
-.status.warn{background:var(--amber-l);border-color:var(--amber-b)}
-.status.err{background:var(--red-l);border-color:var(--red-b)}
-.status.info{background:var(--blue-l);border-color:var(--blue-b)}
-.st-ico{font-size:22px;flex-shrink:0;line-height:1.1}
-.st-ttl{font-size:13px;font-weight:700;margin-bottom:2px}
-.status.ok .st-ttl{color:var(--green)}
-.status.warn .st-ttl{color:var(--amber)}
-.status.err .st-ttl{color:var(--red)}
-.status.info .st-ttl{color:var(--blue)}
-.st-body{font-size:11px;color:var(--ink2);line-height:1.5}
-
-/* PRICE ROW */
-.price-row{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
-.price-big{font-family:'DM Mono',monospace;font-size:32px;font-weight:500;color:var(--ink)}
-.price-chg{font-size:13px;font-weight:600;padding:2px 8px;border-radius:6px;font-family:'DM Mono',monospace}
-.price-chg.up{background:var(--green-l);color:var(--green)}
-.price-chg.dn{background:var(--red-l);color:var(--red)}
-.price-meta{font-size:10px;color:var(--ink4);font-family:'DM Mono',monospace}
-
-/* RANGE BOX — the hero element */
-.range-hero{background:linear-gradient(135deg,var(--blue-l),#f0f9ff);border:1.5px solid var(--blue-b);border-radius:16px;padding:18px;margin-bottom:12px;box-shadow:var(--shadow-md)}
-.rh-title{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--blue);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between}
-.rh-mode{font-size:9px;padding:2px 8px;border-radius:5px;font-weight:700;letter-spacing:.3px}
-.rh-mode.normal{background:var(--green-l);color:var(--green);border:1px solid var(--green-b)}
-.rh-mode.volatile{background:var(--amber-l);color:var(--amber);border:1px solid var(--amber-b)}
-.rh-nums{display:flex;align-items:stretch;gap:0;margin-bottom:14px;border-radius:12px;overflow:hidden;border:1px solid var(--border)}
-.rh-box{flex:1;padding:12px;text-align:center;background:var(--white)}
-.rh-box:not(:last-child){border-right:1px solid var(--border)}
-.rh-box.mid{background:var(--off)}
-.rh-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
-.rh-box:first-child .rh-lbl{color:var(--red)}
-.rh-box.mid .rh-lbl{color:var(--amber)}
-.rh-box:last-child .rh-lbl{color:var(--green)}
-.rh-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500}
-.rh-box:first-child .rh-val{color:var(--red)}
-.rh-box.mid .rh-val{color:var(--amber)}
-.rh-box:last-child .rh-val{color:var(--green)}
-.rh-sub{font-size:9px;color:var(--ink4);margin-top:2px}
-
-/* Range track */
-.rh-track-wrap{margin-bottom:10px}
-.rh-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--red-b),var(--amber-b),var(--green-b));position:relative;margin-bottom:5px}
-.rh-pin{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--white);border:2.5px solid var(--blue);box-shadow:0 2px 6px rgba(37,99,235,.4);transition:left .4s}
-.rh-track-lbls{display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);font-family:'DM Mono',monospace}
-.rh-reason{font-size:11px;color:var(--ink2);line-height:1.6;padding-top:10px;border-top:1px solid var(--blue-b)}
-
-/* TRADE SIGNAL BOX */
-.trade-box{border-radius:16px;padding:16px;margin-bottom:12px;border:1.5px solid;box-shadow:var(--shadow)}
-.trade-box.long{background:var(--green-l);border-color:var(--green-b)}
-.trade-box.short{background:var(--red-l);border-color:var(--red-b)}
-.trade-box.wait{background:var(--amber-l);border-color:var(--amber-b)}
-.tb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
-.tb-dir{font-size:20px;font-weight:800}
-.trade-box.long .tb-dir{color:var(--green)}
-.trade-box.short .tb-dir{color:var(--red)}
-.trade-box.wait .tb-dir{color:var(--amber)}
-.conf-tag{font-size:10px;font-weight:700;padding:3px 10px;border-radius:6px;font-family:'DM Mono',monospace}
-.conf-tag.hi{background:var(--green-b);color:var(--green)}
-.conf-tag.med{background:var(--amber-b);color:var(--amber)}
-.conf-tag.lo{background:var(--red-b);color:var(--red)}
-.tb-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
-.tb-cell{background:rgba(255,255,255,.6);border-radius:9px;padding:10px}
-.tb-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:3px}
-.tb-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:500;color:var(--ink)}
-.tb-val.tp{color:var(--green)}
-.tb-val.sl{color:var(--red)}
-.tb-val.rr{color:var(--blue)}
-.tb-reason{font-size:11px;color:var(--ink2);line-height:1.6;padding-top:10px;border-top:1px solid rgba(0,0,0,.06)}
-
+/* DECISION BOX — hero element */
+.decision{border-radius:16px;padding:18px;margin-bottom:12px;border:2px solid}
+.decision.act-now{background:var(--rl);border-color:var(--rb)}
+.decision.wait{background:var(--al);border-color:var(--ab)}
+.decision.ok{background:var(--gl);border-color:var(--gb)}
+.decision.info{background:var(--bl);border-color:var(--bb)}
+.dec-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.dec-ico{font-size:26px;flex-shrink:0}
+.dec-title{font-size:17px;font-weight:800}
+.decision.act-now .dec-title{color:var(--red)}
+.decision.wait .dec-title{color:var(--amber)}
+.decision.ok .dec-title{color:var(--green)}
+.decision.info .dec-title{color:var(--blue)}
+.dec-sub{font-size:12px;font-weight:600;margin-top:1px}
+.decision.act-now .dec-sub{color:var(--red)}
+.decision.wait .dec-sub{color:var(--amber)}
+.decision.ok .dec-sub{color:var(--green)}
+.decision.info .dec-sub{color:var(--blue)}
+.dec-body{font-size:12px;color:var(--ink2);line-height:1.6}
+/* ACTION STEPS */
+.actions{margin-top:12px;padding-top:12px;border-top:1px solid rgba(0,0,0,.06)}
+.action-step{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(0,0,0,.04)}
+.action-step:last-child{border-bottom:none}
+.asn{width:22px;height:22px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-top:1px}
+.asn.r{background:var(--red)}.asn.g{background:var(--green)}.asn.b{background:var(--blue)}.asn.a{background:var(--amber)}
+.as-title{font-size:12px;font-weight:700;margin-bottom:1px}
+.as-body{font-size:11px;color:var(--ink3);line-height:1.4}
+.as-body code{font-family:'DM Mono',monospace;font-size:10px;background:var(--off2);border:1px solid var(--bd);padding:1px 5px;border-radius:3px;color:var(--blue)}
+/* METRICS */
+.mx{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.mc{background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:11px;box-shadow:var(--sh)}
+.ml{font-size:8px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink4);margin-bottom:4px}
+.mv{font-family:'DM Mono',monospace;font-size:17px;font-weight:500}
+.mv.up{color:var(--green)}.mv.dn{color:var(--red)}.mv.neu{color:var(--amber)}.mv.bl{color:var(--blue)}.mv.bk{color:var(--ink)}
+.ms{font-size:9px;color:var(--ink4);margin-top:3px}
+/* LP RANGE BAR */
+.range-box{background:linear-gradient(135deg,var(--bl),#f0f9ff);border:1.5px solid var(--bb);border-radius:14px;padding:16px;margin-bottom:12px}
+.rh-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.rh-title{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--blue)}
+.rh-mode{font-size:9px;padding:2px 8px;border-radius:5px;font-weight:700}
+.rh-mode.normal{background:var(--gl);color:var(--green);border:1px solid var(--gb)}
+.rh-mode.volatile{background:var(--al);color:var(--amber);border:1px solid var(--ab)}
+.rh-nums{display:flex;border-radius:10px;overflow:hidden;border:1px solid var(--bd);margin-bottom:12px}
+.rn{flex:1;padding:10px;text-align:center;background:var(--w)}
+.rn:not(:last-child){border-right:1px solid var(--bd)}
+.rn.mid{background:var(--off)}
+.rn-lbl{font-size:7px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:3px}
+.rn:first-child .rn-lbl{color:var(--red)}.rn.mid .rn-lbl{color:var(--amber)}.rn:last-child .rn-lbl{color:var(--green)}
+.rn-val{font-family:'DM Mono',monospace;font-size:17px;font-weight:500}
+.rn:first-child .rn-val{color:var(--red)}.rn.mid .rn-val{color:var(--amber)}.rn:last-child .rn-val{color:var(--green)}
+.rn-sub{font-size:8px;color:var(--ink4);margin-top:2px}
+.rb-track{height:6px;border-radius:3px;background:linear-gradient(90deg,var(--rb),var(--ab),var(--gb));position:relative;margin-bottom:5px}
+.rb-pin{position:absolute;top:50%;transform:translate(-50%,-50%);width:14px;height:14px;border-radius:50%;background:var(--w);border:2.5px solid var(--blue);box-shadow:0 2px 6px rgba(37,99,235,.4)}
+.rb-lbls{display:flex;justify-content:space-between;font-size:9px;color:var(--ink4);font-family:'DM Mono',monospace}
+.rh-why{font-size:11px;color:var(--ink2);line-height:1.5;margin-top:10px;padding-top:10px;border-top:1px solid var(--bb)}
+/* TRADE BOX */
+.trade-box{border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid}
+.trade-box.long{background:var(--gl);border-color:var(--gb)}
+.trade-box.short{background:var(--rl);border-color:var(--rb)}
+.trade-box.wait{background:var(--al);border-color:var(--ab)}
+.tb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tb-dir{font-size:19px;font-weight:800}
+.trade-box.long .tb-dir{color:var(--green)}.trade-box.short .tb-dir{color:var(--red)}.trade-box.wait .tb-dir{color:var(--amber)}
+.conf{font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px;font-family:'DM Mono',monospace}
+.conf.hi{background:var(--gb);color:var(--green)}.conf.med{background:var(--ab);color:var(--amber)}.conf.lo{background:var(--rb);color:var(--red)}
+.tb-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:10px}
+.tb-cell{background:rgba(255,255,255,.6);border-radius:8px;padding:9px}
+.tb-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:2px}
+.tb-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:500}
+.tb-val.tp{color:var(--green)}.tb-val.sl{color:var(--red)}.tb-val.rr{color:var(--blue)}.tb-val.bk{color:var(--ink)}
+.tb-reason{font-size:11px;color:var(--ink2);line-height:1.5;padding-top:8px;border-top:1px solid rgba(0,0,0,.06)}
+/* REBALANCE CALC */
+.reb-box{border-radius:14px;padding:14px;margin-bottom:12px;border:1.5px solid var(--ab);background:var(--al)}
+.reb-title{font-size:9px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--amber);margin-bottom:12px}
+.reb-opts{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.reb-opt{background:rgba(255,255,255,.6);border-radius:9px;padding:10px;text-align:center;border:1.5px solid transparent}
+.reb-opt.rec{background:var(--bl);border-color:var(--bb)}
+.reb-opt-lbl{font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink3);margin-bottom:5px}
+.reb-opt.rec .reb-opt-lbl{color:var(--blue)}
+.reb-opt-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;margin-bottom:2px}
+.reb-opt-sub{font-size:9px;color:var(--ink4)}
 /* TA TABLE */
 .ta-tbl{width:100%;border-collapse:collapse}
 .ta-tbl tr{border-bottom:1px solid var(--off3)}
 .ta-tbl tr:last-child{border-bottom:none}
-.ta-tbl td{padding:9px 16px;font-size:11px}
+.ta-tbl td{padding:8px 14px;font-size:11px}
 .ta-tbl td:first-child{color:var(--ink3);width:48%}
 .ta-tbl td:last-child{font-family:'DM Mono',monospace;font-weight:500;text-align:right}
-.tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace}
-.tag.bull{background:var(--green-l);color:var(--green)}
-.tag.bear{background:var(--red-l);color:var(--red)}
-.tag.neut{background:var(--amber-l);color:var(--amber)}
-
-/* STEPS */
-.step{display:flex;gap:11px;padding:10px 0;border-bottom:1px solid var(--off3)}
-.step:last-child{border-bottom:none}
-.snum{width:24px;height:24px;border-radius:7px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;margin-top:1px}
-.snum.blue{background:var(--blue)}.snum.green{background:var(--green)}.snum.red{background:var(--red)}.snum.amber{background:var(--amber)}
-.stit{font-size:12px;font-weight:700;margin-bottom:2px;color:var(--ink)}
-.sbdy{font-size:11px;color:var(--ink3);line-height:1.5}
-.sbdy code{font-family:'DM Mono',monospace;font-size:10px;background:var(--off2);border:1px solid var(--border);padding:1px 5px;border-radius:4px;color:var(--blue)}
-
-/* FEE ROW */
-.fee-row{display:flex;justify-content:space-between;align-items:center;padding:9px 16px;border-bottom:1px solid var(--off3);font-size:12px}
-.fee-row:last-child{border-bottom:none}
-.fee-row span:first-child{color:var(--ink3)}
-.fee-row span:last-child{font-family:'DM Mono',monospace;font-weight:500}
-
-/* SOURCES */
-.src-row{display:flex;flex-wrap:wrap;gap:5px;padding:8px 0 4px}
-.src-tag{font-size:9px;padding:2px 7px;border-radius:4px;background:var(--off2);border:1px solid var(--border);color:var(--ink4);font-family:'DM Mono',monospace}
-
-/* METRICS GRID */
-.mx{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.mx-card{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
-.mx-lbl{font-size:8px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink4);margin-bottom:5px}
-.mx-val{font-family:'DM Mono',monospace;font-size:18px;font-weight:500}
-.mx-val.up{color:var(--green)}.mx-val.dn{color:var(--red)}.mx-val.neu{color:var(--amber)}.mx-val.bl{color:var(--blue)}
-.mx-sub{font-size:9px;color:var(--ink4);margin-top:3px}
-
+.tag{display:inline-flex;padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600;font-family:'DM Mono',monospace}
+.tag.bull{background:var(--gl);color:var(--green)}.tag.bear{background:var(--rl);color:var(--red)}.tag.neut{background:var(--al);color:var(--amber)}
 /* LOADING */
-.loading-wrap{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:24px 20px;text-align:center;margin-bottom:12px;box-shadow:var(--shadow)}
-.loading-icon{font-size:36px;margin-bottom:12px;animation:bob 1.8s ease-in-out infinite}
+.loading-wrap{background:var(--w);border:1px solid var(--bd);border-radius:14px;padding:24px 20px;text-align:center;margin-bottom:12px;box-shadow:var(--sh)}
+.loading-ico{font-size:36px;margin-bottom:12px;animation:bob 1.8s ease-in-out infinite}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-.loading-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px}
+.loading-ttl{font-size:15px;font-weight:700;margin-bottom:4px}
 .loading-sub{font-size:12px;color:var(--ink4);line-height:1.5}
-.loading-prog{margin-top:16px}
-.lp-step{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--off3);font-size:11px;color:var(--ink4);text-align:left}
+.loading-prog{margin-top:14px}
+.lp-step{display:flex;align-items:center;gap:9px;padding:6px 0;border-bottom:1px solid var(--off3);font-size:11px;color:var(--ink4);text-align:left}
 .lp-step:last-child{border-bottom:none}
-.lp-dot{width:7px;height:7px;border-radius:50%;background:var(--border);flex-shrink:0;transition:all .3s}
-.lp-step.done .lp-dot{background:var(--green)}
-.lp-step.done{color:var(--ink2)}
-.lp-step.active .lp-dot{background:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.2)}
-.lp-step.active{color:var(--blue);font-weight:600}
-
+.lp-dot{width:7px;height:7px;border-radius:50%;background:var(--bd);flex-shrink:0;transition:all .3s}
+.lp-step.done .lp-dot{background:var(--green)}.lp-step.done{color:var(--ink2)}
+.lp-step.active .lp-dot{background:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.2)}.lp-step.active{color:var(--blue);font-weight:600}
 /* JOURNAL */
 .kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
-.kpi{background:var(--white);border:1px solid var(--border);border-radius:12px;padding:12px;box-shadow:var(--shadow)}
-.kpi-l{font-size:8px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink4);margin-bottom:4px}
-.kpi-v{font-family:'DM Mono',monospace;font-size:20px;font-weight:500}
-.kpi-v.up{color:var(--green)}.kpi-v.dn{color:var(--red)}.kpi-v.bl{color:var(--blue)}
-.kpi-s{font-size:9px;color:var(--ink4);margin-top:2px}
+.kpi{background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:11px;box-shadow:var(--sh)}
+.kl{font-size:8px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink4);margin-bottom:4px}
+.kv{font-family:'DM Mono',monospace;font-size:19px;font-weight:500}
+.kv.up{color:var(--green)}.kv.dn{color:var(--red)}.kv.bl{color:var(--blue)}
+.ks{font-size:9px;color:var(--ink4);margin-top:2px}
 .cw{height:120px;position:relative}
 canvas{display:block;width:100%!important;height:100%!important}
 .ce{display:flex;align-items:center;justify-content:center;height:120px;font-size:11px;color:var(--ink4);font-family:'DM Mono',monospace}
-.je{background:var(--white);border:1px solid var(--border);border-radius:12px;margin-bottom:9px;overflow:hidden;box-shadow:var(--shadow)}
-.jeh{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;background:var(--off);border-bottom:1px solid var(--border)}
+.je{background:var(--w);border:1px solid var(--bd);border-radius:12px;margin-bottom:9px;overflow:hidden;box-shadow:var(--sh)}
+.jeh{display:flex;justify-content:space-between;align-items:center;padding:9px 13px;background:var(--off);border-bottom:1px solid var(--bd)}
 .jed{font-family:'DM Mono',monospace;font-size:9px;color:var(--ink4)}
 .bdg{font-size:9px;font-weight:700;padding:2px 7px;border-radius:5px;font-family:'DM Mono',monospace}
-.bdg.up{background:var(--green-l);color:var(--green);border:1px solid var(--green-b)}
-.bdg.dn{background:var(--red-l);color:var(--red);border:1px solid var(--red-b)}
-.bdg.bl{background:var(--blue-l);color:var(--blue);border:1px solid var(--blue-b)}
+.bdg.up{background:var(--gl);color:var(--green);border:1px solid var(--gb)}.bdg.dn{background:var(--rl);color:var(--red);border:1px solid var(--rb)}.bdg.bl{background:var(--bl);color:var(--blue);border:1px solid var(--bb)}
 .jbody{padding:10px 13px}
 .jrow{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--off3);font-size:11px}
 .jrow:last-child{border-bottom:none}
-.jrow span:first-child{color:var(--ink3)}
-.jrow span:last-child{font-family:'DM Mono',monospace;font-weight:500}
+.jrow span:first-child{color:var(--ink3)}.jrow span:last-child{font-family:'DM Mono',monospace;font-weight:500}
 .btn-row{display:flex;gap:8px;margin-bottom:12px}
-.btn-sm{flex:1;padding:10px;background:var(--white);border:1.5px solid var(--border);border-radius:10px;font-size:11px;font-weight:700;color:var(--ink2);cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:var(--shadow)}
-.btn-sm.red{border-color:var(--red-b);color:var(--red)}
-.btn-sm.green{border-color:var(--green-b);color:var(--green)}
+.bsm{flex:1;padding:10px;background:var(--w);border:1.5px solid var(--bd);border-radius:10px;font-size:11px;font-weight:700;color:var(--ink2);cursor:pointer;font-family:'DM Sans',sans-serif;box-shadow:var(--sh)}
+.bsm.red{border-color:var(--rb);color:var(--red)}.bsm.green{border-color:var(--gb);color:var(--green)}
 .empty{text-align:center;padding:32px 20px}
 .empty-ico{font-size:32px;margin-bottom:10px}
 .empty-txt{font-size:12px;color:var(--ink4);line-height:1.6}
+/* TRADE PERFORMANCE */
+.perf-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.perf-cell{background:var(--off);border-radius:10px;padding:10px}
+.perf-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:3px}
+.perf-val{font-family:'DM Mono',monospace;font-size:16px;font-weight:600}
+.perf-sub{font-size:9px;color:var(--ink4);margin-top:2px}
+.win-bar{height:6px;border-radius:3px;background:var(--off3);margin:6px 0 4px;overflow:hidden}
+.win-fill{height:100%;border-radius:3px;background:var(--green);transition:width .4s}
+.verdict{border-radius:10px;padding:12px 14px;margin-top:4px}
+.verdict.scale{background:var(--gl);border:1.5px solid var(--gb)}
+.verdict.watch{background:var(--al);border:1.5px solid var(--ab)}
+.verdict.hold{background:var(--rl);border:1.5px solid var(--rb)}
+.verdict.data{background:var(--bl);border:1.5px solid var(--bb)}
+.verdict-title{font-size:12px;font-weight:800;margin-bottom:3px}
+.verdict.scale .verdict-title{color:var(--green)}
+.verdict.watch .verdict-title{color:var(--amber)}
+.verdict.hold .verdict-title{color:var(--red)}
+.verdict.data .verdict-title{color:var(--blue)}
+.verdict-body{font-size:11px;line-height:1.5}
+.verdict.scale .verdict-body{color:var(--green)}
+.verdict.watch .verdict-body{color:var(--amber)}
+.verdict.hold .verdict-body{color:var(--red)}
+.verdict.data .verdict-body{color:var(--blue)}
+.trade-btns{display:flex;flex-wrap:wrap;gap:7px;margin-top:4px}
+.tbtn{padding:9px 14px;border-radius:10px;font-size:12px;font-weight:700;border:1.5px solid var(--bd);background:var(--off);color:var(--ink3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;flex:1;min-width:60px;text-align:center}
+.tbtn.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tbtn.tp.on{background:var(--green);border-color:var(--green);color:#fff}
+.tbtn.sl.on{background:var(--red);border-color:var(--red);color:#fff}
+.tbtn.new.on{background:var(--amber);border-color:var(--amber);color:#fff}
+/* SAVE BUTTON */
+.save-btn{flex:1;background:var(--gl);border:1.5px solid var(--gb);border-radius:14px;padding:17px 10px;font-size:14px;font-weight:700;color:var(--green);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.save-btn:active{transform:scale(.98)}
+/* TEST DATA */
+.test-btn{flex:1;background:var(--off);border:1.5px solid var(--bd);border-radius:14px;padding:14px 10px;font-size:13px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
+.test-btn:active{transform:scale(.98)}.test-btn.running{pointer-events:none;color:var(--blue);border-color:var(--bb)}
+.trow{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;border-bottom:1px solid var(--off3);font-size:11px}
+.trow:last-child{border-bottom:none}
+.trow span:first-child{color:var(--ink3);flex:1}
+.trow .tval{font-family:'DM Mono',monospace;font-weight:500;font-size:11px;text-align:right}
+.tsec{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);padding:8px 14px 4px;background:var(--off);border-bottom:1px solid var(--off3)}
+.tscore{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace}
+.tscore.hi{background:var(--gl);color:var(--green)}.tscore.med{background:var(--al);color:var(--amber)}.tscore.lo{background:var(--rl);color:var(--red)}
+.tverdict{margin:10px 14px 6px;border-radius:9px;padding:10px 12px;font-size:11px;line-height:1.6}
+.tverdict.ok{background:var(--gl);color:var(--green)}.tverdict.warn{background:var(--al);color:var(--amber)}.tverdict.err{background:var(--rl);color:var(--red)}
 
-/* LOG FORM */
-.log-form{background:var(--green-l);border:1.5px solid var(--green-b);border-radius:14px;padding:14px;margin-bottom:12px}
-.log-ttl{font-size:9px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--green);margin-bottom:12px}
-
-/* GUIDE */
-.guide-item{display:flex;gap:10px;padding:12px 0;border-bottom:1px solid var(--off3)}
+/* SETTINGS */
+.guide-item{display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--off3)}
 .guide-item:last-child{border-bottom:none}
-.guide-ico{font-size:20px;flex-shrink:0;margin-top:1px}
-.guide-ttl{font-size:12px;font-weight:700;margin-bottom:3px;color:var(--ink)}
+.guide-ico{font-size:18px;flex-shrink:0;margin-top:1px}
+.guide-ttl{font-size:12px;font-weight:700;margin-bottom:2px}
 .guide-bdy{font-size:11px;color:var(--ink3);line-height:1.5}
-
-/* KEY STATUS */
-.key-ok{font-size:11px;color:var(--green);font-family:'DM Mono',monospace;margin-top:8px;display:flex;align-items:center;gap:5px}
+.key-ok{font-size:11px;color:var(--green);font-family:'DM Mono',monospace;margin-top:8px}
 .key-none{font-size:11px;color:var(--red);font-family:'DM Mono',monospace;margin-top:8px}
-.key-warn{background:var(--amber-l);border:1px solid var(--amber-b);border-radius:8px;padding:9px 11px;font-size:11px;color:var(--amber);line-height:1.5;margin-bottom:10px}
-
-/* ANALYSIS TS */
-.ats{text-align:center;font-size:9px;color:var(--ink4);font-family:'DM Mono',monospace;padding:10px 0 4px;letter-spacing:.4px}
-
-/* TOAST */
-.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:9px;padding:8px 16px;font-size:12px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none}
-.toast.show{opacity:1}
-.toast.ok{background:var(--green)}.toast.err{background:var(--red)}
+.key-warn{background:var(--al);border:1px solid var(--ab);border-radius:8px;padding:9px 11px;font-size:11px;color:var(--amber);line-height:1.5;margin-bottom:10px}
+.ats{text-align:center;font-size:9px;color:var(--ink4);font-family:'DM Mono',monospace;padding:8px 0 4px;letter-spacing:.4px}
+.toast{position:fixed;bottom:84px;left:50%;transform:translateX(-50%);border-radius:9px;padding:8px 16px;font-size:12px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none}
+.toast.show{opacity:1}.toast.ok{background:var(--green);color:#fff}.toast.err{background:var(--red);color:#fff}
 </style>
 </head>
 <body>
@@ -263,110 +261,194 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole CL200 · Hyperliquid · AI live analysis</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v8</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
   </div>
-
   <div class="sec">
-    <div class="slbl">Tonight's inputs</div>
-    <div class="card card-p">
 
+    <!-- Live strip -->
+    <div class="live-strip" id="live-strip">
+      <div class="ls-row">
+        <div class="ls-cell"><div class="ls-lbl">AVAX</div><div class="ls-val" id="ls-px">—</div><div class="ls-sub" id="ls-chg">fetching…</div></div>
+        <div class="ls-cell"><div class="ls-lbl">Funding/hr</div><div class="ls-val" id="ls-fund">—</div><div class="ls-sub" id="ls-fund-s">—</div></div>
+        <div class="ls-cell"><div class="ls-lbl">Open Interest</div><div class="ls-val" id="ls-oi">—</div><div class="ls-sub">AVAX</div></div>
+      </div>
+      <div class="ls-signal" id="ls-signal" style="color:var(--ink4)">Loading…</div>
+    </div>
+
+    <!-- ═══ SECTION 1: LP POSITION ═══ -->
+    <div class="slbl">LP Position <span style="font-size:8px;color:var(--ink4);font-weight:400;text-transform:none;letter-spacing:0">from Blackhole</span></div>
+    <div class="card cp">
       <div class="g2">
         <div class="field">
-          <div class="flbl">AVAX in LP <span class="fhint">from Blackhole</span></div>
+          <div class="flbl">AVAX in LP</div>
           <input type="number" id="i_avax" inputmode="decimal" placeholder="168.5" step="0.1">
         </div>
         <div class="field">
-          <div class="flbl">USDC in LP <span class="fhint">from Blackhole</span></div>
+          <div class="flbl">USDC in LP</div>
           <input type="number" id="i_usdc" inputmode="decimal" placeholder="2090" step="1">
         </div>
       </div>
-
       <div class="g2">
         <div class="field">
-          <div class="flbl">Pool APY <span class="fhint">from Blackhole UI</span></div>
-          <input type="number" id="i_apy" inputmode="decimal" placeholder="56.5" step="0.1">
+          <div class="flbl">Days out of range <span class="fhint">0 = in range</span></div>
+          <input type="number" id="i_daysout" inputmode="decimal" placeholder="0" value="0" step="1">
         </div>
         <div class="field">
-          <div class="flbl">HL Position</div>
-          <select id="i_dir">
-            <option value="none">None open</option>
-            <option value="long">Long ▲</option>
-            <option value="short">Short ▼</option>
+          <div class="flbl">Pool APY % <span class="fhint">from Blackhole UI</span></div>
+          <input type="number" id="i_apy_display" inputmode="decimal" placeholder="35" value="35" step="1">
+        </div>
+        <div class="field">
+          <div class="flbl">Crash hedge</div>
+          <select id="i_hedge">
+            <option value="open">Short $500 open ✓</option>
+            <option value="closed">Closed — need reset</option>
           </select>
         </div>
       </div>
-
+      <div class="field" style="margin-top:2px">
+        <div class="flbl">Hedge entry price $ <span class="fhint">when you opened the short</span></div>
+        <input type="number" id="i_hedge_entry" inputmode="decimal" placeholder="9.71" step="0.01" value="9.71">
+      </div>
+      </div>
     </div>
 
-    <button class="analyse-btn" id="analyse-btn" onclick="runAnalysis()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <span id="btn-txt">Analyse AVAX Now</span>
-    </button>
-
-    <div id="no-key-warn" style="display:none;margin-top:10px">
-      <div class="status warn">
-        <div class="st-ico">🔑</div>
-        <div><div class="st-ttl">API Key Required</div><div class="st-body">Go to <b>Settings tab</b> and enter your Anthropic API key before analysing.</div></div>
+    <!-- ═══ SECTION 2: TONIGHT'S INCOME ═══ -->
+    <div class="slbl">Tonight's Income</div>
+    <div class="card cp">
+      <div class="field">
+        <div class="flbl">BLACK sold → USDC $ <span class="fhint">what you received after swap</span></div>
+        <input type="number" id="i_black" inputmode="decimal" placeholder="0.00" step="0.01" value="0">
       </div>
+      <div class="field" style="margin-bottom:4px">
+        <div class="flbl">Trade closed tonight?</div>
+        <div class="trade-btns" id="trade-btns">
+          <button class="tbtn on" onclick="setTrade('nothing',this)">Nothing</button>
+          <button class="tbtn tp" onclick="setTrade('tp1',this)">TP1 ✓</button>
+          <button class="tbtn tp" onclick="setTrade('tp2',this)">TP2 ✓</button>
+          <button class="tbtn sl" onclick="setTrade('sl',this)">SL ✗</button>
+          <button class="tbtn new" onclick="setTrade('new',this)">New trade</button>
+        </div>
+      </div>
+      <div id="trade-amt-wrap" style="display:none">
+        <div class="field">
+          <div class="flbl" id="trade-amt-lbl">Trade P&L $</div>
+          <input type="number" id="i_tpnl" inputmode="decimal" placeholder="0" value="0" step="1">
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SECTION 3: TRADE POSITION ═══ -->
+    <div class="slbl">Open Trade Position <span style="font-size:8px;color:var(--ink4);font-weight:400;text-transform:none;letter-spacing:0">on Hyperliquid</span></div>
+    <div class="card cp">
+      <div class="field">
+        <div class="flbl">Current position</div>
+        <div class="trade-btns">
+          <button class="tbtn on" onclick="setDir('none',this)">None</button>
+          <button class="tbtn tp" onclick="setDir('long',this)">Long ▲</button>
+          <button class="tbtn tp" onclick="setDir('long_half',this)">Long ▲ ½</button>
+          <button class="tbtn sl" onclick="setDir('short',this)">Short ▼</button>
+          <button class="tbtn sl" onclick="setDir('short_half',this)">Short ▼ ½</button>
+        </div>
+      </div>
+      <div id="pos-fields" style="display:none;margin-top:4px">
+        <div class="g2">
+          <div class="field">
+            <div class="flbl">Entry price $</div>
+            <input type="number" id="i_pe" inputmode="decimal" placeholder="9.85" step="0.01">
+          </div>
+          <div class="field">
+            <div class="flbl">Unrealised P&L $</div>
+            <input type="number" id="i_upnl" inputmode="decimal" placeholder="0" value="0" step="1">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ ACTION BUTTONS ═══ -->
+    <div style="display:flex;gap:8px;margin-bottom:4px">
+      <button class="save-btn" id="save-btn" onclick="logEvent()" style="flex:1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save
+      </button>
+      <button class="test-btn" id="tbtn" onclick="runDataTest()" style="flex:1">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span id="tbtn-txt">Test Data</span>
+      </button>
+      <button class="abtn" id="abtn" onclick="runAnalysis()" style="margin-top:0;flex:1.5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span id="btn-txt">Analyse</span>
+      </button>
+    </div>
+
+    <div id="no-key-warn" style="display:none;margin-top:10px;margin-bottom:10px">
+      <div style="background:var(--al);border:1px solid var(--ab);border-radius:12px;padding:13px;display:flex;gap:10px">
+        <div style="font-size:20px">🔑</div>
+        <div><div style="font-size:13px;font-weight:700;color:var(--amber)">API Key Required</div><div style="font-size:11px;color:var(--ink2);margin-top:2px">Go to Settings and add your Anthropic API key to use Analyse.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TEST DATA PANEL -->
+  <div id="test-panel" style="display:none">
+    <div class="sec" style="margin-top:4px">
+      <div class="slbl" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Data Accuracy Test</span>
+        <span id="test-time" style="font-size:9px;color:var(--ink4);font-weight:400;text-transform:none;letter-spacing:0"></span>
+      </div>
+      <div class="card" id="test-result" style="overflow:hidden"></div>
     </div>
   </div>
 
   <!-- RESULTS -->
   <div id="results" style="display:none">
     <div class="sec" style="margin-top:4px">
-
       <div id="loading-wrap" style="display:none">
         <div class="loading-wrap">
-          <div class="loading-icon">🔍</div>
-          <div class="loading-title">Analysing AVAX…</div>
-          <div class="loading-sub">Searching live data, running TA,<br>computing your LP range + trade signal</div>
+          <div class="loading-ico">🤖</div>
+          <div class="loading-ttl">AI Analysing AVAX…</div>
+          <div class="loading-sub">Searching live data · running decision tree · generating instructions</div>
           <div class="loading-prog">
-            <div class="lp-step" id="ls1"><div class="lp-dot"></div>Fetching live AVAX price</div>
-            <div class="lp-step" id="ls2"><div class="lp-dot"></div>Searching TA sources</div>
-            <div class="lp-step" id="ls3"><div class="lp-dot"></div>Identifying S/R levels</div>
-            <div class="lp-step" id="ls4"><div class="lp-dot"></div>Computing LP range</div>
-            <div class="lp-step" id="ls5"><div class="lp-dot"></div>Generating trade signal</div>
+            <div class="lp-step" id="ls1"><div class="lp-dot"></div>Fetching live AVAX price, funding & OI from Hyperliquid</div>
+            <div class="lp-step" id="ls2"><div class="lp-dot"></div>Searching AVAX daily/4H chart — RSI, MACD, EMA, ATR</div>
+            <div class="lp-step" id="ls3"><div class="lp-dot"></div>Checking BTC trend & macro filter</div>
+            <div class="lp-step" id="ls4"><div class="lp-dot"></div>Running 5-layer decision tree — LP zone, regime, signal</div>
+            <div class="lp-step" id="ls5"><div class="lp-dot"></div>Calculating trade size, SL/TP & LP range action</div>
           </div>
         </div>
       </div>
-
       <div id="result-content" style="display:none">
-        <div id="r-status"></div>
+        <div class="slbl">What to Do Tonight</div>
+        <div id="r-decision"></div>
         <div id="r-price"></div>
-        <div id="r-metrics"></div>
-        <div class="slbl">Recommended LP Range</div>
+        <div id="r-metrics" class="mx"></div>
+        <div class="slbl">LP Range</div>
         <div id="r-range"></div>
         <div class="slbl">Trade Signal</div>
         <div id="r-trade"></div>
+        <div id="r-rebal-wrap" style="display:none">
+          <div class="slbl">Rebalance Calculator</div>
+          <div id="r-rebal"></div>
+        </div>
         <div class="slbl">Technical Analysis</div>
         <div class="card" id="r-ta"></div>
-        <div class="slbl">Tonight's Actions</div>
-        <div class="card card-p" id="r-steps"></div>
-        <div class="slbl">LP Fee Estimate</div>
+        <div class="slbl">LP Snapshot</div>
         <div class="card" id="r-fees"></div>
-        <div id="r-sources"></div>
+        <div id="r-src"></div>
         <div class="ats" id="r-ts"></div>
-        <div class="slbl" id="log-slbl" style="display:none">Log This Event</div>
-        <div class="log-form" id="log-form" style="display:none">
-          <div class="log-ttl">Record Rebalance / Trade Close</div>
-          <div class="g2">
-            <div class="field"><div class="flbl">LP Before $</div><input type="number" id="lb" inputmode="decimal" placeholder="3749" step="1"></div>
-            <div class="field"><div class="flbl">LP After $</div><input type="number" id="la" inputmode="decimal" placeholder="3600" step="1"></div>
-          </div>
-          <div class="g2">
-            <div class="field"><div class="flbl">HL P&L $</div><input type="number" id="lh" inputmode="decimal" placeholder="150" value="0" step="1"></div>
-            <div class="field"><div class="flbl">Fees Earned $</div><input type="number" id="lf" inputmode="decimal" placeholder="42" value="0" step="1"></div>
-          </div>
-          <div class="g2" style="margin-bottom:10px">
-            <div class="field"><div class="flbl">Trade P&L $</div><input type="number" id="lt" inputmode="decimal" placeholder="0" value="0" step="1"></div>
-            <div class="field"><div class="flbl">Event Type</div>
-              <select id="levt"><option value="rebalance">LP Rebalance</option><option value="trade">Trade Closed</option><option value="both">Both</option></select>
+        <!-- Confirm trade placed button — shown when trade signal is active -->
+        <div id="r-confirm-wrap" style="display:none;margin-top:4px">
+          <div class="slbl">Execution Confirmation</div>
+          <div style="background:var(--gl);border:1.5px solid var(--gb);border-radius:13px;padding:13px;margin-bottom:12px">
+            <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:8px">Did you place the trade on Hyperliquid?</div>
+            <div style="font-size:10px;color:var(--ink3);margin-bottom:10px;line-height:1.5">Tap to record that a trade was placed. This creates a journal entry with the exact time, distinguishing "signal seen" from "trade executed".</div>
+            <div class="g2">
+              <button class="bsm green" onclick="confirmTrade(true)">✅ Yes — Trade Placed</button>
+              <button class="bsm" onclick="confirmTrade(false)">⏭ No Trade Tonight</button>
             </div>
           </div>
-          <button class="btn-sm green" style="width:100%" onclick="logEvent()">+ Save to Journal</button>
         </div>
         <div style="height:12px"></div>
       </div>
@@ -376,109 +458,110 @@ canvas{display:block;width:100%!important;height:100%!important}
 
 <!-- PAGE: JOURNAL -->
 <div id="pg-journal" class="page">
-  <div class="hdr">
-    <div class="hdr-title">P&L <span>Journal</span></div>
-    <div class="hdr-sub">LP + trade history</div>
-  </div>
+  <div class="hdr"><div class="hdr-title">P&L <span>Journal</span></div><div class="hdr-sub">LP + trade history</div></div>
   <div class="sec">
     <div class="kpi-grid">
-      <div class="kpi"><div class="kpi-l">Total Fees</div><div class="kpi-v up" id="j-fee">$0</div><div class="kpi-s">All time</div></div>
-      <div class="kpi"><div class="kpi-l">Trade P&L</div><div class="kpi-v" id="j-trade">$0</div><div class="kpi-s">Realised</div></div>
-      <div class="kpi"><div class="kpi-l">Hedge P&L</div><div class="kpi-v" id="j-hedge">$0</div><div class="kpi-s">Realised</div></div>
-      <div class="kpi"><div class="kpi-l">Net P&L</div><div class="kpi-v" id="j-net">$0</div><div class="kpi-s">Combined</div></div>
-      <div class="kpi"><div class="kpi-l">Events</div><div class="kpi-v bl" id="j-cnt">0</div><div class="kpi-s">Logged</div></div>
-      <div class="kpi"><div class="kpi-l">Win Rate</div><div class="kpi-v" id="j-wr">—</div><div class="kpi-s">Trades</div></div>
+      <div class="kpi"><div class="kl">BLACK Income</div><div class="kv up" id="j-fee">$0</div><div class="ks">Sold to USDC</div></div>
+      <div class="kpi"><div class="kl">Trade P&L</div><div class="kv" id="j-trade">$0</div><div class="ks">Realised</div></div>
+      <div class="kpi"><div class="kl">Net P&L</div><div class="kv" id="j-net">$0</div><div class="ks">Combined</div></div>
+      <div class="kpi"><div class="kl">LP Value</div><div class="kv bl" id="j-lp">$0</div><div class="ks">Latest snapshot</div></div>
+      <div class="kpi"><div class="kl">Events</div><div class="kv bl" id="j-cnt">0</div><div class="ks">Logged</div></div>
+      <div class="kpi"><div class="kl">Win Rate</div><div class="kv" id="j-wr">—</div><div class="ks">Trades</div></div>
     </div>
+    <!-- CONDITION WIN RATE STATS — unlocks after 5 trade closes -->
+    <div id="j-stats-wrap" style="display:none">
+      <div class="slbl">Trade Edge Analysis</div>
+      <div class="card" id="j-stats"></div>
+    </div>
+
     <div class="slbl">LP Value</div>
-    <div class="card card-p"><div class="cw"><canvas id="c-lp"></canvas><div class="ce" id="ce-lp">Log events to see chart</div></div></div>
+    <div class="card cp"><div class="cw"><canvas id="c-lp"></canvas><div class="ce" id="ce-lp">Log events to see chart</div></div></div>
     <div class="slbl">Cumulative P&L</div>
-    <div class="card card-p"><div class="cw"><canvas id="c-pnl"></canvas><div class="ce" id="ce-pnl">Log events to see chart</div></div></div>
+    <div class="card cp"><div class="cw"><canvas id="c-pnl"></canvas><div class="ce" id="ce-pnl">Log events to see chart</div></div></div>
     <div class="btn-row">
-      <button class="btn-sm" onclick="syncSheets()">↑ Sheets</button>
-      <button class="btn-sm" onclick="exportCSV()">↓ CSV</button>
-      <button class="btn-sm red" onclick="clearJ()">Clear</button>
+      <button class="bsm" onclick="syncSheets()">↑ Sheets</button>
+      <button class="bsm" onclick="exportCSV()">↓ CSV</button>
+      <button class="bsm red" onclick="clearJ()">Clear</button>
     </div>
+
+    <!-- TRADE PERFORMANCE CARD -->
+    <div id="j-perf-wrap" style="display:none">
+      <div class="slbl">Trade Performance</div>
+      <div class="card cp" id="j-perf"></div>
+    </div>
+
     <div class="slbl">History</div>
-    <div id="j-ents"><div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No events yet.<br>Analyse and log to start tracking.</div></div></div>
+    <div id="j-ents"><div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No events yet.</div></div></div>
     <div style="height:8px"></div>
   </div>
 </div>
 
 <!-- PAGE: SETTINGS -->
 <div id="pg-settings" class="page">
-  <div class="hdr">
-    <div class="hdr-title">App <span>Settings</span></div>
-    <div class="hdr-sub">API key · Sheets sync · Guide</div>
-  </div>
+  <div class="hdr"><div class="hdr-title">App <span>Settings</span></div><div class="hdr-sub">API key · Guide</div></div>
   <div class="sec">
-
     <div class="slbl">Anthropic API Key</div>
-    <div class="card card-p">
-      <div class="key-warn">⚠️ Your key is stored only on this device. It is sent only to api.anthropic.com and nowhere else.</div>
+    <div class="card cp">
+      <div class="key-warn">⚠️ Stored on this device only. Sent only to api.anthropic.com.</div>
       <div class="field">
-        <div class="flbl">API Key <span class="fhint">console.anthropic.com → API Keys</span></div>
+        <div class="flbl">API Key <span class="fhint">from console.anthropic.com → API Keys</span></div>
         <input type="password" id="key-input" placeholder="sk-ant-api03-..." autocomplete="off" style="margin-bottom:8px">
         <div style="display:flex;gap:8px">
-          <button class="btn-sm green" style="flex:1" onclick="saveKey()">Save Key</button>
-          <button class="btn-sm red" onclick="clearKey()">Remove</button>
+          <button class="bsm green" style="flex:1" onclick="saveKey()">Save Key</button>
+          <button class="bsm red" onclick="clearKey()">Remove</button>
         </div>
       </div>
       <div id="key-status"></div>
     </div>
 
     <div class="slbl">How to Get Your API Key</div>
-    <div class="card card-p">
-      <div class="guide-item"><div class="guide-ico">1️⃣</div><div><div class="guide-ttl">Go to console.anthropic.com</div><div class="guide-bdy">This is separate from claude.ai. Create a new account or sign in with your email.</div></div></div>
-      <div class="guide-item"><div class="guide-ico">2️⃣</div><div><div class="guide-ttl">Add a credit card</div><div class="guide-bdy">Go to Billing → Add payment method. You get $5 free credit. At ~$0.007 per analysis that covers 700+ analyses — years of nightly use.</div></div></div>
-      <div class="guide-item"><div class="guide-ico">3️⃣</div><div><div class="guide-ttl">Create an API key</div><div class="guide-bdy">Click "API Keys" → "+ Create Key" → name it "AVAX Advisor" → copy it immediately (shown only once).</div></div></div>
-      <div class="guide-item"><div class="guide-ico">4️⃣</div><div><div class="guide-ttl">Paste it above</div><div class="guide-bdy">Paste the key in the field above and tap Save Key. Done — tap Analyse to use it.</div></div></div>
+    <div class="card cp">
+      <div class="guide-item"><div class="guide-ico">1️⃣</div><div><div class="guide-ttl">Go to console.anthropic.com</div><div class="guide-bdy">Separate from claude.ai. Create account or sign in.</div></div></div>
+      <div class="guide-item"><div class="guide-ico">2️⃣</div><div><div class="guide-ttl">Add a credit card</div><div class="guide-bdy">Billing → Add payment. $5 free credit included. At ~$0.007/analysis = 700 free analyses.</div></div></div>
+      <div class="guide-item"><div class="guide-ico">3️⃣</div><div><div class="guide-ttl">Create API key</div><div class="guide-bdy">API Keys → +Create Key → name it "AVAX Advisor" → copy immediately.</div></div></div>
+      <div class="guide-item"><div class="guide-ico">4️⃣</div><div><div class="guide-ttl">Paste above and tap Save</div><div class="guide-bdy">Done. Tap Analyse to use.</div></div></div>
     </div>
 
-    <div class="slbl">How the Analysis Works</div>
-    <div class="card card-p">
-      <div class="guide-item"><div class="guide-ico">🔍</div><div><div class="guide-ttl">Live web search every time</div><div class="guide-bdy">When you tap Analyse, Claude searches the web for current AVAX price, RSI, MACD, support/resistance levels, BTC trend, and Fear & Greed. Fresh data every night.</div></div></div>
-      <div class="guide-item"><div class="guide-ico">📐</div><div><div class="guide-ttl">S/R anchored LP range</div><div class="guide-bdy">LP range low = nearest real support level. LP range high = nearest real resistance. Range updates every analysis based on current market structure.</div></div></div>
-      <div class="guide-item"><div class="guide-ico">⚡</div><div><div class="guide-ttl">Trade signal with confidence</div><div class="guide-bdy">Long/Short/Wait based on LP zone position + RSI + MACD + BTC trend. Confidence % tells you whether to trade full size, half size, or skip tonight.</div></div></div>
-      <div class="guide-item"><div class="guide-ico">🔒</div><div><div class="guide-ttl">Confidence levels</div><div class="guide-bdy">70%+ HIGH → trade $1,000 at 2×. 50–70% MEDIUM → trade $500 at 2×. Below 50% WAIT → no trade tonight.</div></div></div>
+    <div class="slbl">What the App Does Automatically</div>
+    <div class="card cp">
+      <div class="guide-item"><div class="guide-ico">🔄</div><div><div class="guide-ttl">Fetches live data from Hyperliquid API</div><div class="guide-bdy">AVAX price, funding rate, open interest — no login needed, free, every time you open the app.</div></div></div>
+      <div class="guide-item"><div class="guide-ico">🤖</div><div><div class="guide-ttl">Runs the decision tree automatically</div><div class="guide-bdy">Based on your LP status and market data, Claude determines: do nothing / wait / rebalance now / trade long / trade short.</div></div></div>
+      <div class="guide-item"><div class="guide-ico">📐</div><div><div class="guide-ttl">Calculates exact rebalance amounts</div><div class="guide-bdy">For both up and down moves — how much AVAX to buy or sell, what range to set, step by step.</div></div></div>
+      <div class="guide-item"><div class="guide-ico">⚡</div><div><div class="guide-ttl">Gives one clear instruction</div><div class="guide-bdy">The first thing you see after analysis is always: what to do tonight. No interpretation needed.</div></div></div>
     </div>
 
     <div class="slbl">Google Sheets Sync</div>
-    <div class="card card-p">
+    <div class="card cp">
       <div class="field">
         <div class="flbl">Apps Script URL <span class="fhint">optional</span></div>
         <input type="text" id="gs-url" placeholder="https://script.google.com/macros/s/.../exec" style="margin-bottom:8px">
-        <button class="btn-sm green" style="width:100%" onclick="saveGS()">Save URL</button>
+        <button class="bsm green" style="width:100%" onclick="saveGS()">Save URL</button>
       </div>
     </div>
-
     <div style="height:8px"></div>
   </div>
 </div>
 
-<!-- NAV BAR -->
+<!-- NAV -->
 <nav class="nav">
   <button class="nt on" onclick="goPage('analyse',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-    Analyse
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Analyse
   </button>
   <button class="nt" onclick="goPage('journal',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-    Journal
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Journal
   </button>
   <button class="nt" onclick="goPage('settings',this)">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    Settings
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>Settings
   </button>
 </nav>
 
 <script>
-// ── CONSTANTS ──
-const SK='avax_j_v3', GK='avax_gs_url', KK='avax_api_key';
+const SK='avax_j_v6',GK='avax_gs_url',KK='avax_api_key';
 const $=id=>document.getElementById(id);
 const pv=n=>parseFloat(n)||0;
 const f2=(n,d=2)=>'$'+Math.abs(pv(n)).toFixed(d);
 const fs=(n,d=2)=>(pv(n)>=0?'+$':'−$')+Math.abs(pv(n)).toFixed(d);
-const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const cl=(v,a,b)=>Math.max(a,Math.min(b,v));
 
 // ── CLOCK ──
 function tick(){
@@ -492,127 +575,474 @@ setInterval(tick,1000);tick();
 function goPage(id,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
   document.querySelectorAll('.nt').forEach(b=>b.classList.remove('on'));
-  $('pg-'+id).classList.add('on'); btn.classList.add('on');
+  $('pg-'+id).classList.add('on');btn.classList.add('on');
   window.scrollTo(0,0);
-  if(id==='journal') renderJ();
+  if(id==='journal')renderJ();
 }
 
 // ── TOAST ──
-function toast(msg,t='ok'){
-  const el=$('toast'); el.textContent=msg; el.className='toast show '+t;
-  setTimeout(()=>el.className='toast',2500);
-}
+function toast(msg,t='ok'){const el=$('toast');el.textContent=msg;el.className='toast show '+t;setTimeout(()=>el.className='toast',2600);}
 
-// ── KEY MANAGEMENT ──
-function saveKey(){
-  const k=$('key-input').value.trim();
-  if(!k.startsWith('sk-')){toast('Key must start with sk-','err');return;}
-  localStorage.setItem(KK,k);
-  $('key-input').value='';
-  updateKeyStatus(); toast('API key saved','ok');
-}
-function clearKey(){
-  if(!confirm('Remove API key?'))return;
-  localStorage.removeItem(KK); updateKeyStatus(); toast('Key removed','ok');
-}
-function updateKeyStatus(){
-  const k=localStorage.getItem(KK);
-  const el=$('key-status'); if(!el)return;
-  if(k&&k.startsWith('sk-')){
-    el.innerHTML=`<div class="key-ok">✓ Key saved · ends in …${k.slice(-6)}</div>`;
+// ── TRADE EVENT BUTTONS ──
+let _tradeEvt='nothing';
+function setTrade(val,btn){
+  _tradeEvt=val;
+  document.querySelectorAll('#trade-btns .tbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const wrap=$('trade-amt-wrap');
+  const lbl=$('trade-amt-lbl');
+  if(val==='nothing'||val==='new'){
+    wrap.style.display='none';
+    if($('i_tpnl'))$('i_tpnl').value='0';
   } else {
-    el.innerHTML=`<div class="key-none">✗ No key saved — add your key above</div>`;
+    wrap.style.display='block';
+    if(val==='tp1')lbl.textContent='TP1 profit $';
+    else if(val==='tp2')lbl.textContent='TP2 profit $';
+    else if(val==='sl')lbl.textContent='SL loss $ (enter as negative)';
   }
 }
 
-// ── LOADING STEPS ──
+// ── POSITION BUTTONS ──
+let _dir='none';
+function setDir(val,btn){
+  _dir=val;
+  document.querySelectorAll('#pg-analyse .card:nth-of-type(3) .tbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  const pf=$('pos-fields');
+  if(pf)pf.style.display=(val==='none')?'none':'block';
+}
+
+// ── LEGACY COMPAT ──
+function showPosFields(){}
+
+
+// ── HYPERLIQUID LIVE DATA ──
+let _hl=null;
+async function fetchHL(){
+  try{
+    const r=await fetch('https://api.hyperliquid.xyz/info',{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({type:'metaAndAssetCtxs'})
+    });
+    if(!r.ok) return null;
+    const d=await r.json();
+    const uni=d[0]?.universe||[],ctx=d[1]||[];
+    const idx=uni.findIndex(u=>u.name==='AVAX');
+    if(idx<0) return null;
+    const c=ctx[idx];
+    return{
+      px:parseFloat(c.markPx||0),
+      oraclePx:parseFloat(c.oraclePx||0),
+      funding:parseFloat(c.funding||0),
+      oi:parseFloat(c.openInterest||0),
+      vol:parseFloat(c.dayNtlVlm||0),
+      prevPx:parseFloat(c.prevDayPx||0)
+    };
+  }catch(e){console.warn('HL err',e);return null;}
+}
+
+function fundingLabel(r){
+  const pct=(r*100).toFixed(4);
+  const ann=(r*24*365*100).toFixed(1);
+  let sig,col;
+  if(r>0.0002){sig='Crowded LONG — bearish lean';col='var(--red)';}
+  else if(r>0.00005){sig='Slightly long — neutral';col='var(--amber)';}
+  else if(r<-0.0002){sig='Crowded SHORT — bullish lean';col='var(--green)';}
+  else if(r<-0.00005){sig='Slightly short — neutral';col='var(--amber)';}
+  else{sig='Balanced — no crowding signal';col='var(--ink3)';}
+  return{pct,ann,sig,col};
+}
+
+async function loadStrip(){
+  _hl=await fetchHL();
+  if(!_hl){$('ls-signal').textContent='Hyperliquid unavailable — enter price manually';return;}
+  const chg=((_hl.px-_hl.prevPx)/_hl.prevPx*100);
+  $('ls-px').textContent='$'+_hl.px.toFixed(2);
+  $('ls-chg').textContent=(chg>=0?'+':'')+chg.toFixed(2)+'% 24h';
+  $('ls-chg').style.color=chg>=0?'var(--green)':'var(--red)';
+  const fi=fundingLabel(_hl.funding);
+  $('ls-fund').textContent=(+_hl.funding>=0?'+':'')+fi.pct+'%';
+  $('ls-fund').style.color=fi.col;
+  $('ls-fund-s').textContent=fi.ann+'% ann.';
+  $('ls-oi').textContent=(_hl.oi/1000).toFixed(0)+'K';
+  $('ls-signal').textContent='📊 Funding: '+fi.sig;
+  $('ls-signal').style.color=fi.col;
+}
+
+// ── LOADING ANIMATION ──
 let _lt=null;
 function startLoader(){
   $('loading-wrap').style.display='block';
   $('result-content').style.display='none';
-  const ids=['ls1','ls2','ls3','ls4','ls5'];
-  ids.forEach(id=>{const e=$(id);if(e)e.className='lp-step';});
+  ['ls1','ls2','ls3','ls4','ls5'].forEach(id=>{const e=$(id);if(e)e.className='lp-step';});
   let i=0;
+  const ids=['ls1','ls2','ls3','ls4','ls5'];
   function next(){
     if(i>0&&i<=ids.length){const p=$(ids[i-1]);if(p)p.className='lp-step done';}
     if(i<ids.length){const c=$(ids[i]);if(c)c.className='lp-step active';i++;_lt=setTimeout(next,1900);}
   }
   next();
 }
-function stopLoader(){
-  if(_lt)clearTimeout(_lt);
-  $('loading-wrap').style.display='none';
-}
+function stopLoader(){if(_lt)clearTimeout(_lt);$('loading-wrap').style.display='none';}
 
 // ── MAIN ANALYSIS ──
 async function runAnalysis(){
   const key=localStorage.getItem(KK)||'';
-  if(!key.startsWith('sk-')){
-    $('no-key-warn').style.display='block';
-    toast('Add API key in Settings tab','err'); return;
-  }
+  if(!key.startsWith('sk-')){$('no-key-warn').style.display='block';toast('Add API key in Settings','err');return;}
   $('no-key-warn').style.display='none';
+
+  // Refresh HL data
+  _hl=await fetchHL();
+  if(_hl){
+    const fi=fundingLabel(_hl.funding);
+    $('ls-px').textContent='$'+_hl.px.toFixed(2);
+    $('ls-fund').textContent=(+_hl.funding>=0?'+':'')+fi.pct+'%';
+    $('ls-fund').style.color=fi.col;
+    $('ls-oi').textContent=(_hl.oi/1000).toFixed(0)+'K';
+    $('ls-signal').textContent='📊 Funding: '+fi.sig;
+    $('ls-signal').style.color=fi.col;
+  }
 
   const avax=pv($('i_avax').value);
   const usdc=pv($('i_usdc').value);
-  const apy=pv($('i_apy').value)||35;
-  const dir=$('i_dir').value;
-  const lpVal=avax>0&&usdc>0?(avax*10+usdc):3749;
+  // CHANGE 1: Store HL price for cross-check after search
+  const _hlPriceForCheck=_hl?.px||0;
+  const blackUsdc=pv($('i_black')?.value)||0;
+  const apy=35;
+  const daysOut=pv($('i_daysout').value);
+  const dir=_dir||'none';
+  const hedgeStatus=$('i_hedge').value;
+  const hedgeEntry=pv($('i_hedge_entry')?.value)||9.71;
+  const pe=pv($('i_pe')?.value)||0;
+  const upnl=pv($('i_upnl')?.value)||0;
+  const isHalf=dir.includes('half');
+  const dirBase=dir.replace('_half','');
+  const lpVal=avax>0&&usdc>0?(avax*(_hl?.px||10)+usdc):3749;
+  // LP range from last analysis or default
+  const _storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
+  const a_lo=_storedRange.lo||9.25;
+  const a_hi=_storedRange.hi||10.50;
+  const hlPx=_hl?.px||0;
+  const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%/hr':'unknown';
+  const hlOI=_hl?_hl.oi.toFixed(0)+' AVAX':'unknown';
 
-  const btn=$('analyse-btn');
+  // ── OI CHANGE DIRECTION (Priority 4) ──
+  // Store previous OI in sessionStorage to detect direction
+  const prevOI=parseFloat(sessionStorage.getItem('avax_prev_oi')||'0');
+  const currOI=_hl?.oi||0;
+  let oiChange='unknown';
+  if(prevOI>0&&currOI>0){
+    const oiDiff=((currOI-prevOI)/prevOI*100);
+    if(oiDiff>3)oiChange=`rising strongly (+${oiDiff.toFixed(1)}%) — trend strengthening`;
+    else if(oiDiff>0.5)oiChange=`rising slightly (+${oiDiff.toFixed(1)}%) — mild accumulation`;
+    else if(oiDiff<-3)oiChange=`falling strongly (${oiDiff.toFixed(1)}%) — positions closing, trend weakening`;
+    else if(oiDiff<-0.5)oiChange=`falling slightly (${oiDiff.toFixed(1)}%) — mild reduction`;
+    else oiChange=`flat (${oiDiff.toFixed(1)}%) — no conviction`;
+  }
+  if(currOI>0)sessionStorage.setItem('avax_prev_oi',currOI.toString());
+
+  // ── SGT SESSION TIME (Priority 7) ──
+  const now=new Date();
+  const sgtH=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000).getUTCHours();
+  let session='';
+  if(sgtH>=21||sgtH<2)session='US market hours (peak AVAX volume 9pm–2am SGT) — higher conviction signals';
+  else if(sgtH>=14&&sgtH<21)session='EU session (moderate volume) — decent signals';
+  else session='Asia/low volume session — reduce position size, widen SL slightly';
+
+  // ── LAST 3 TRADE OUTCOMES (Priority 5) ──
+  const jd=loadJ();
+  const lastTrades=jd.filter(e=>['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType)).slice(0,3);
+  let recentTradeCtx='No trades logged yet.';
+  if(lastTrades.length>0){
+    const summary=lastTrades.map((e,i)=>{
+      const outcome=e.tradePnl>0?`WIN +$${e.tradePnl.toFixed(0)}`:e.tradePnl<0?`LOSS -$${Math.abs(e.tradePnl).toFixed(0)}`:'BREAKEVEN';
+      // Include conditions if available
+      const cond=e.trade?` [${e.trade.regime||''} · RSI${e.trade.rsi||'?'} · LP${e.trade.lp_zone||'?'}]`:'';
+      return `Trade ${i+1}: ${outcome} (${e.evtType.replace('trade_','').toUpperCase()})${cond} on ${e.date.slice(0,10)}`;
+    }).join(' | ');
+    const recentWins=lastTrades.filter(e=>e.tradePnl>0).length;
+    const streak=recentWins===3?'3/3 wins — strong trend, hold full size':
+                 recentWins===2?'2/3 wins — system working, normal size':
+                 recentWins===1?'1/3 wins — choppy market, reduce to mixed size':
+                 '0/3 wins — reduce to mixed size, review conditions';
+    recentTradeCtx=`${summary} → ${streak}`;
+  }
+
+  // Build personalised stats context for AI (if enough data)
+  const allTrades=jd.filter(e=>e.trade&&['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType));
+  let personalStatsCtx='';
+  if(allTrades.length>=10){
+    const wrByCondition=(filter,label)=>{
+      const subset=allTrades.filter(filter);
+      if(subset.length<3)return'';
+      const wins=subset.filter(e=>e.tradePnl>0).length;
+      return `${label}: ${Math.round(wins/subset.length*100)}% (${subset.length} trades)`;
+    };
+    const stats=[
+      wrByCondition(e=>e.trade.regime==='uptrend','Uptrend'),
+      wrByCondition(e=>e.trade.regime==='downtrend','Downtrend'),
+      wrByCondition(e=>e.trade.lp_pct>50,'LP upper half'),
+      wrByCondition(e=>e.trade.lp_pct<=50,'LP lower half'),
+      wrByCondition(e=>e.trade.rsi>=55&&e.trade.rsi<=70,'RSI 55-70'),
+      wrByCondition(e=>e.trade.btc_trend==='neutral','BTC neutral'),
+      wrByCondition(e=>e.trade.btc_trend==='bearish','BTC bearish'),
+    ].filter(Boolean).join(', ');
+    if(stats)personalStatsCtx=`
+- USER PERSONAL WIN RATES FROM JOURNAL: ${stats}`;
+  }
+
+  const btn=$('abtn');
   btn.classList.add('loading');
-  btn.innerHTML='<div class="spinner"></div><span id="btn-txt">Analysing…</span>';
-
+  btn.innerHTML='<div class="spinner"></div><span>AI Analysing…</span>';
   $('results').style.display='block';
   startLoader();
 
-  const sys=`You are an expert AVAX DeFi analyst. Search the web for current live AVAX data. Return ONLY a JSON object, no markdown, no explanation.
+  const sys=`You are a systematic AVAX trading analyst managing a Blackhole CL LP and Hyperliquid trading system. Your goal is to find the BEST trade available tonight, not a reason to skip. Adjust size for mixed conditions. Only skip on hard gates.
 
-User LP context:
+USER POSITION
 - AVAX in LP: ${avax||'unknown'}
-- USDC in LP: $${usdc||'unknown'}  
-- Pool APY: ${apy}%
-- HL position: ${dir}
-- Pool: Blackhole CL200 WAVAX/USDC on Avalanche
+- USDC in LP: $${usdc||'unknown'}
+- LP estimated value: $${lpVal.toFixed(0)}
+- LP current range: $${a_lo.toFixed(2)} to $${a_hi.toFixed(2)}
+- BLACK sold today USDC: $${blackUsdc>0?blackUsdc.toFixed(2):'not entered'}
+- Days LP out of range: ${daysOut}
+- HL trade position: ${dir}${isHalf?' (TP1 already hit)':''}
+- Trade entry price: ${pe>0?'$'+pe:'none'}
+- Trade unrealised P&L: ${upnl!==0?'$'+upnl:'none'}
+- Crash hedge $500 1x short: ${hedgeStatus}
+- Crash hedge entry price: $${hedgeEntry.toFixed(2)} (used for profit calculation)
 
-Search for today's AVAX price from CoinMarketCap or MetaMask price page (these are fastest). Also search for AVAX RSI, MACD, EMA20/50/200, support levels, resistance levels, BTC trend, Fear & Greed index. IMPORTANT: For price, prefer CoinMarketCap or real-time sources over CoinGecko which can lag.
+LIVE DATA (do not search for these)
+- AVAX mark price: ${hlPx>0?'$'+hlPx.toFixed(2):'not available'}
+- Funding rate: ${hlFund} (positive=longs paying=bearish)
+- Open interest: ${hlOI}
+- OI change: ${oiChange}
+- SGT session: ${session}
+- Last 3 trades: ${recentTradeCtx}${personalStatsCtx}
 
-Return this exact JSON:
+STEP 1 - EXACTLY 2 WEB SEARCHES
+SEARCH 1: "AVAX price RSI MACD EMA200 ATR daily 4-hour chart technical analysis today"
+  Extract: price, RSI(14), MACD direction+histogram, EMA20, EMA200, ATR daily value, key support/resistance levels
+
+SEARCH 2: "BTC price trend today"
+  Extract: BTC direction, % change 24h
+
+No more than 2 searches. All other data provided above.
+
+STEP 2 - LP DECISION TREE
+days_out == 0: decision = "in_range" - continue to LP zone check then trade layers
+
+days_out >= 1 AND price still falling: decision = "wait_falling" - signal = "wait"
+days_out >= 1 AND exited top AND recovered: decision = "rebalance_up"
+  Show rebalance calculator AND continue to trade layers (trade allowed after rebalance)
+days_out >= 1 AND exited bottom:
+  days_out < 2: decision = "wait_stabilise" - signal = "wait"
+  days_out >= 2 AND BTC falling: decision = "wait_btc" - signal = "wait"
+  days_out >= 2 AND price sideways - TWO-LEVEL TRIGGER:
+    Price exited range_low but still above NEXT major support below: decision = "wait_second_level" - wait longer, high reversal probability
+    Price also broke below NEXT major support below range: decision = "rebalance_down" - signal = "wait"
+    CHOP PROTECTION: If this is the 2nd LP exit within 30 days (user has rebalanced recently):
+      Extend wait to 72h minimum (not 48h) before confirming rebalance_down
+      High probability this is chop not new downtrend - set decision = "wait_chop_72h"
+unclear: decision = "in_range"
+
+STEP 3 - LP ZONE CHECK (always when in_range)
+lp_pct = (price - range_low) / (range_high - range_low) x 100
+
+LP NEAR-EXIT (lp_pct > 70 OR lp_pct < 30):
+  Check 1 - Momentum: price move >2% today in exit direction AND volume above avg? YES=strong / NO=weak
+  Check 2 - Signal: do trade layers produce 3/4+ signal in exit direction? YES=true / NO=false
+  Check 3 - New S/R range available? Find nearest support below and resistance above.
+    ATR minimum width = max(2.5 x ATR, 8% of price). If range too narrow, widen.
+
+  ALL 3 checks pass: lp_shift_recommended = true
+    Calculate: lp_shift_avax_receive, lp_shift_usdc_receive, lp_shift_avax_need, lp_shift_usdc_need, lp_shift_swap
+    lp_new_range_low = nearest support from search, lp_new_range_high = nearest resistance from search
+  ANY check fails: lp_shift_recommended = false, lp_shift_reason = why holding
+
+REGIME WIDTH CHECK:
+  optimal_width_pct: consolidating+normal=7, trending=10, high_vol=15, bear=20
+  current_width_pct = (range_high - range_low) / price x 100
+  range_too_narrow = true if current_width_pct < optimal_width_pct x 0.7
+
+40% DROP CHECK:
+  lp_entry_approx = (range_low + range_high) / 2
+  drop_40pct = true if price < lp_entry_approx x 0.60
+
+LAYER 1 - VOLATILITY FILTER
+atr_pct = ATR / price x 100
+atr_pct < 3%: vol_regime = "low" - signal = "wait". Market too quiet. Hard gate.
+atr_pct 3-7%: vol_regime = "normal" - continue
+atr_pct 7-12%: vol_regime = "high" - continue, entry_size = "mixed"
+atr_pct > 12%: vol_regime = "extreme" - signal = "wait". Too volatile for any trade. Hard gate.
+
+LAYER 2 - MARKET REGIME
+Price above EMA20 AND EMA20 above EMA200: regime = "uptrend" - long preferred
+Price below EMA20 AND EMA20 below EMA200: regime = "downtrend" - short preferred
+Price oscillating around EMA20: regime = "ranging" - reversals, entry_size = "mixed"
+Price spiking without EMA structure: regime = "choppy" - entry_size = "mixed" (still trade, not skip)
+
+LP zone sizing:
+  regime aligns with LP zone direction: full size allowed
+  LP zone mismatches regime: entry_size = "mixed"
+  LP upper half (lp_pct>50): long preferred. LP lower half: short preferred.
+
+LAYER 3 - MACRO FILTER
+HARD VETO (skip trade):
+1. BTC falling >5% today AND signal = long - hard gate
+2. R:R < 2.0 - hard gate
+3. vol_regime = "low" - already handled
+
+SOFT VETO (reduce to mixed size, do not skip):
+4. Funding > +0.02%/hr AND direction = long
+
+HEDGE LIQUIDATION WARNING (not a veto but flag it):
+  If vol_regime = "normal" or "high" AND regime = "uptrend" AND lp_pct > 75%:
+    Calculate: hedge_liq_price = hedge_entry_price x 1.9 (approx 1x leverage liquidation)
+    If current price > hedge_liq_price x 0.85 (within 15% of liquidation):
+      hedge_liquidation_risk = true
+      hedge_liquidation_reason = "AVAX approaching hedge liquidation. Consider closing hedge when LP shifts range upward.
+5. Funding < -0.02%/hr AND direction = short
+6. OI falling strongly AND price rising
+7. Last 3 trades = 0/3 wins - reduce to mixed size only, still trade
+8. Price within 2% of LP range boundary
+
+veto_fired = true ONLY for hard vetos 1-3. Soft vetos just reduce size.
+
+LAYER 4 - TRADE SETUP
+Score 1 each (need 3-4 = strong, 2 = mixed, <2 = wait):
+[ ] RSI supports: above 50 for long, below 50 for short
+[ ] MACD histogram supports: positive for long, negative for short
+[ ] OI change supports: rising for trend, falling for reversal
+[ ] Price at clean S/R level
+
+confirm_score 3-4: strong signal
+confirm_score 2: mixed signal
+confirm_score < 2: signal = "wait"
+
+LAYER 5 - RISK CONTROL
+ATR from search (default $0.51).
+ATR minimum width check: any suggested range must be >= max(2.5xATR, 8% of price).
+
+LONG: SL = entry - (1.2xATR) | TP1 = entry + (2.0xATR) | TP2 = entry + (3.5xATR)
+SHORT: SL = entry + (1.2xATR) | TP1 = entry - (2.0xATR) | TP2 = entry - (3.5xATR)
+
+R:R = (TP1-entry)/(entry-SL) must be >= 2.0 or hard veto.
+
+POSITION SIZING - Stage 1:
+  strong signal (3-4/4) + normal vol + no soft veto: entry_size = "strong" ($1,000 notional, $500 margin x 2x)
+  mixed signal (2/4) OR high vol OR soft veto OR regime mismatch: entry_size = "mixed" ($500 notional, $250 margin x 2x)
+  hard veto or confirm<2: signal = "wait"
+
+ENTRY TYPE: price at S/R = "limit" | breakout = "market"
+
+CONFIDENCE
+Start 40. Add: regime aligns LP zone +20, 4/4 confirmed +15 (3/4 +8), BTC strongly supporting +15 (neutral +5),
+OI rising trend +8, normal vol +5, 3/3 recent wins +8 (2/3 +3, 1/3 -5), US session +5.
+>=70=HIGH, 50-69=MED, <50=WAIT
+
+RETURN EXACTLY THIS JSON - nothing else:
 {
-  "price": 9.85,
-  "change24h": 2.93,
+  "price": 9.71,
+  "data_age_hours": 2,
+  "change24h": 1.2,
   "rsi": 57,
   "macd": "bullish",
   "ema20": 9.25,
-  "ema50": 9.80,
-  "ema200": 12.55,
+  "ema200": 16.91,
+  "atr": 0.51,
+  "atr_pct": 5.3,
+  "vol_regime": "normal",
+  "regime": "downtrend",
   "trend": "recovering",
-  "btc": "neutral",
-  "feargreed": 15,
-  "supports": [{"p":9.25,"lbl":"EMA20"},{"p":8.80,"lbl":"Swing low"},{"p":7.55,"lbl":"Weekly"}],
-  "resistances": [{"p":10.10,"lbl":"Pivot"},{"p":10.50,"lbl":"Fib 0.618"},{"p":12.00,"lbl":"Bull target"}],
+  "btc_trend": "neutral",
+  "btc_change": -0.8,
+  "btc_still_falling": false,
+  "price_still_falling": false,
+  "oi_change": "rising slightly",
+  "confirm_score": 3,
+  "veto_fired": false,
+  "veto_reason": "",
   "range_low": 9.25,
   "range_high": 10.50,
   "range_mode": "normal",
-  "range_why": "Range anchored to EMA20 support $9.25 and Fib 0.618 resistance $10.50. Current consolidation zone.",
-  "signal": "long",
-  "confidence": 68,
-  "entry": 9.85,
-  "tp1": 10.50,
-  "tp2": 12.00,
-  "sl": 9.00,
-  "rr": "2.1",
-  "signal_why": "Price in upper LP half above midpoint. RSI neutral-bullish. MACD positive. EMA20 holding. BTC neutral.",
-  "lp_status": "in_range",
   "lp_pct": 54,
-  "actions": [
-    {"n":1,"c":"blue","t":"Verify AVAX price","b":"Confirm $9.85 on Hyperliquid."},
-    {"n":2,"c":"green","t":"LP in range — no Blackhole action","b":"Earning fees. Leave unchanged."},
-    {"n":3,"c":"red","t":"Crash hedge: SHORT $500 · 1× confirm open","b":"TP $5.57 · SL $11.55."},
-    {"n":4,"c":"green","t":"Trade: LONG $1,000 · 2× on HL","b":"Entry $9.85 · TP1 $10.50 · TP2 $12.00 · SL $9.00"}
+  "lp_zone": "upper",
+  "lp_exited": "none",
+  "lp_near_exit": false,
+  "lp_exit_direction": "none",
+  "lp_momentum": "neutral",
+  "lp_shift_recommended": false,
+  "lp_shift_reason": "",
+  "lp_new_range_low": 0,
+  "lp_new_range_high": 0,
+  "lp_new_range_reason": "",
+  "lp_shift_avax_receive": 0,
+  "lp_shift_usdc_receive": 0,
+  "lp_shift_avax_need": 0,
+  "lp_shift_usdc_need": 0,
+  "lp_shift_swap": "",
+  "range_too_narrow": false,
+  "optimal_width_pct": 7,
+  "current_width_pct": 6.2,
+  "drop_40pct": false,
+  "decision": "in_range",
+  "decision_reason": "LP in range at 54%. Proceeding to trade layers.",
+  "action_title": "LP RUNNING - TRADE SIGNAL BELOW",
+  "action_type": "ok",
+  "action_steps": [
+    {"n":1,"c":"g","t":"LP confirmed in range","b":"At 54% through $9.25 to $10.50. Earning BLACK emissions."},
+    {"n":2,"c":"b","t":"Crash hedge running","b":"$500 short. TP $5.55. SL $11.55. No change needed."},
+    {"n":3,"c":"g","t":"Trade signal below","b":"Review entry, size and risk levels."}
   ],
-  "sources": ["CoinMarketCap","Blockchain.news","CoinCodex"]
-}`;
+  "signal": "long",
+  "confidence": 63,
+  "entry": 9.71,
+  "entry_type": "limit",
+  "entry_size": "strong",
+  "tp1": 10.73,
+  "tp2": 11.50,
+  "sl": 9.10,
+  "rr": "2.0",
+  "signal_why": "Regime downtrend but LP upper half. Strong signal 3/4. RSI neutral-bullish. MACD positive. OI rising. ATR SL 1.2x. Stage 1: $1,000 notional.",
+  "rebal_direction": "none",
+  "rebal_avax_to_buy": 0,
+  "rebal_avax_to_sell": 0,
+  "rebal_usdc_needed": 0,
+  "rebal_usdc_available": 0,
+  "rebal_new_low": 0,
+  "rebal_new_high": 0,
+  "rebal_new_mode": "normal",
+  "rebal_reason": "",
+  "rebal_steps": [],
+  "hedge_liquidation_risk": false,
+  "hedge_liquidation_reason": "",
+  "sources": ["TradingView","CoinGecko","Hyperliquid"]
+}
+
+REBALANCE RULES (when decision != in_range):
+rebalance_up (LP exited top, ~100% USDC available ~$${lpVal.toFixed(0)}):
+  rebal_direction = "up"
+  confidence >=70: buy 65% AVAX | 50-69: buy 50% | <50: buy 35%
+  NEW RANGE from real S/R levels from search:
+    rebal_new_low = nearest support below current price
+    rebal_new_high = nearest resistance above current price
+    Width must be >= max(2.5xATR, 8% of price). Widen if too narrow.
+
+rebalance_down (LP exited bottom, ~100% AVAX ~${avax>0?avax:200} AVAX):
+  rebal_direction = "down"
+  USDC from crash hedge profit + $500 reserve
+  ASYMMETRIC deployment: 60% AVAX / 40% USDC (not 50/50 - preserve more AVAX)
+  HEDGE RESET RULE: Do NOT immediately reset crash hedge after rebalance_down if overall trend is still down.
+    Keep original hedge running OR reset only after price recovers >= 15% from crash low.
+    Reason: resetting hedge at each rebalance progressively reduces total crash protection.
+    Only reset when: price has stabilised and new range is confirmed holding 48h+.
+  Sell MINIMUM AVAX - only the shortfall after hedge+reserve
+  NEW RANGE from real S/R levels from search:
+    rebal_new_low = nearest support below price
+    rebal_new_high = nearest resistance above price with 15% asymmetric bullish upside bias
+    Width must be >= max(2.5xATR, 8% of price)
+  range_mode = "volatile"`;
 
   try{
     const res=await fetch('https://api.anthropic.com/v1/messages',{
@@ -625,223 +1055,1025 @@ Return this exact JSON:
       },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
+        max_tokens:2000,
         tools:[{type:'web_search_20250305',name:'web_search'}],
         system:sys,
-        messages:[{role:'user',content:'Search for current AVAX price and TA data today. Return only the JSON.'}]
+        messages:[{role:'user',content:'Search for current AVAX price and TA data right now. Run the decision tree based on my LP position. Return only the JSON.'}]
       })
     });
-    if(!res.ok){
-      const err=await res.json().catch(()=>({}));
-      throw new Error(err?.error?.message||'API error '+res.status);
-    }
+    if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e?.error?.message||'API error '+res.status);}
     const data=await res.json();
     let raw='';
     for(const b of(data.content||[])){if(b.type==='text')raw+=b.text;}
-    const s=raw.indexOf('{'),e=raw.lastIndexOf('}');
-    if(s<0||e<=s)throw new Error('No JSON in response');
-    const a=JSON.parse(raw.slice(s,e+1));
+    const s=raw.indexOf('{'),e2=raw.lastIndexOf('}');
+    if(s<0||e2<=s)throw new Error('No JSON in response');
+    const a=JSON.parse(raw.slice(s,e2+1));
     stopLoader();
-    render(a,apy,avax,usdc,dir,lpVal);
+    render(a,apy,avax,usdc,dirBase,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus);
   }catch(err){
     stopLoader();
-    $('result-content').innerHTML=`<div class="status err"><div class="st-ico">⚠️</div><div><div class="st-ttl">Analysis Failed</div><div class="st-body">${err.message}</div></div></div>`;
+    $('result-content').innerHTML=`<div style="background:var(--rl);border:1.5px solid var(--rb);border-radius:12px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">Analysis Failed</div><div style="font-size:11px;color:var(--ink2)">${err.message}</div></div>`;
     $('result-content').style.display='block';
     toast(err.message.slice(0,50),'err');
   }finally{
     btn.classList.remove('loading');
-    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span id="btn-txt">Re-Analyse AVAX</span>';
+    btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><span id="btn-txt">Re-Analyse AVAX</span>';
   }
 }
 
-// ── RENDER RESULTS ──
-function render(a,apy,avax,usdc,dir,lpVal){
+// ── RENDER ──
+function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   $('result-content').style.display='block';
-
   const px=a.price||0;
   const realLp=avax>0&&usdc>0?(avax*px+usdc):lpVal;
   const fDR=realLp*(apy/100)/365*0.7;
-  const lo=a.range_low, hi=a.range_high, mid=((lo+hi)/2);
-  const inR=px>=lo&&px<=hi;
-  const pct=inR?((px-lo)/(hi-lo)*100):(px<lo?0:100);
+  const lo=a.range_low,hi=a.range_high,mid=((lo+hi)/2);
+  const pct=a.lp_pct||50;
 
-  // Status
-  let sc,ico,ttl,msg;
-  if(!inR&&px<lo){sc='err';ico='🔴';ttl='BELOW RANGE';msg=`$${px.toFixed(2)} is below range bottom $${lo.toFixed(2)}. LP is 100% AVAX. Wait 48h then rebalance to new range.`;}
-  else if(!inR&&px>hi){sc='info';ico='🔵';ttl='ABOVE RANGE';msg=`$${px.toFixed(2)} is above range top $${hi.toFixed(2)}. LP is 100% USDC. Buy AVAX and reenter.`;}
-  else if(pct>80){sc='warn';ico='⚠️';ttl='NEAR RANGE TOP';msg=`Price at ${pct.toFixed(0)}% through range. Approaching resistance $${hi.toFixed(2)}.`;}
-  else if(pct<20){sc='warn';ico='⚠️';ttl='NEAR RANGE BOTTOM';msg=`Price at ${pct.toFixed(0)}% through range. Approaching support $${lo.toFixed(2)}.`;}
-  else{sc='ok';ico='✅';ttl='IN RANGE — FEES RUNNING';msg=`$${px.toFixed(2)} is ${pct.toFixed(0)}% through range. ~${f2(fDR)}/day. ${pct>50?'Upper half → LONG zone.':'Lower half → SHORT zone.'}`;}
-  $('r-status').innerHTML=`<div class="status ${sc}"><div class="st-ico">${ico}</div><div><div class="st-ttl">${ttl}</div><div class="st-body">${msg}</div></div></div>`;
+  // ── 1. DECISION CARD (hero) ──
+  const decTypeMap={
+    'in_range':'ok',
+    'wait_falling':'wait',
+    'wait_stabilise':'wait',
+    'wait_btc':'wait',
+    'rebalance_up':'act-now',
+    'rebalance_down':'act-now',
+    'wait_chop_72h':'wait'
+  };
+  const decType=decTypeMap[a.decision]||'ok';
+  const decIco={'ok':'✅','wait':'⏳','act-now':a.rebal_direction==='down'?'🔴':'🔵'}[decType];
 
-  // Price
-  const chgC=a.change24h>=0?'up':'dn';
-  $('r-price').innerHTML=`<div class="card card-p" style="margin-bottom:12px">
-    <div class="price-row"><div class="price-big">$${px.toFixed(2)}</div><div class="price-chg ${chgC}">${a.change24h>=0?'+':''}${(a.change24h||0).toFixed(2)}%</div></div>
-    <div class="price-meta">AVAX · 24h change · ${new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'})}</div>
-  </div>`;
-
-  // Metrics
-  const rsiC=a.rsi>60?'up':a.rsi<40?'dn':'neu';
-  const tC=a.trend==='bullish'||a.trend==='recovering'?'up':'dn';
-  const fgC=a.feargreed<25?'dn':a.feargreed>60?'up':'neu';
-  $('r-metrics').innerHTML=`<div class="mx">
-    <div class="mx-card"><div class="mx-lbl">RSI (14)</div><div class="mx-val ${rsiC}">${a.rsi}</div><div class="mx-sub">${a.rsi>60?'Overbought':a.rsi<40?'Oversold':'Neutral'}</div></div>
-    <div class="mx-card"><div class="mx-lbl">MACD</div><div class="mx-val ${a.macd?.includes('bull')?'up':'dn'}">${(a.macd||'').toUpperCase()}</div><div class="mx-sub">Momentum</div></div>
-    <div class="mx-card"><div class="mx-lbl">Fear & Greed</div><div class="mx-val ${fgC}">${a.feargreed}</div><div class="mx-sub">${a.feargreed<25?'Extreme Fear':a.feargreed>60?'Greed':'Neutral'}</div></div>
-    <div class="mx-card"><div class="mx-lbl">LP Daily Fees</div><div class="mx-val up">${f2(fDR)}</div><div class="mx-sub">${f2(fDR*30)}/month</div></div>
-  </div>`;
-
-  // Range
-  const modeC=a.range_mode==='volatile'?'volatile':'normal';
-  const modeL=a.range_mode==='volatile'?'± 10% VOLATILE':'± 6% NORMAL';
-  const pinPct=clamp(pct,2,98);
-  $('r-range').innerHTML=`<div class="range-hero">
-    <div class="rh-title">S/R ANCHORED LP RANGE <span class="rh-mode ${modeC}">${modeL}</span></div>
-    <div class="rh-nums">
-      <div class="rh-box"><div class="rh-lbl">Range Low</div><div class="rh-val">$${lo.toFixed(2)}</div><div class="rh-sub">${a.supports?.[0]?.lbl||'Support'}</div></div>
-      <div class="rh-box mid"><div class="rh-lbl">Midpoint</div><div class="rh-val">$${mid.toFixed(2)}</div><div class="rh-sub">Width $${(hi-lo).toFixed(2)}</div></div>
-      <div class="rh-box"><div class="rh-lbl">Range High</div><div class="rh-val">$${hi.toFixed(2)}</div><div class="rh-sub">${a.resistances?.[0]?.lbl||'Resistance'}</div></div>
-    </div>
-    <div class="rh-track-wrap">
-      <div class="rh-track"><div class="rh-pin" style="left:${pinPct}%"></div></div>
-      <div class="rh-track-lbls"><span>$${lo.toFixed(2)}</span><span>AVAX $${px.toFixed(2)} (${pct.toFixed(0)}%)</span><span>$${hi.toFixed(2)}</span></div>
-    </div>
-    <div class="rh-reason">📍 ${a.range_why||'S/R anchored range from live analysis.'}</div>
-  </div>`;
-
-  // Trade
-  const td=a.signal||'wait', tc=a.confidence||50;
-  const cC=tc>=70?'hi':tc>=50?'med':'lo', cL=tc>=70?`${tc}% HIGH`:tc>=50?`${tc}% MEDIUM`:`${tc}% LOW`;
-  const tCls=td==='long'?'long':td==='short'?'short':'wait';
-  const tDir=td==='long'?'▲ LONG':td==='short'?'▼ SHORT':'⏸ WAIT';
-  const tNotl=1000*2, tSz=(tNotl/px).toFixed(1);
-  $('r-trade').innerHTML=`<div class="trade-box ${tCls}">
-    <div class="tb-head"><div class="tb-dir">${tDir}</div><div class="conf-tag ${cC}">${cL}</div></div>
-    ${td!=='wait'?`<div class="tb-grid">
-      <div class="tb-cell"><div class="tb-lbl">Entry</div><div class="tb-val">$${(a.entry||px).toFixed(2)}</div></div>
-      <div class="tb-cell"><div class="tb-lbl">Size · $2,000 notional</div><div class="tb-val">${tSz} AVAX</div></div>
-      <div class="tb-cell"><div class="tb-lbl">Take Profit 1 (50%)</div><div class="tb-val tp">$${a.tp1?.toFixed(2)||'—'}</div></div>
-      <div class="tb-cell"><div class="tb-lbl">Take Profit 2 (50%)</div><div class="tb-val tp">$${a.tp2?.toFixed(2)||'—'}</div></div>
-      <div class="tb-cell"><div class="tb-lbl">Stop Loss</div><div class="tb-val sl">$${a.sl?.toFixed(2)||'—'}</div></div>
-      <div class="tb-cell"><div class="tb-lbl">R:R Ratio</div><div class="tb-val rr">${a.rr||'—'}:1</div></div>
-    </div>`:`<div style="font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:10px">Confidence below threshold (${tc}%). No trade tonight. Watch $${a.resistances?.[0]?.p?.toFixed(2)||'—'} resistance and $${a.supports?.[0]?.p?.toFixed(2)||'—'} support.</div>`}
-    <div class="tb-reason">${a.signal_why||'No reasoning provided.'}</div>
-  </div>`;
-
-  // TA table
-  const macdC=a.macd?.includes('bull')?'bull':'bear';
-  const btcC=a.btc==='bullish'?'bull':a.btc==='bearish'?'bear':'neut';
-  let srRows='';
-  (a.supports||[]).forEach(s=>srRows+=`<tr><td>Support · ${s.lbl}</td><td style="color:var(--red)">$${s.p?.toFixed(2)}</td></tr>`);
-  (a.resistances||[]).forEach(r=>srRows+=`<tr><td>Resistance · ${r.lbl}</td><td style="color:var(--green)">$${r.p?.toFixed(2)}</td></tr>`);
-  $('r-ta').innerHTML=`<table class="ta-tbl">
-    <tr><td>RSI (14)</td><td><span class="tag ${rsiC==='up'?'bull':rsiC==='dn'?'bear':'neut'}">${a.rsi} ${a.rsi>60?'HIGH':a.rsi<40?'LOW':'NEUTRAL'}</span></td></tr>
-    <tr><td>MACD</td><td><span class="tag ${macdC}">${(a.macd||'').toUpperCase()}</span></td></tr>
-    <tr><td>EMA 20</td><td>$${a.ema20?.toFixed(2)||'—'}</td></tr>
-    <tr><td>EMA 50</td><td>$${a.ema50?.toFixed(2)||'—'}</td></tr>
-    <tr><td>EMA 200</td><td>$${a.ema200?.toFixed(2)||'—'}</td></tr>
-    <tr><td>Short-term trend</td><td><span class="tag ${tC==='up'?'bull':'bear'}">${(a.trend||'').toUpperCase()}</span></td></tr>
-    <tr><td>BTC signal</td><td><span class="tag ${btcC}">${(a.btc||'').toUpperCase()}</span></td></tr>
-    <tr><td>Fear & Greed</td><td><span class="tag ${fgC==='up'?'bull':fgC==='dn'?'bear':'neut'}">${a.feargreed} ${a.feargreed<25?'EXTREME FEAR':a.feargreed>60?'GREED':'NEUTRAL'}</span></td></tr>
-    ${srRows}
-  </table>`;
-
-  // Actions
-  const cmap={blue:'blue',green:'green',red:'red',amber:'amber'};
-  $('r-steps').innerHTML=(a.actions||[]).map(ac=>`<div class="step">
-    <div class="snum ${cmap[ac.c]||'blue'}">${ac.n}</div>
-    <div><div class="stit">${ac.t}</div><div class="sbdy">${ac.b}</div></div>
-  </div>`).join('');
-
-  // Fees
-  $('r-fees').innerHTML=`
-    <div class="fee-row"><span>Daily (70% uptime)</span><span style="color:var(--green)">${f2(fDR)}</span></div>
-    <div class="fee-row"><span>Monthly</span><span style="color:var(--green)">${f2(fDR*30)}</span></div>
-    <div class="fee-row"><span>Yearly</span><span style="color:var(--green)">${f2(fDR*365)}</span></div>
-    <div class="fee-row"><span>LP total value est.</span><span>${f2(realLp)}</span></div>
-    <div class="fee-row"><span>Crash hedge TP</span><span style="color:var(--green)">$${(lo*0.60).toFixed(2)}</span></div>
-    <div class="fee-row"><span>Crash hedge SL</span><span style="color:var(--amber)">$${(hi*1.10).toFixed(2)}</span></div>`;
-
-  // Sources
-  if(a.sources?.length){
-    $('r-sources').innerHTML=`<div class="sec-label">Data Sources</div><div style="padding:0 0 6px"><div class="src-row">${a.sources.map(s=>`<span class="src-tag">${s}</span>`).join('')}</div></div>`;
+  let stepsHtml='';
+  if(a.action_steps&&a.action_steps.length){
+    const cmap={g:'g',r:'r',b:'b',a:'a'};
+    stepsHtml=`<div class="actions">${a.action_steps.map(s=>`
+      <div class="action-step">
+        <div class="asn ${cmap[s.c]||'b'}">${s.n}</div>
+        <div><div class="as-title">${s.t}</div><div class="as-body">${s.b}</div></div>
+      </div>`).join('')}</div>`;
   }
 
-  // Timestamp
+  $('r-decision').innerHTML=`
+    <div class="decision ${decType}">
+      <div class="dec-head">
+        <div class="dec-ico">${decIco}</div>
+        <div>
+          <div class="dec-title">${a.action_title||a.decision.toUpperCase().replace('_',' ')}</div>
+          <div class="dec-sub">${a.decision_reason||''}</div>
+        </div>
+      </div>
+      <div class="dec-body">${stepsHtml}</div>
+    </div>`;
+
+  // ── 2. PRICE ──
+  const chgC=a.change24h>=0?'var(--green)':'var(--red)';
+  // CHANGE 1: Price cross-check — compare HL API price vs search price
+  const searchPx=a.price||0;
+  const priceDiff=_hlPriceForCheck>0&&searchPx>0?Math.abs(_hlPriceForCheck-searchPx)/_hlPriceForCheck*100:0;
+  const priceConflict=priceDiff>1.0;
+  // CHANGE 2: Data staleness — AI returns data_age_hours if available
+  const dataAge=a.data_age_hours||0;
+  const dataStale=dataAge>4;
+  $('r-price').innerHTML=`<div class="card cp" style="margin-bottom:${priceConflict||dataStale?'4px':'12px'}">
+    <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:3px">
+      <span style="font-family:'DM Mono',monospace;font-size:30px;font-weight:500">$${px.toFixed(2)}</span>
+      <span style="font-size:12px;font-weight:600;color:${chgC};padding:2px 8px;border-radius:6px;background:${a.change24h>=0?'var(--gl)':'var(--rl)'}">${a.change24h>=0?'+':''}${(a.change24h||0).toFixed(2)}%</span>
+      ${_hlPriceForCheck>0?`<span style="font-size:10px;color:var(--ink4)">HL: $${_hlPriceForCheck.toFixed(2)}</span>`:''}
+    </div>
+    <div style="font-size:10px;color:var(--ink4);font-family:'DM Mono',monospace">AVAX · 24h change · ${new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'})}</div>
+  </div>
+  ${priceConflict?`<div style="background:var(--al);border:1px solid var(--ab);border-radius:9px;padding:8px 12px;margin-bottom:4px;font-size:10px;color:var(--amber)">⚠️ <b>Price conflict:</b> HL API $${_hlPriceForCheck.toFixed(2)} vs search $${searchPx.toFixed(2)} (${priceDiff.toFixed(1)}% gap). Verify price before trading.</div>`:''}
+  ${dataStale?`<div style="background:var(--al);border:1px solid var(--ab);border-radius:9px;padding:8px 12px;margin-bottom:12px;font-size:10px;color:var(--amber)">⚠️ <b>Stale data:</b> TA data may be up to ${dataAge}h old. RSI/MACD values may have changed.</div>`:'<div style="margin-bottom:12px"></div>'}`;
+
+  // ── 3. METRICS ──
+  const rsiC=a.rsi>60?'up':a.rsi<40?'dn':'neu';
+  const tC=a.trend==='recovering'||a.trend==='bullish'?'up':'dn';
+  const fgC=a.feargreed<25?'dn':a.feargreed>60?'up':'neu';
+  let hlPnl=upnl;
+  if(pe>0&&px>0&&dir!=='none'){const n=1000*2*(isHalf?.5:1);hlPnl=dir==='long'?n*(px-pe)/pe:n*(pe-px)/pe;}
+  const fi=_hl?fundingLabel(_hl.funding):null;
+  $('r-metrics').innerHTML=`
+    <div class="mc"><div class="ml">RSI (14)</div><div class="mv ${rsiC}">${a.rsi}</div><div class="ms">${a.rsi>60?'Overbought':a.rsi<40?'Oversold':'Neutral'}</div></div>
+    <div class="mc"><div class="ml">MACD</div><div class="mv ${a.macd?.includes('bull')?'up':'dn'}">${(a.macd||'').toUpperCase()}</div><div class="ms">Momentum</div></div>
+    <div class="mc"><div class="ml">Vol Regime</div><div class="mv ${a.vol_regime==='normal'?'up':a.vol_regime==='high'?'neu':'dn'}">${(a.vol_regime||'—').toUpperCase()}</div><div class="ms">ATR ${a.atr_pct?.toFixed(1)||'—'}%</div></div>
+    <div class="mc"><div class="ml">Mkt Regime</div><div class="mv ${a.regime==='uptrend'?'up':a.regime==='downtrend'?'dn':'neu'}" style="font-size:13px">${(a.regime||'—').toUpperCase()}</div><div class="ms">EMA structure</div></div>
+    ${fi?`<div class="mc"><div class="ml">Funding/hr</div><div class="mv" style="color:${fi.col};font-size:14px">${_hl.funding>=0?'+':''}${fi.pct}%</div><div class="ms">${fi.sig.split('—')[0].trim()}</div></div>`:''}
+    ${pe>0?`<div class="mc"><div class="ml">Trade P&L${isHalf?' (½)':''}</div><div class="mv ${hlPnl>=0?'up':'dn'}">${hlPnl>=0?'+':'-'}${f2(Math.abs(hlPnl))}</div><div class="ms">Entry $${pe.toFixed(2)}</div></div>`:''}
+    <div class="mc"><div class="ml">Confirm</div><div class="mv ${a.confirm_score>=3?'up':a.confirm_score>=2?'neu':'dn'}">${a.confirm_score||0}/4</div><div class="ms">Setup factors</div></div>
+    <div class="mc"><div class="ml">Veto</div><div class="mv ${a.veto_fired?'dn':'up'}">${a.veto_fired?'FIRED':'CLEAR'}</div><div class="ms">${a.veto_fired?a.veto_reason?.split(' ').slice(0,3).join(' '):'Trade allowed'}</div></div>`;
+
+  // ── 4. LP RANGE ──
+  const modeC=a.range_mode==='volatile'?'volatile':'normal';
+  const widPct=a.current_width_pct?.toFixed(1)||((hi-lo)/px*100).toFixed(1);
+  const modeL=a.range_mode==='volatile'?`±${widPct}% VOLATILE`:`±${widPct}% NORMAL`;
+  const pin=cl(pct,2,98);
+  $('r-range').innerHTML=`<div class="range-box">
+    <div class="rh-top"><div class="rh-title">S/R ANCHORED RANGE</div><span class="rh-mode ${modeC}">${modeL}</span></div>
+    <div class="rh-nums">
+      <div class="rn"><div class="rn-lbl">Low</div><div class="rn-val">$${lo.toFixed(2)}</div><div class="rn-sub">Support</div></div>
+      <div class="rn mid"><div class="rn-lbl">Mid</div><div class="rn-val">$${mid.toFixed(2)}</div><div class="rn-sub">Width $${(hi-lo).toFixed(2)}</div></div>
+      <div class="rn"><div class="rn-lbl">High</div><div class="rn-val">$${hi.toFixed(2)}</div><div class="rn-sub">Resistance</div></div>
+    </div>
+    <div class="rb-track"><div class="rb-pin" style="left:${pin}%"></div></div>
+    <div class="rb-lbls"><span>$${lo.toFixed(2)}</span><span>$${px.toFixed(2)} (${pct.toFixed(0)}%)</span><span>$${hi.toFixed(2)}</span></div>
+    ${daysOut>0?`<div style="margin-top:8px;padding:7px 10px;background:${a.decision.includes('rebalance')?'var(--rl)':'var(--al)'};border-radius:7px;font-size:11px;color:${a.decision.includes('rebalance')?'var(--red)':'var(--amber)'}">LP has been out of range for <b>${daysOut} day${daysOut!==1?'s':''}</b>. ${a.decision.includes('rebalance')?'Rebalance required — see actions above.':'Continue waiting for stabilisation.'}</div>`:''}
+    <div class="rh-why">${(()=>{
+      const reg=a.regime||'';
+      if(reg==='uptrend')return'📈 <b>Uptrend detected</b> — LP is actively selling AVAX into rising price. Watch near-exit warning. Consider proactive range shift or temporary LP removal if breakout is sustained above $12+.';
+      if(reg==='downtrend')return'📉 <b>Downtrend detected</b> — LP is accumulating AVAX as price falls. Aligns with long-term hold thesis ✅. Hedge running provides protection.';
+      if(reg==='ranging')return'↔️ <b>Ranging market</b> — optimal conditions for LP ✅. Price oscillating within range generates maximum BLACK emissions with minimal IL.';
+      if(reg==='choppy')return'⚡ <b>Choppy market</b> — LP earning fees but range exits likely. 72h rule active for any rebalance decisions.';
+      return'LP earning BLACK emissions. Monitor range position nightly.';
+    })()}</div>
+  </div>`;
+
+  // ── 4b. LP NEAR-EXIT / RANGE ACTION ──
+  const lpActionWrap=$('r-lp-action-wrap');
+  const lpActionDiv=$('r-lp-action');
+  const lpActionLbl=$('r-lp-action-lbl');
+
+  // Check for 40% drop emergency
+  if(a.drop_40pct){
+    if(lpActionWrap)lpActionWrap.style.display='block';
+    if(lpActionLbl)lpActionLbl.textContent='Emergency — Remove LP';
+    if(lpActionDiv)lpActionDiv.innerHTML=`
+      <div style="background:var(--rl);border:2px solid var(--rb);border-radius:14px;padding:16px;margin-bottom:12px">
+        <div style="font-size:15px;font-weight:800;color:var(--red);margin-bottom:8px">⛔ AVAX DOWN 40%+ — REMOVE LP ENTIRELY</div>
+        <div style="font-size:12px;color:var(--ink2);line-height:1.7;margin-bottom:10px">Do NOT rebalance. Rebalancing here permanently sells AVAX at deep discount.</div>
+        <div style="background:var(--w);border-radius:9px;padding:12px;font-size:11px;line-height:2;color:var(--ink2)">
+          <b style="color:var(--red)">Steps tonight:</b><br>
+          1. Remove full LP position on Blackhole → receive AVAX + USDC back<br>
+          2. Keep crash hedge SHORT running on Hyperliquid<br>
+          3. Hold AVAX in wallet — do not sell<br>
+          4. Redeploy LP only after AVAX recovers 30%+ from tonight's price
+        </div>
+      </div>`;
+  }
+  // Check for near-exit shift recommendation
+  else if(a.lp_near_exit){
+    if(lpActionWrap)lpActionWrap.style.display='block';
+    if(lpActionDiv){
+      const exitDir=a.lp_exit_direction==='top'?'TOP ↑':'BOTTOM ↓';
+      const exitPct=a.lp_exit_direction==='top'?pct:(100-pct);
+      const shiftCls=a.lp_shift_recommended?'act-now':'wait';
+      const shiftIco=a.lp_shift_recommended?'⚡':'⏳';
+
+      if(a.lp_shift_recommended){
+        if(lpActionLbl)lpActionLbl.textContent='LP Near Exit — Shift Range Tonight';
+        const newLo=a.lp_new_range_low||0;
+        const newHi=a.lp_new_range_high||0;
+        const newMid=newLo>0?((newLo+newHi)/2).toFixed(2):'—';
+        const newWidth=newLo>0?((newHi-newLo)/px*100).toFixed(1):'—';
+        lpActionDiv.innerHTML=`
+          <div class="decision act-now" style="margin-bottom:12px">
+            <div class="dec-head">
+              <div class="dec-ico">⚡</div>
+              <div>
+                <div class="dec-title">SHIFT RANGE TONIGHT</div>
+                <div class="dec-sub">LP at ${exitPct.toFixed(0)}% toward ${exitDir} — shift now saves AVAX</div>
+              </div>
+            </div>
+            <div class="dec-body">
+              <div style="font-size:11px;color:var(--ink2);line-height:1.6;margin-bottom:10px">${a.lp_shift_reason}</div>
+              <div style="background:var(--w);border-radius:9px;border:1px solid var(--bd);padding:12px;margin-bottom:10px">
+                <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">New Range from S/R Analysis</div>
+                <div class="jrow"><span>New low</span><span style="color:var(--red);font-family:'DM Mono',monospace">$${newLo.toFixed(2)}</span></div>
+                <div class="jrow"><span>New high</span><span style="color:var(--green);font-family:'DM Mono',monospace">$${newHi.toFixed(2)}</span></div>
+                <div class="jrow"><span>Width</span><span style="font-family:'DM Mono',monospace">${newWidth}% of price</span></div>
+                <div class="jrow" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:4px"><span>Reason</span><span style="font-size:10px;color:var(--ink3)">${a.lp_new_range_reason||'Nearest S/R levels'}</span></div>
+              </div>
+              ${a.lp_shift_avax_receive>0||a.lp_shift_usdc_receive>0?`
+              <div style="background:var(--w);border-radius:9px;border:1px solid var(--bd);padding:12px;margin-bottom:10px">
+                <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Token Amounts</div>
+                <div class="jrow"><span>Remove → receive</span><span style="font-family:'DM Mono',monospace">${a.lp_shift_avax_receive.toFixed(1)} AVAX + $${a.lp_shift_usdc_receive.toFixed(0)} USDC</span></div>
+                <div class="jrow"><span>Need to deploy</span><span style="font-family:'DM Mono',monospace">${a.lp_shift_avax_need.toFixed(1)} AVAX + $${a.lp_shift_usdc_need.toFixed(0)} USDC</span></div>
+                ${a.lp_shift_swap?`<div class="jrow"><span>Swap needed</span><span style="font-size:10px;color:var(--blue)">${a.lp_shift_swap}</span></div>`:''}
+              </div>`:'' }
+              <div style="background:var(--bl);border-radius:8px;padding:10px;font-size:11px;line-height:1.9;color:var(--ink2)">
+                <div style="font-size:9px;font-weight:700;color:var(--blue);margin-bottom:4px">★ STEPS TONIGHT</div>
+                <div>1. Remove LP from Blackhole (receive both tokens)</div>
+                <div>2. ${a.lp_shift_swap||'Adjust token ratio as shown above'}</div>
+                <div>3. Redeploy: range <b>$${newLo.toFixed(2)} → $${newHi.toFixed(2)}</b></div>
+                <div>4. Stake new LP to earn BLACK</div>
+                <div>5. Reset crash hedge: SHORT $500 · TP $${(newLo*0.60).toFixed(2)} · SL $${(newHi*1.10).toFixed(2)}</div>
+              </div>
+              <div style="margin-top:8px;padding:7px 10px;background:var(--gl);border-radius:7px;font-size:10px;color:var(--green)">✅ No AVAX sold in this operation. LP shift preserves full AVAX position.</div>
+            </div>
+          </div>`;
+      } else {
+        // Monitor — do not shift yet
+        if(lpActionLbl)lpActionLbl.textContent='LP Near Exit — Monitoring';
+        lpActionDiv.innerHTML=`
+          <div class="decision wait" style="margin-bottom:12px">
+            <div class="dec-head">
+              <div class="dec-ico">⏳</div>
+              <div>
+                <div class="dec-title">HOLD RANGE — LIKELY REVERSAL</div>
+                <div class="dec-sub">LP at ${exitPct.toFixed(0)}% toward ${exitDir}</div>
+              </div>
+            </div>
+            <div class="dec-body">
+              <div style="font-size:11px;color:var(--ink2);line-height:1.6">${a.lp_shift_reason||'Momentum weak — high probability of price reversing back into range. No action needed tonight.'}</div>
+              <div style="margin-top:8px;padding:7px 10px;background:var(--al);border-radius:7px;font-size:10px;color:var(--amber)">⚠️ Check again tomorrow. If price continues toward exit, shift will be recommended.</div>
+            </div>
+          </div>`;
+      }
+    }
+  }
+  // Check for range width mismatch (regime-based)
+  else if(a.range_too_narrow){
+    if(lpActionWrap)lpActionWrap.style.display='block';
+    if(lpActionLbl)lpActionLbl.textContent='Range Width — Action Suggested';
+    const curW=a.current_width_pct?.toFixed(1)||'—';
+    const optW=a.optimal_width_pct?.toFixed(0)||'—';
+    const sugLo=(px*(1-a.optimal_width_pct/100/1.5)).toFixed(2);
+    const sugHi=(px*(1+a.optimal_width_pct/100)).toFixed(2);
+    if(lpActionDiv)lpActionDiv.innerHTML=`
+      <div class="decision wait" style="margin-bottom:12px">
+        <div class="dec-head">
+          <div class="dec-ico">⚠️</div>
+          <div>
+            <div class="dec-title">RANGE TOO NARROW FOR CONDITIONS</div>
+            <div class="dec-sub">${a.regime?.toUpperCase()} market needs wider range</div>
+          </div>
+        </div>
+        <div class="dec-body">
+          <div style="background:var(--w);border-radius:9px;border:1px solid var(--bd);padding:12px;margin-bottom:10px">
+            <div class="jrow"><span>Current range width</span><span style="color:var(--red)">±${curW}%</span></div>
+            <div class="jrow"><span>Recommended width</span><span style="color:var(--green)">±${optW}%</span></div>
+            <div class="jrow"><span>Suggested range</span><span style="font-family:'DM Mono',monospace">$${sugLo} → $${sugHi}</span></div>
+          </div>
+          <div style="font-size:11px;color:var(--ink2);line-height:1.6;margin-bottom:8px">In ${a.regime} conditions, your narrow range will exit frequently causing unnecessary rebalances and permanent AVAX loss. Widening reduces APY but improves net income after rebalance costs.</div>
+          <div style="font-size:10px;color:var(--amber);padding:7px 10px;background:var(--al);border-radius:7px">Consider widening range tonight. Not urgent — act when convenient.</div>
+        </div>
+      </div>`;
+  } else {
+    if(lpActionWrap)lpActionWrap.style.display='none';
+  }
+
+  // ── 5. TRADE SIGNAL ──
+  const td=a.signal||'wait',tc=a.confidence||50;
+  const cC=tc>=70?'hi':tc>=50?'med':'lo';
+  const cL=tc>=70?`${tc}% HIGH`:tc>=50?`${tc}% MED`:`${tc}% WAIT`;
+  const tCls=td==='long'?'long':td==='short'?'short':'wait';
+  const tDir=td==='long'?'▲ LONG':td==='short'?'▼ SHORT':'⏸ WAIT';
+  const entryType=a.entry_type||'limit';
+  const entrySize=a.entry_size||'strong';
+  // Stage 1 sizing: strong=$1,000 notional, mixed=$500 notional
+  const notional=entrySize==='strong'?1000:500;
+  const margin=notional/2;
+  const sz=(notional/px).toFixed(1);
+  // Save range for next session
+  if(a.range_low&&a.range_high){
+    sessionStorage.setItem('avax_lp_range',JSON.stringify({lo:a.range_low,hi:a.range_high}));
+  }
+  $('r-trade').innerHTML=`<div class="trade-box ${tCls}">
+    <div class="tb-head"><div class="tb-dir">${tDir}</div><div class="conf ${cC}">${cL}</div></div>
+    ${a.veto_fired?`<div style="background:var(--rl);border-radius:7px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:var(--red)"><b>⛔ VETO:</b> ${a.veto_reason}</div>`:''}
+    ${a.signal==='remove_lp'?`<div style="background:var(--rl);border:1.5px solid var(--rb);border-radius:9px;padding:12px;margin-bottom:10px;font-size:12px;color:var(--red)"><b>⛔ AVAX DOWN 40%+ FROM LP ENTRY</b><br>Do NOT rebalance. Remove LP entirely.<br>1. Remove full LP on Blackhole → hold AVAX in wallet<br>2. Keep crash hedge running<br>3. Redeploy LP after 30%+ price recovery<br><b>Rebalancing here permanently destroys gains.</b></div>`:''}
+    ${isHalf?`<div style="background:rgba(255,255,255,.5);border-radius:7px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:var(--amber)"><b>TP1 already hit.</b> Running remaining 50% toward TP2 at $${a.tp2?.toFixed(2)||'—'}. Monitor and close if signal weakens.</div>`:''}
+    ${td!=='wait'&&a.signal!=='remove_lp'?`<div class="tb-grid">
+      <div class="tb-cell"><div class="tb-lbl">Entry (${entryType.toUpperCase()})</div><div class="tb-val bk">$${(a.entry||px).toFixed(2)}</div></div>
+      <div class="tb-cell"><div class="tb-lbl">${entrySize==='strong'?'STRONG · $1,000':'MIXED · $500'}</div><div class="tb-val bk">${sz} AVAX · $${margin} margin</div></div>
+      <div class="tb-cell"><div class="tb-lbl">TP1 (50%)</div><div class="tb-val tp">$${a.tp1?.toFixed(2)||'—'}</div></div>
+      <div class="tb-cell"><div class="tb-lbl">TP2 (50%)</div><div class="tb-val tp">$${a.tp2?.toFixed(2)||'—'}</div></div>
+      <div class="tb-cell"><div class="tb-lbl">SL (1.2×ATR)</div><div class="tb-val sl">$${a.sl?.toFixed(2)||'—'}</div></div>
+      <div class="tb-cell"><div class="tb-lbl">R:R</div><div class="tb-val rr">${a.rr||'—'}:1</div></div>
+    </div>
+    ${entrySize==='mixed'?`<div style="background:var(--al);border-radius:7px;padding:7px 10px;margin-bottom:8px;font-size:11px;color:var(--amber)">⚠️ Mixed conditions — $500 notional ($250 margin). Add to $1,000 if price confirms direction within 4h.</div>`:''}
+    `:`${a.signal!=='remove_lp'?`<div style="background:var(--al);border-radius:12px;padding:14px;margin-bottom:8px">
+      <div style="font-size:13px;font-weight:800;color:var(--amber);margin-bottom:4px">⏸ NO TRADE TONIGHT</div>
+      <div style="font-size:11px;color:var(--ink2);line-height:1.6">${a.veto_fired?'<b>Veto:</b> '+a.veto_reason:'Signal conditions not met tonight.'}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:6px;line-height:1.5">${a.signal_why||'Watch for improved conditions tomorrow.'}</div>
+    </div>`:''}`}
+    ${td!=='wait'&&a.signal!=='remove_lp'?`<div class="tb-reason">${a.signal_why||''}</div>`:''}
+  </div>`;
+
+  // ── 5b. HEDGE LIQUIDATION WARNING ──
+  if(a.hedge_liquidation_risk){
+    const hedgeLiqPx=(hedgeEntry*1.9).toFixed(2);
+    const existing=$('r-trade');
+    if(existing){
+      const warn=document.createElement('div');
+      warn.style.cssText='background:var(--al);border:1.5px solid var(--ab);border-radius:10px;padding:10px 13px;margin-top:8px;font-size:11px;color:var(--amber);line-height:1.6';
+      warn.innerHTML=`⚠️ <b>Hedge liquidation risk:</b> ${a.hedge_liquidation_reason||'AVAX approaching hedge liquidation at ~$'+hedgeLiqPx}. When shifting LP range upward, consider closing crash hedge and opening fresh one at new range_high × 1.10 as SL.`;
+      existing.after(warn);
+    }
+  }
+
+  // ── 6. REBALANCE CALCULATOR ──
+  const rw=$('r-rebal-wrap'),rb=$('r-rebal');
+  if(a.rebal_direction&&a.rebal_direction!=='none'&&rw&&rb){
+    rw.style.display='block';
+    if(a.rebal_direction==='up'){
+      // Buying AVAX scenario
+      const tot=realLp;
+      const conf=a.confidence||50;
+      const pcts=[{p:35,l:'Conservative',s:'Worried about drop'},{p:50,l:'Standard',s:'Balanced entry'},{p:65,l:'Aggressive',s:'Confident trend'}];
+      const recP=conf>=70?65:conf>=50?50:35;
+      rb.innerHTML=`
+        <div class="reb-box">
+          <div class="reb-title">LP EXITED TOP — BUY AVAX</div>
+          <div style="font-size:11px;color:var(--ink2);margin-bottom:12px;line-height:1.5">AVAX ${a.rebal_reason||'has risen above your range'}. You hold ~100% USDC ($${tot.toFixed(0)}). Choose how much AVAX to buy based on confidence (${conf}% → <b>${recP===65?'Aggressive':recP===50?'Standard':'Conservative'}</b> recommended).</div>
+          <div class="reb-opts">
+            ${pcts.map(opt=>{const buy=(tot*opt.p/100)/px;const rem=tot-buy*px;return`
+              <div class="reb-opt${opt.p===recP?' rec':''}">
+                <div class="reb-opt-lbl">${opt.l}${opt.p===recP?' ★':''}</div>
+                <div class="reb-opt-val" style="color:var(--green)">+${buy.toFixed(1)} AVAX</div>
+                <div class="reb-opt-val" style="color:var(--ink2)">$${rem.toFixed(0)} USDC</div>
+                <div class="reb-opt-sub">${opt.p}% AVAX</div>
+              </div>`;}).join('')}
+          </div>
+          <div style="background:var(--bl);border-radius:8px;padding:10px;font-size:11px;line-height:1.8;color:var(--ink2)">
+            <div style="font-size:10px;font-weight:700;color:var(--blue);margin-bottom:6px">★ RECOMMENDED STEPS</div>
+            <div>1. Wait <b>4–12 hours</b> after range exit — confirm price is holding</div>
+            <div>2. Buy <b style="color:var(--green)">${((realLp*recP/100)/px).toFixed(1)} AVAX</b> at ~$${px.toFixed(2)}</div>
+            <div>3. New range from S/R analysis: <b>$${(a.rebal_new_low||lo).toFixed(2)} → $${(a.rebal_new_high||hi).toFixed(2)}</b></div>
+            <div>4. Reset crash hedge SHORT at $${px.toFixed(2)} · $500 · 1× · TP $${(px*0.60).toFixed(2)} · SL $${(px*1.10).toFixed(2)}</div>
+            <div>5. ✅ Trade signal below is valid tonight — run after completing LP steps</div>
+          </div>
+          <div style="margin-top:10px;font-size:10px;color:var(--green);padding:8px;background:var(--gl);border-radius:7px">✅ After rebalancing LP, proceed to trade signal below. Rebalance UP = bullish context = long trade likely valid.</div>
+          <div style="margin-top:6px;font-size:10px;color:var(--amber);padding:8px;background:var(--al);border-radius:7px">⚠️ Never use $500 reserve for upside rebalances. Reserve is for crash rebalances only.</div>
+        </div>`;
+    } else {
+      // Selling AVAX scenario (down move)
+      const avaxAmt=avax>0?avax:200;
+      const hedgeProfit=_hl&&_hl.px>0?Math.max(0,500*(hedgeEntry-_hl.px)/hedgeEntry):0;
+      const reserveUsdc=500;
+      const totalUsdcAvail=hedgeProfit+reserveUsdc;
+      const usdcNeeded=avaxAmt*px*0.40; // 60% AVAX / 40% USDC — asymmetric bullish bias
+      const shortfall=Math.max(0,usdcNeeded-totalUsdcAvail);
+      const avaxToSell=shortfall>0?shortfall/px:0;
+      const avaxKeep=avaxAmt-avaxToSell;
+      const newLo=a.rebal_new_low||(px*0.85);
+      const newHi=a.rebal_new_high||(px*1.08);
+      rb.innerHTML=`
+        <div class="reb-box">
+          <div class="reb-title">LP EXITED BOTTOM — ASYMMETRIC 60/40 REBALANCE</div>
+          <div style="font-size:11px;color:var(--ink2);margin-bottom:12px;line-height:1.5">${a.rebal_reason||'AVAX fell below your range low'}. You hold ~100% AVAX (${avaxAmt.toFixed(1)} AVAX). <b style="color:var(--red)">Do NOT rebalance while AVAX is still falling.</b> Only proceed when price is sideways for 24h+.</div>
+          <div style="background:var(--w);border-radius:10px;border:1px solid var(--bd);padding:12px;margin-bottom:12px">
+            <div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:1px">USDC Sources (use in this order)</div>
+            <div class="jrow"><span>1. Crash hedge profit</span><span style="color:var(--green)">~+$${hedgeProfit.toFixed(0)}</span></div>
+            <div class="jrow"><span>2. Reserve capital</span><span style="color:var(--green)">+$${reserveUsdc}</span></div>
+            <div class="jrow"><span>Total available USDC</span><span style="font-weight:700">$${totalUsdcAvail.toFixed(0)}</span></div>
+            <div class="jrow" style="padding-top:6px;margin-top:4px;border-top:1px solid var(--bd)"><span>USDC needed (40% — asymmetric bullish)</span><span>$${usdcNeeded.toFixed(0)}</span></div>
+            <div class="jrow"><span style="color:${avaxToSell>0?'var(--red)':'var(--green)'}">AVAX to sell (minimum)</span><span style="font-weight:700;color:${avaxToSell>0?'var(--red)':'var(--green)'}">${avaxToSell>0?avaxToSell.toFixed(1)+' AVAX':'None needed ✓'}</span></div>
+            <div class="jrow"><span>AVAX retained</span><span style="color:var(--green)">${avaxKeep.toFixed(1)} AVAX</span></div>
+          </div>
+          <div style="background:var(--al);border-radius:8px;padding:10px;font-size:11px;line-height:1.8;color:var(--ink2)">
+            <div style="font-size:10px;font-weight:700;color:var(--amber);margin-bottom:6px">★ REBALANCE STEPS (only when price stabilised)</div>
+            <div>1. Close crash hedge → collect ~$${hedgeProfit.toFixed(0)} profit</div>
+            <div>2. ${avaxToSell>0?`Sell <b style="color:var(--red)">${avaxToSell.toFixed(1)} AVAX</b> at $${px.toFixed(2)} to get USDC`:'No AVAX selling needed — hedge + reserve covers it ✓'}</div>
+            <div>3. Set <b>asymmetric range: $${newLo.toFixed(2)} → $${newHi.toFixed(2)}</b> (more room below)</div>
+            <div>4. Deposit ${avaxKeep.toFixed(1)} AVAX + $${totalUsdcAvail.toFixed(0)} USDC into Blackhole</div>
+            <div>5. Open new crash hedge SHORT at $${px.toFixed(2)} · $500 · 1× · TP $${(newLo*0.60).toFixed(2)} · SL $${(newHi*1.10).toFixed(2)}</div>
+            <div>6. Rebuild $500 reserve from LP fees over next 4–6 weeks</div>
+          </div>
+          <div style="margin-top:10px;font-size:10px;color:var(--red);padding:8px;background:var(--rl);border-radius:7px">⛔ Sell minimum AVAX only. Every AVAX sold at $${px.toFixed(2)} that recovers to $20 = $${(20-px).toFixed(2)} lost gain per AVAX.</div>
+        </div>`;
+    }
+  } else if(rw) rw.style.display='none';
+
+  // ── 7. TA TABLE ──
+  const macdC=a.macd?.includes('bull')?'bull':'bear';
+  const btcC=a.btc_trend==='bullish'?'bull':a.btc_trend==='bearish'?'bear':'neut';
+  const volC=a.vol_regime==='normal'?'bull':a.vol_regime==='high'?'neut':'bear';
+  const regC=a.regime==='uptrend'?'bull':a.regime==='downtrend'?'bear':'neut';
+  const vetoCls=a.veto_fired?'bear':'bull';
+  const confirmCls=a.confirm_score>=3?'bull':a.confirm_score>=2?'neut':'bear';
+  $('r-ta').innerHTML=`<table class="ta-tbl">
+    <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Volatility & Regime</td></tr>
+    <tr><td>ATR (daily)</td><td>$${a.atr?.toFixed(2)||'0.51'} (${a.atr_pct?.toFixed(1)||'—'}% of price)</td></tr>
+    <tr><td>Vol regime</td><td><span class="tag ${volC}">${(a.vol_regime||'—').toUpperCase()}</span></td></tr>
+    <tr><td>Market regime</td><td><span class="tag ${regC}">${(a.regime||'—').toUpperCase()}</span></td></tr>
+    <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Macro</td></tr>
+    <tr><td>BTC trend</td><td><span class="tag ${btcC}">${(a.btc_trend||'—').toUpperCase()} ${a.btc_change?'('+a.btc_change+'%)':''}</span></td></tr>
+    <tr><td>Funding rate</td><td style="color:${fi?.col}">${_hl?((_hl.funding>=0?'+':'')+fi?.pct+'%/hr'):'—'}</td></tr>
+    <tr><td>OI change</td><td style="font-size:10px">${a.oi_change||oiChange}</td></tr>
+    <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Setup Confirmation</td></tr>
+    <tr><td>RSI (14)</td><td><span class="tag ${rsiC==='up'?'bull':rsiC==='dn'?'bear':'neut'}">${a.rsi} ${a.rsi>60?'HIGH':a.rsi<40?'LOW':'NEUTRAL'}</span></td></tr>
+    <tr><td>MACD</td><td><span class="tag ${macdC}">${(a.macd||'—').toUpperCase()}</span></td></tr>
+    <tr><td>EMA 20</td><td>$${a.ema20?.toFixed(2)||'—'}</td></tr>
+    <tr><td>EMA 200</td><td>$${a.ema200?.toFixed(2)||'—'}</td></tr>
+    <tr><td>Confirm score</td><td><span class="tag ${confirmCls}">${a.confirm_score||0}/4 factors</span></td></tr>
+    <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Decision</td></tr>
+    <tr><td>Veto fired?</td><td><span class="tag ${vetoCls}">${a.veto_fired?'YES — '+a.veto_reason:'NO — clear'}</span></td></tr>
+    <tr><td>Session</td><td style="font-size:10px">${a.session||session}</td></tr>
+    <tr><td>AVAX falling?</td><td><span class="tag ${a.price_still_falling?'bear':'bull'}">${a.price_still_falling?'YES':'NO'}</span></td></tr>
+  </table>`;
+
+  // ── 8. LP SNAPSHOT ──
+  const lpValueNow=avax>0&&hlPx>0?(avax*hlPx+usdc):realLp;
+  const avaxPct=avax>0&&lpValueNow>0?Math.round((avax*hlPx/lpValueNow)*100):50;
+  const usdcPct=100-avaxPct;
+  // APY viability check — user enters current APY in BLACK emissions
+  const currentApy=pv($('i_apy_display')?.value)||apy||35;
+  const apyOk=currentApy>=25;
+  const apyWarn=currentApy>0&&currentApy<25;
+  $('r-fees').innerHTML=`
+    <div class="jrow" style="padding:9px 14px"><span>LP value tonight</span><span style="color:var(--blue);font-weight:600">${f2(lpValueNow)}</span></div>
+    <div class="jrow" style="padding:9px 14px"><span>Composition</span><span>${avaxPct}% AVAX · ${usdcPct}% USDC</span></div>
+    <div class="jrow" style="padding:9px 14px"><span>BLACK sold tonight</span><span style="color:var(--green);font-weight:600">${blackUsdc>0?'+'+f2(blackUsdc):'—  enter above'}</span></div>
+    <div class="jrow" style="padding:9px 14px"><span>Income source</span><span style="color:var(--green)">BLACK emissions only</span></div>
+    <div class="jrow" style="padding:9px 14px"><span>Trading fees while staked</span><span style="color:var(--amber)">Go to veNFT voters ✗</span></div>
+    <div class="jrow" style="padding:9px 14px"><span>Crash hedge TP</span><span style="color:var(--green)">$${(lo*0.60).toFixed(2)}</span></div>
+    <div class="jrow" style="padding:9px 14px"><span>Crash hedge SL</span><span style="color:var(--amber)">$${(hi*1.10).toFixed(2)}</span></div>
+    ${apyWarn?`<div style="margin:8px 14px 6px;background:var(--rl);border:1px solid var(--rb);border-radius:8px;padding:9px 11px;font-size:11px;color:var(--red);line-height:1.6">
+      🔴 <b>APY too low for LP</b><br>
+      Current BLACK APY appears below 25%. LP may not justify impermanent loss.<br>
+      <b>Consider:</b> removing LP and holding AVAX directly until APY recovers above 30%.
+    </div>`:''}
+    ${apyOk&&currentApy>=30?`<div style="margin:8px 14px 6px;background:var(--gl);border:1px solid var(--gb);border-radius:8px;padding:7px 11px;font-size:10px;color:var(--green)">✅ APY viable — BLACK yield justifies IL cost at current range</div>`:''}
+  `;
+
+  // ── 9. SOURCES ──
+  if(a.sources?.length){
+    $('r-src').innerHTML=`<div style="display:flex;flex-wrap:wrap;gap:5px;padding:0 0 8px">${a.sources.map(s=>`<span style="font-size:9px;padding:2px 7px;border-radius:4px;background:var(--off2);border:1px solid var(--bd);color:var(--ink4);font-family:'DM Mono',monospace">${s}</span>`).join('')}</div>`;
+  }
+
+  // ── 10. TIMESTAMP ──
   const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
   const p=v=>String(v).padStart(2,'0');
   $('r-ts').textContent=`Analysis ${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())} SGT`;
-
-  // Log form
-  $('log-slbl').style.display='block'; $('log-form').style.display='block';
-  const nlo=$('lnlo'),nhi=$('lnhi');
-  if(nlo) nlo.value=lo.toFixed(2);
-  if(nhi) nhi.value=hi.toFixed(2);
-  if(realLp>100&&$('lb')) $('lb').value=realLp.toFixed(0);
-
-  setTimeout(()=>$('results').scrollIntoView({behavior:'smooth',block:'start'}),120);
+  // Show confirm trade button when signal is active
+  const confirmWrap=$('r-confirm-wrap');
+  if(confirmWrap){
+    confirmWrap.style.display=(a.signal==='long'||a.signal==='short')?'block':'none';
+  }
+  // CHANGE 1: Save pending trade context for learning
+  if(a.signal==='long'||a.signal==='short'){
+    const pendingCtx={
+      signal_date:new Date().toISOString(),
+      direction:a.signal,
+      entry_size:a.entry_size||'strong',
+      confidence:a.confidence||0,
+      entry:a.entry||px,
+      tp1:a.tp1||0,
+      tp2:a.tp2||0,
+      sl:a.sl||0,
+      regime:a.regime||'',
+      vol_regime:a.vol_regime||'',
+      rsi:a.rsi||0,
+      macd:a.macd||'',
+      btc_trend:a.btc_trend||'',
+      oi_change:a.oi_change||'',
+      atr_pct:a.atr_pct||0,
+      lp_zone:a.lp_zone||'',
+      lp_pct:a.lp_pct||0,
+      days_out:daysOut
+    };
+    try{sessionStorage.setItem('avax_pending_trade',JSON.stringify(pendingCtx));}catch(e){}
+  }
+  setTimeout(()=>$('results').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
 // ── JOURNAL ──
 const loadJ=()=>{try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return[];}};
 const saveJ=d=>{try{localStorage.setItem(SK,JSON.stringify(d));}catch{}};
-
 function logEvent(){
-  const b=pv($('lb').value),a=pv($('la').value),hl=pv($('lh').value),fee=pv($('lf').value),tr=pv($('lt').value);
-  const lo=pv($('lnlo')?.value||0),hi=pv($('lnhi')?.value||0);
-  const evtType=$('levt').value;
-  const j=loadJ(), prev=j.length?j[0].cum:0;
-  const net=hl+fee+tr+(b>0&&a>0?a-b:0);
+  const avax=pv($('i_avax')?.value)||0;
+  const usdc=pv($('i_usdc')?.value)||0;
+  const px=_hl?.px||0;
+  const lpVal=avax>0&&usdc>0&&px>0?(avax*px+usdc):0;
+  const blackSold=pv($('i_black')?.value)||0;
+  const tradePnl=pv($('i_tpnl')?.value)||0;
+  const evtMap={nothing:'routine',tp1:'trade_tp1',tp2:'trade_tp2',sl:'trade_sl',new:'trade_new'};
+  const evtType=evtMap[_tradeEvt]||'routine';
+  const net=+(blackSold+tradePnl).toFixed(2);
+  const j=loadJ();
+  const prev=j.length?j[0].cum:0;
   const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
   const p=v=>String(v).padStart(2,'0');
+
+  // CHANGE 2: Enrich trade close entries with pending conditions
+  const isTradeClose=['trade_tp1','trade_tp2','trade_sl'].includes(evtType);
+  let tradeCtx=null;
+  if(isTradeClose){
+    try{
+      const raw=sessionStorage.getItem('avax_pending_trade');
+      if(raw){
+        const ctx=JSON.parse(raw);
+        const openedAt=new Date(ctx.signal_date);
+        const hoursHeld=+((now-openedAt)/3600000).toFixed(1);
+        tradeCtx={...ctx,result:_tradeEvt,hours_held:hoursHeld};
+        sessionStorage.removeItem('avax_pending_trade');
+      }
+    }catch(e){}
+  }
+
   const entry={
     date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
-    lpBefore:b,lpAfter:a,hlPnl:hl,fees:fee,tradePnl:tr,
-    net:+net.toFixed(2),rangeLow:lo,rangeHigh:hi,cum:+(prev+net).toFixed(2),evtType
+    lpVal:+lpVal.toFixed(0),
+    avaxPx:+px.toFixed(2),
+    blackSold:+blackSold.toFixed(2),
+    tradePnl:+tradePnl.toFixed(2),
+    net,cum:+(prev+net).toFixed(2),evtType,
+    ...(tradeCtx?{trade:tradeCtx}:{})
   };
-  j.unshift(entry); saveJ(j);
-  const gu=localStorage.getItem(GK); if(gu) syncOne(entry,gu);
-  toast('Saved','ok');
-  ['lb','la','lh','lf','lt'].forEach(id=>{const e=$(id);if(e)e.value='';});
+  j.unshift(entry);saveJ(j);
+  const gu=localStorage.getItem(GK);if(gu)syncOne(entry,gu);
+  toast('✓ Saved to Journal','ok');
+  if($('i_tpnl'))$('i_tpnl').value='0';
+  setTrade('nothing',document.querySelector('#trade-btns .tbtn'));
 }
-
+function confirmTrade(placed){
+  if(!placed){
+    // User chose no trade — just record as routine
+    if($('i_tpnl'))$('i_tpnl').value='0';
+    setTrade('nothing',document.querySelector('#trade-btns .tbtn'));
+    logEvent();
+    toast('Recorded: no trade tonight','ok');
+    return;
+  }
+  // Record that a trade was placed
+  const avax=pv($('i_avax')?.value)||0;
+  const usdc=pv($('i_usdc')?.value)||0;
+  const px=_hl?.px||0;
+  const lpVal=avax>0&&usdc>0&&px>0?(avax*px+usdc):0;
+  const blackSold=pv($('i_black')?.value)||0;
+  const j=loadJ();
+  const prev=j.length?j[0].cum:0;
+  const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
+  const p=v=>String(v).padStart(2,'0');
+  const dir=_dir||'none';
+  const notional=dir!=='none'?1000:0;
+  const entry={
+    date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
+    lpVal:+lpVal.toFixed(0),
+    avaxPx:+px.toFixed(2),
+    blackSold:+blackSold.toFixed(2),
+    tradePnl:0,
+    net:+blackSold.toFixed(2),
+    cum:+(prev+blackSold).toFixed(2),
+    evtType:'trade_new',
+    note:`Trade placed: ${dir.toUpperCase()} $${notional} notional`
+  };
+  j.unshift(entry);saveJ(j);
+  const gu=localStorage.getItem(GK);if(gu)syncOne(entry,gu);
+  toast('✅ Trade placement recorded','ok');
+  const cw=$('r-confirm-wrap');if(cw)cw.style.display='none';
+}
 function renderJ(){
   const d=loadJ();
-  let tf=0,th=0,tt=0,tn=0,wins=0,losses=0;
-  d.forEach(e=>{tf+=e.fees||0;th+=e.hlPnl||0;tt+=e.tradePnl||0;tn+=e.net||0;
-    if(e.tradePnl>0)wins++;if(e.tradePnl<0)losses++;});
-  $('j-fee').textContent=f2(tf);
-  const jt=$('j-trade'); jt.textContent=fs(tt); jt.className='kpi-v '+(tt>=0?'up':'dn');
-  const jh=$('j-hedge'); jh.textContent=fs(th); jh.className='kpi-v '+(th>=0?'up':'dn');
-  const jn=$('j-net'); jn.textContent=fs(tn); jn.className='kpi-v '+(tn>=0?'up':'dn');
+  let tBlack=0,tTrade=0,tNet=0,wins=0,losses=0,lastLp=0;
+  d.forEach(e=>{
+    tBlack+=e.blackSold||0;
+    tTrade+=e.tradePnl||0;
+    tNet+=e.net||0;
+    if(e.tradePnl>0)wins++;
+    if(e.tradePnl<0)losses++;
+    if(!lastLp&&e.lpVal)lastLp=e.lpVal;
+  });
+  $('j-fee').textContent=f2(tBlack);
+  const jt=$('j-trade');jt.textContent=fs(tTrade);jt.className='kv '+(tTrade>=0?'up':'dn');
+  const jn=$('j-net');jn.textContent=fs(tNet);jn.className='kv '+(tNet>=0?'up':'dn');
+  const jlp=$('j-lp');if(jlp){jlp.textContent=lastLp>0?f2(lastLp):'—';}
   $('j-cnt').textContent=d.length;
   const tot=wins+losses;
-  const jw=$('j-wr'); jw.textContent=tot>0?Math.round(wins/tot*100)+'%':'—';
-  jw.className='kpi-v '+(tot>0?(wins/tot>=0.5?'up':'dn'):'');
+  const jw=$('j-wr');jw.textContent=tot>0?Math.round(wins/tot*100)+'%':'—';
+  jw.className='kv '+(tot>0?(wins/tot>=0.5?'up':'dn'):'');
+
+  // Render trade performance card
+  renderPerf(d);
+  // Render condition stats panel
+  renderStats(d);
+
   if(d.length>=2){
     const lbs=d.map(e=>e.date.slice(5,10)).reverse();
-    drawC('c-lp','ce-lp',lbs,d.map(e=>e.lpAfter||0).reverse(),'#2563eb','rgba(37,99,235,.08)');
+    drawC('c-lp','ce-lp',lbs,d.map(e=>e.lpVal||0).reverse(),'#2563eb','rgba(37,99,235,.08)');
     let run=0;const cv=d.slice().reverse().map(e=>{run+=e.net;return+run.toFixed(2);});
     drawC('c-pnl','ce-pnl',lbs,cv,'#16a34a','rgba(22,163,74,.08)');
   }
   const el=$('j-ents');
-  if(!d.length){el.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No events yet.</div></div>';return;}
+  if(!d.length){el.innerHTML='<div class="empty"><div class="empty-ico">📋</div><div class="empty-txt">No events yet.<br>After tonight\'s analysis, tap Save to record.</div></div>';return;}
   el.innerHTML=d.map(e=>`<div class="je">
-    <div class="jeh"><span class="jed">${e.date}</span><div style="display:flex;gap:4px"><span class="bdg ${e.net>=0?'up':'dn'}">${e.net>=0?'+':''}$${Math.abs(e.net).toFixed(0)}</span><span class="bdg bl">${(e.evtType||'').toUpperCase()}</span></div></div>
-    <div class="jbody">
-      <div class="jrow"><span>Range</span><span style="color:var(--blue)">$${e.rangeLow}–$${e.rangeHigh}</span></div>
-      ${e.lpBefore?`<div class="jrow"><span>LP Before→After</span><span>${f2(e.lpBefore)}→<b style="color:${e.lpAfter>=e.lpBefore?'var(--green)':'var(--red)'}">${f2(e.lpAfter)}</b></span></div>`:''}
-      <div class="jrow"><span>Hedge P&L</span><span style="color:${e.hlPnl>=0?'var(--green)':'var(--red)'}">${fs(e.hlPnl)}</span></div>
-      <div class="jrow"><span>Trade P&L</span><span style="color:${e.tradePnl>=0?'var(--green)':'var(--red)'}">${fs(e.tradePnl)}</span></div>
-      <div class="jrow"><span>Fees</span><span style="color:var(--green)">+${f2(e.fees)}</span></div>
-      <div class="jrow"><span>Net</span><span style="color:${e.net>=0?'var(--green)':'var(--red)'}"><b>${fs(e.net)}</b></span></div>
-      <div class="jrow"><span>Cumulative</span><span style="color:${e.cum>=0?'var(--green)':'var(--red)'}"><b>${fs(e.cum)}</b></span></div>
+    <div class="jeh">
+      <span class="jed">${e.date}</span>
+      <div style="display:flex;gap:4px">
+        <span class="bdg ${e.net>=0?'up':'dn'}">${e.net>=0?'+':''}$${Math.abs(e.net).toFixed(0)}</span>
+        <span class="bdg bl">${(e.evtType||'').replace('_',' ').toUpperCase()}</span>
+      </div>
     </div>
-  </div>`).join('');
+    <div class="jbody">
+      ${e.lpVal?`<div class="jrow"><span>LP value</span><span style="color:var(--blue)">${f2(e.lpVal)}</span></div>`:''}
+      ${e.avaxPx?`<div class="jrow"><span>AVAX price</span><span>$${e.avaxPx}</span></div>`:''}
+      <div class="jrow"><span>BLACK sold</span><span style="color:var(--green)">+${f2(e.blackSold||0)}</span></div>
+      <div class="jrow"><span>Trade P&L</span><span style="color:${(e.tradePnl||0)>=0?'var(--green)':'var(--red)'}">${fs(e.tradePnl||0)}</span></div>
+      <div class="jrow"><span>Net tonight</span><span style="color:${e.net>=0?'var(--green)':'var(--red)'}"><b>${fs(e.net)}</b></span></div>
+      <div class="jrow"><span>Cumulative</span><span style="color:${e.cum>=0?'var(--green)':'var(--red)'}"><b>${fs(e.cum)}</b></span></div>
+      ${e.trade?`<div style="margin-top:6px;padding:7px 10px;background:var(--off);border-radius:7px;font-size:10px;color:var(--ink3);line-height:1.8">
+        <span style="font-weight:700;color:var(--ink2)">${(e.trade.direction||'').toUpperCase()} · ${(e.trade.entry_size||'').toUpperCase()} · ${e.trade.confidence||0}% conf</span><br>
+        Entry $${e.trade.entry?.toFixed(2)||'—'} · TP1 $${e.trade.tp1?.toFixed(2)||'—'} · SL $${e.trade.sl?.toFixed(2)||'—'}<br>
+        ${e.trade.regime?`Regime: ${e.trade.regime} · `:''}RSI ${e.trade.rsi||'—'} · MACD ${e.trade.macd||'—'} · BTC ${e.trade.btc_trend||'—'}<br>
+        LP ${e.trade.lp_zone||'—'} half (${e.trade.lp_pct||0}%) · ${e.trade.hours_held||0}h held
+      </div>`:''}
+    </div></div>`).join('');
+}
+// ── DATA ACCURACY TEST ──
+async function runDataTest(){
+  const key=localStorage.getItem(KK)||'';
+  if(!key.startsWith('sk-')){toast('Add API key in Settings first','err');return;}
+
+  const btn=$('tbtn'),btxt=$('tbtn-txt');
+  btn.classList.add('running');
+  btxt.textContent='Testing…';
+
+  // Refresh HL data
+  _hl=await fetchHL();
+  const hlPx=_hl?.px||0;
+  const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%':null;
+  const hlOI=_hl?(_hl.oi/1000).toFixed(0)+'K AVAX':null;
+
+  // Read inputs
+  const avax=pv($('i_avax')?.value)||0;
+  const usdc=pv($('i_usdc')?.value)||0;
+  const daysOut=pv($('i_daysout')?.value)||0;
+  const hedgeEntry=pv($('i_hedge_entry')?.value)||9.71;
+  const apy=pv($('i_apy_display')?.value)||35;
+  const storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
+  const lo=storedRange.lo||9.25, hi=storedRange.hi||10.50;
+  const lpVal=avax>0&&usdc>0&&hlPx>0?(avax*hlPx+usdc):0;
+  const lp_pct=lpVal>0?((hlPx-lo)/(hi-lo)*100).toFixed(0):50;
+
+  // LP ratio sanity
+  const expectedAvaxPct=lpVal>0?Math.round(avax*hlPx/lpVal*100):50;
+  const expectedUsdcPct=100-expectedAvaxPct;
+  const lpRatioOk=avax>0&&usdc>0&&hlPx>0;
+
+  // Hedge checks
+  const hedgeLiq=(hedgeEntry*1.9).toFixed(2);
+  const hedgeLiqSafe=hlPx>0&&hlPx<hedgeEntry*1.7;
+  const hedgeProfit=hlPx>0?Math.max(0,500*(hedgeEntry-hlPx)/hedgeEntry).toFixed(0):0;
+
+  const testSys=`You are a data accuracy auditor for a crypto trading system. Run exactly 2 web searches to verify data quality. Return only valid JSON.
+
+LIVE DATA TO VERIFY (fetched from Hyperliquid API seconds ago):
+- AVAX price: ${hlPx>0?'$'+hlPx.toFixed(2):'unavailable'}
+- Funding rate: ${hlFund||'unavailable'}
+- Open interest: ${hlOI||'unavailable'}
+
+USER INPUTS TO SANITY CHECK:
+- AVAX in LP: ${avax}
+- USDC in LP: $${usdc}
+- LP range: $${lo.toFixed(2)} to $${hi.toFixed(2)}
+- Pool APY: ${apy}%
+- Days out of range: ${daysOut}
+- Hedge entry: $${hedgeEntry}
+
+STEP 1: Search "AVAX price live current USD"
+  Get price from 2-3 sources (CoinGecko, CoinMarketCap, exchange)
+  Compare each vs HL API price $${hlPx.toFixed(2)}
+
+STEP 2: Search "AVAX RSI MACD EMA20 EMA200 ATR technical analysis today"
+  Get current RSI, MACD direction, EMA20, EMA200, ATR
+  Note how old the data is (hours)
+  Check if values are internally consistent:
+    RSI>60 + MACD bullish + price above EMA20 = consistent
+    RSI<40 + MACD bullish = inconsistent
+    ATR should be $0.30-$1.50 for AVAX currently
+
+Return this exact JSON:
+{
+  "price_hl": ${hlPx>0?hlPx.toFixed(2):0},
+  "price_source1": 9.71,
+  "price_source1_name": "CoinGecko",
+  "price_source2": 9.73,
+  "price_source2_name": "CoinMarketCap",
+  "price_max_gap_pct": 0.21,
+  "price_confidence": "high",
+  "price_verdict": "All sources within 0.3%. Data reliable.",
+  "rsi": 57,
+  "rsi_sources": 2,
+  "rsi_age_hours": 1.5,
+  "macd": "bullish",
+  "macd_consistent_with_rsi": true,
+  "ema20": 9.25,
+  "ema200": 16.91,
+  "ema_price_consistent": true,
+  "atr": 0.51,
+  "atr_plausible": true,
+  "ta_confidence": "medium",
+  "ta_verdict": "RSI and MACD agree. EMA20 data 2h old — may have shifted slightly.",
+  "btc_trend": "neutral",
+  "btc_confidence": "high",
+  "overall_confidence": "medium",
+  "overall_verdict": "Price data highly reliable. TA data moderate — RSI/EMA may be 1-3h old. Safe to run full analysis.",
+  "recommendation": "proceed",
+  "data_age_hours": 2,
+  "warnings": []
 }
 
-function drawC(cid,eid,labels,data,stroke,fill){
+confidence values: "high" / "medium" / "low"
+recommendation: "proceed" / "proceed_with_caution" / "re-run_later"`;
+
+  const panel=$('test-panel'),result=$('test-result');
+  if(panel)panel.style.display='block';
+  if(result)result.innerHTML=`<div style="padding:20px;text-align:center"><div style="font-size:24px;margin-bottom:8px;animation:bob 1.5s ease-in-out infinite">🔍</div><div style="font-size:12px;color:var(--ink4)">Running data accuracy test…</div></div>`;
+  if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:800,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        system:testSys,
+        messages:[{role:'user',content:'Run data accuracy test now. Return only the JSON.'}]
+      })
+    });
+    if(!res.ok)throw new Error('API error '+res.status);
+    const data=await res.json();
+    let raw='';
+    for(const b of(data.content||[])){if(b.type==='text')raw+=b.text;}
+    const s=raw.indexOf('{'),e2=raw.lastIndexOf('}');
+    if(s<0||e2<=s)throw new Error('No JSON');
+    const t=JSON.parse(raw.slice(s,e2+1));
+
+    // Render results
+    const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
+    const p2=v=>String(v).padStart(2,'0');
+    const timeStr=`${p2(sgt.getUTCHours())}:${p2(sgt.getUTCMinutes())} SGT`;
+    const timeEl=$('test-time');if(timeEl)timeEl.textContent=`Tested ${timeStr}`;
+
+    const confBadge=(c)=>{
+      const cls=c==='high'?'hi':c==='medium'?'med':'lo';
+      const lbl=c==='high'?'HIGH':c==='medium'?'MED':'LOW';
+      return `<span class="tscore ${cls}">${lbl}</span>`;
+    };
+    const tick=(ok)=>ok?'<span style="color:var(--green)">✅</span>':'<span style="color:var(--red)">⚠️</span>';
+
+    // Price gap
+    const gapPct=t.price_max_gap_pct||0;
+    const gapOk=gapPct<1.0;
+    const gapWarn=gapPct>=1.0&&gapPct<2.0;
+    const gapBad=gapPct>=2.0;
+    const gapCol=gapBad?'var(--red)':gapWarn?'var(--amber)':'var(--green)';
+
+    // Overall verdict style
+    const ov=t.overall_confidence||'medium';
+    const ovCls=ov==='high'?'ok':ov==='medium'?'warn':'err';
+    const recIco=t.recommendation==='proceed'?'✅':t.recommendation==='proceed_with_caution'?'⚠️':'🔴';
+
+    result.innerHTML=`
+      <!-- OVERALL VERDICT -->
+      <div class="tverdict ${ovCls}">
+        <b>${recIco} ${t.recommendation==='proceed'?'SAFE TO ANALYSE':t.recommendation==='proceed_with_caution'?'PROCEED WITH AWARENESS':'WAIT — DATA ISSUES'}</b><br>
+        ${t.overall_verdict||''}
+      </div>
+
+      <!-- PRICE FEEDS -->
+      <div class="tsec">Price Feeds</div>
+      <div class="trow"><span>Hyperliquid API</span><span class="tval">$${(t.price_hl||hlPx).toFixed(2)} ${tick(true)}</span></div>
+      ${t.price_source1?`<div class="trow"><span>${t.price_source1_name||'Source 1'}</span><span class="tval">$${t.price_source1.toFixed(2)} ${tick(Math.abs(t.price_source1-hlPx)/hlPx*100<1)}</span></div>`:''}
+      ${t.price_source2?`<div class="trow"><span>${t.price_source2_name||'Source 2'}</span><span class="tval">$${t.price_source2.toFixed(2)} ${tick(Math.abs(t.price_source2-hlPx)/hlPx*100<1)}</span></div>`:''}
+      <div class="trow"><span>Max price gap</span><span class="tval" style="color:${gapCol}">${gapPct.toFixed(2)}% ${gapBad?'⚠️':''}</span></div>
+      <div class="trow"><span>Price confidence</span><span class="tval">${confBadge(t.price_confidence||'high')}</span></div>
+
+      <!-- TECHNICAL INDICATORS -->
+      <div class="tsec">Technical Indicators</div>
+      <div class="trow"><span>RSI (14)</span><span class="tval">${t.rsi||'—'} · ${t.rsi_sources||1} source${(t.rsi_sources||1)>1?'s':''} · ${t.rsi_age_hours||'?'}h old</span></div>
+      <div class="trow"><span>MACD</span><span class="tval">${(t.macd||'—').toUpperCase()} ${tick(t.macd_consistent_with_rsi!==false)}</span></div>
+      <div class="trow"><span>EMA 20</span><span class="tval">$${t.ema20?.toFixed(2)||'—'} ${tick(t.ema_price_consistent!==false)}</span></div>
+      <div class="trow"><span>EMA 200</span><span class="tval">$${t.ema200?.toFixed(2)||'—'}</span></div>
+      <div class="trow"><span>ATR (daily)</span><span class="tval">$${t.atr?.toFixed(2)||'—'} ${tick(t.atr_plausible!==false)}</span></div>
+      <div class="trow"><span>TA data age</span><span class="tval" style="color:${(t.data_age_hours||0)>4?'var(--amber)':'var(--green)'}">${t.data_age_hours||'?'}h old</span></div>
+      <div class="trow"><span>TA confidence</span><span class="tval">${confBadge(t.ta_confidence||'medium')}</span></div>
+
+      <!-- LIVE FEEDS -->
+      <div class="tsec">Live Market Data</div>
+      <div class="trow"><span>Funding rate</span><span class="tval">${hlFund||'—'}/hr ${tick(!!hlFund)}</span></div>
+      <div class="trow"><span>Open interest</span><span class="tval">${hlOI||'—'} ${tick(!!hlOI)}</span></div>
+      <div class="trow"><span>BTC trend</span><span class="tval">${(t.btc_trend||'—').toUpperCase()}</span></div>
+
+      <!-- YOUR LP INPUTS -->
+      <div class="tsec">Your LP Inputs</div>
+      ${lpRatioOk?`
+      <div class="trow"><span>LP value</span><span class="tval" style="color:var(--blue)">$${lpVal.toFixed(0)}</span></div>
+      <div class="trow"><span>Composition</span><span class="tval">${expectedAvaxPct}% AVAX · ${expectedUsdcPct}% USDC</span></div>
+      <div class="trow"><span>Range position</span><span class="tval">${lp_pct}% through $${lo.toFixed(2)}→$${hi.toFixed(2)}</span></div>
+      <div class="trow"><span>Pool APY</span><span class="tval" style="color:${apy>=30?'var(--green)':apy>=25?'var(--amber)':'var(--red)'}">${apy}% ${apy>=30?'✅':apy>=25?'⚠️':'🔴'}</span></div>
+      `:`<div class="trow"><span>LP inputs</span><span class="tval" style="color:var(--amber)">Enter AVAX + USDC above</span></div>`}
+
+      <!-- HEDGE CHECK -->
+      <div class="tsec">Crash Hedge</div>
+      <div class="trow"><span>Entry price</span><span class="tval">$${hedgeEntry.toFixed(2)}</span></div>
+      <div class="trow"><span>Liquidation at</span><span class="tval" style="color:${hedgeLiqSafe?'var(--green)':'var(--red)'}">~$${hedgeLiq} ${hedgeLiqSafe?'✅ safe':'⚠️ close'}</span></div>
+      <div class="trow"><span>Unrealised profit</span><span class="tval" style="color:var(--green)">+$${hedgeProfit}</span></div>
+
+      ${t.warnings&&t.warnings.length?`<div class="tsec">Warnings</div>${t.warnings.map(w=>`<div class="trow"><span style="color:var(--amber)">⚠️ ${w}</span></div>`).join('')}`:''}
+    `;
+  }catch(err){
+    if(result)result.innerHTML=`<div style="padding:14px;font-size:11px;color:var(--red)">Test failed: ${err.message}. Check API key in Settings.</div>`;
+  }
+
+  btn.classList.remove('running');
+  btxt.textContent='Test Data';
+}
+
+function renderStats(d){
+  const wrap=$('j-stats-wrap'),card=$('j-stats');
+  if(!wrap||!card)return;
+
+  // Only trades with full condition context
+  const trades=d.filter(e=>e.trade&&['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType));
+  const n=trades.length;
+
+  if(n<5){
+    wrap.style.display='none';
+    return;
+  }
+  wrap.style.display='block';
+
+  // Helper: win rate for a subset
+  const wr=(arr)=>{
+    if(!arr.length)return null;
+    const wins=arr.filter(e=>e.tradePnl>0).length;
+    return {wins,total:arr.length,pct:Math.round(wins/arr.length*100)};
+  };
+
+  // Group by condition
+  const groups={
+    'Uptrend':  trades.filter(e=>e.trade.regime==='uptrend'),
+    'Downtrend':trades.filter(e=>e.trade.regime==='downtrend'),
+    'Ranging':  trades.filter(e=>e.trade.regime==='ranging'),
+    'Choppy':   trades.filter(e=>e.trade.regime==='choppy'),
+    'LP Upper half': trades.filter(e=>e.trade.lp_pct>50),
+    'LP Lower half': trades.filter(e=>e.trade.lp_pct<=50),
+    'RSI 55-70':trades.filter(e=>e.trade.rsi>=55&&e.trade.rsi<=70),
+    'RSI 40-55':trades.filter(e=>e.trade.rsi>=40&&e.trade.rsi<55),
+    'BTC neutral':trades.filter(e=>e.trade.btc_trend==='neutral'),
+    'BTC bearish':trades.filter(e=>e.trade.btc_trend==='bearish'),
+    'Strong ($1k)':trades.filter(e=>e.trade.entry_size==='strong'),
+    'Mixed ($500)':trades.filter(e=>e.trade.entry_size==='mixed'),
+    'Confidence 65+':trades.filter(e=>e.trade.confidence>=65),
+    'Confidence <65':trades.filter(e=>e.trade.confidence<65),
+  };
+
+  // Find best and worst conditions (min 3 trades)
+  const rows=Object.entries(groups)
+    .filter(([k,arr])=>arr.length>=3)
+    .map(([label,arr])=>{const w=wr(arr);return{label,wins:w.wins,total:w.total,pct:w.pct};})
+    .sort((a,b)=>b.pct-a.pct);
+
+  // Build win rate bar
+  const bar=(pct)=>{
+    const col=pct>=65?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
+    return `<div style="display:flex;align-items:center;gap:6px">
+      <div style="flex:1;height:5px;border-radius:3px;background:var(--off3);overflow:hidden">
+        <div style="width:${pct}%;height:100%;border-radius:3px;background:${col}"></div>
+      </div>
+      <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${col};min-width:32px;text-align:right">${pct}%</span>
+    </div>`;
+  };
+
+  // Identify your edge: conditions with WR >= 60% and 3+ trades
+  const edgeConditions=rows.filter(r=>r.pct>=60);
+  const weakConditions=rows.filter(r=>r.pct<45);
+
+  card.innerHTML=`
+    <div style="padding:14px 14px 0">
+      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:10px">Based on ${n} trades with full context</div>
+    </div>
+
+    ${edgeConditions.length?`
+    <div style="margin:0 14px 10px;background:var(--gl);border:1px solid var(--gb);border-radius:9px;padding:9px 11px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:6px">✅ Your Edge Conditions</div>
+      ${edgeConditions.map(r=>`<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">${r.label}: <b>${r.pct}%</b> (${r.wins}/${r.total})</div>`).join('')}
+    </div>`:''}
+
+    ${weakConditions.length?`
+    <div style="margin:0 14px 10px;background:var(--rl);border:1px solid var(--rb);border-radius:9px;padding:9px 11px">
+      <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:6px">⚠️ Avoid These Conditions</div>
+      ${weakConditions.map(r=>`<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">${r.label}: <b style="color:var(--red)">${r.pct}%</b> (${r.wins}/${r.total})</div>`).join('')}
+    </div>`:''}
+
+    <div style="border-top:1px solid var(--off3)">
+    ${rows.map(r=>`
+      <div style="padding:8px 14px;border-bottom:1px solid var(--off3)">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:11px;color:var(--ink2)">${r.label}</span>
+          <span style="font-size:10px;color:var(--ink4)">${r.wins}/${r.total} trades</span>
+        </div>
+        ${bar(r.pct)}
+      </div>`).join('')}
+    </div>
+
+    <div style="padding:10px 14px;font-size:10px;color:var(--ink4);line-height:1.5">
+      Updates automatically as you log more trades.
+      Meaningful patterns emerge after 10+ trades per condition.
+    </div>
+  `;
+}
+function renderPerf(d){
+  const wrap=$('j-perf-wrap'),card=$('j-perf');
+  if(!wrap||!card)return;
+
+  // Only count entries where a trade actually closed
+  const trades=d.filter(e=>['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType));
+  const n=trades.length;
+
+  // Hide card until 3+ trade closes logged
+  if(n<3){
+    wrap.style.display='block';
+    card.innerHTML=`<div style="padding:14px;text-align:center">
+      <div style="font-size:24px;margin-bottom:8px">📊</div>
+      <div style="font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:4px">Need ${3-n} more trade close${3-n!==1?'s':''}</div>
+      <div style="font-size:11px;color:var(--ink4);line-height:1.5">Log TP1, TP2, or SL events to unlock<br>your Trade Performance analysis.</div>
+    </div>`;
+    return;
+  }
+
+  wrap.style.display='block';
+
+  const wins=trades.filter(e=>e.tradePnl>0);
+  const losses=trades.filter(e=>e.tradePnl<0);
+  const winRate=wins.length/n;
+  const lossRate=losses.length/n;
+
+  const avgWin=wins.length>0?wins.reduce((s,e)=>s+e.tradePnl,0)/wins.length:0;
+  const avgLoss=losses.length>0?Math.abs(losses.reduce((s,e)=>s+e.tradePnl,0)/losses.length):0;
+  const rr=avgLoss>0?(avgWin/avgLoss):0;
+  const expectancy=(winRate*avgWin)-(lossRate*avgLoss);
+  const bestTrade=Math.max(...trades.map(e=>e.tradePnl));
+  const worstTrade=Math.min(...trades.map(e=>e.tradePnl));
+
+  // Scale-up verdict
+  let vClass,vTitle,vBody,vSuggest;
+  if(n<10){
+    vClass='data';vTitle='Building data…';
+    vBody=`${n}/10 trades logged. Keep following the system. Verdict available at 10 trades.`;
+    vSuggest='';
+  } else if(expectancy>=50){
+    vClass='scale';vTitle='✅ Scale Up — System Profitable';
+    vBody=`Expectancy +$${expectancy.toFixed(0)}/trade with ${n} trades. System is working.`;
+    vSuggest='Suggested: increase trade margin to $1,500';
+  } else if(expectancy>=20){
+    vClass='watch';vTitle='⚠️ Scale Carefully';
+    vBody=`Expectancy +$${expectancy.toFixed(0)}/trade. Profitable but R:R needs improvement.`;
+    vSuggest='Suggested: increase to $1,000 margin only';
+  } else if(expectancy>0){
+    vClass='watch';vTitle='⚠️ Hold — Marginal Edge';
+    vBody=`Expectancy +$${expectancy.toFixed(0)}/trade. Too thin to scale safely yet.`;
+    vSuggest='Keep at $500 margin. Review signal quality.';
+  } else {
+    vClass='hold';vTitle='❌ Do Not Scale';
+    vBody=`Expectancy ${fs(expectancy)}/trade. System losing money on trades.`;
+    vSuggest='Keep at $500. Review entry/exit signals with Claude.';
+  }
+
+  const pct=Math.round(winRate*100);
+  const rrCol=rr>=1.8?'var(--green)':rr>=1.2?'var(--amber)':'var(--red)';
+  const expCol=expectancy>=50?'var(--green)':expectancy>=0?'var(--amber)':'var(--red)';
+
+  card.innerHTML=`
+    <div style="padding:14px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3)">Based on ${n} trade closes</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--ink4)">${wins.length}W · ${losses.length}L</div>
+      </div>
+
+      <div class="perf-grid">
+        <div class="perf-cell">
+          <div class="perf-lbl">Win Rate</div>
+          <div class="perf-val" style="color:${pct>=55?'var(--green)':pct>=45?'var(--amber)':'var(--red)'}">${pct}%</div>
+          <div class="win-bar"><div class="win-fill" style="width:${pct}%"></div></div>
+          <div class="perf-sub">Target ≥55%</div>
+        </div>
+        <div class="perf-cell">
+          <div class="perf-lbl">Expectancy</div>
+          <div class="perf-val" style="color:${expCol}">${expectancy>=0?'+':''}$${expectancy.toFixed(0)}</div>
+          <div class="perf-sub">per trade avg</div>
+        </div>
+        <div class="perf-cell">
+          <div class="perf-lbl">Avg Win</div>
+          <div class="perf-val" style="color:var(--green)">+$${avgWin.toFixed(0)}</div>
+          <div class="perf-sub">${wins.length} winners</div>
+        </div>
+        <div class="perf-cell">
+          <div class="perf-lbl">Avg Loss</div>
+          <div class="perf-val" style="color:var(--red)">-$${avgLoss.toFixed(0)}</div>
+          <div class="perf-sub">${losses.length} losers</div>
+        </div>
+        <div class="perf-cell">
+          <div class="perf-lbl">R:R Actual</div>
+          <div class="perf-val" style="color:${rrCol}">${rr.toFixed(2)}:1</div>
+          <div class="perf-sub">Target ≥2.0:1</div>
+        </div>
+        <div class="perf-cell">
+          <div class="perf-lbl">Best / Worst</div>
+          <div class="perf-val" style="font-size:12px"><span style="color:var(--green)">+$${bestTrade.toFixed(0)}</span> <span style="color:var(--red)">-$${Math.abs(worstTrade).toFixed(0)}</span></div>
+          <div class="perf-sub">trade range</div>
+        </div>
+      </div>
+
+      <div class="verdict ${vClass}">
+        <div class="verdict-title">${vTitle}</div>
+        <div class="verdict-body">${vBody}${vSuggest?`<br><b>${vSuggest}</b>`:''}</div>
+      </div>
+    </div>`;
+}
   const c=$(cid),e=$(eid);
   if(!data||data.filter(v=>v!==0).length<2){c.style.display='none';e.style.display='flex';return;}
   c.style.display='block';e.style.display='none';
@@ -849,11 +2081,9 @@ function drawC(cid,eid,labels,data,stroke,fill){
   const w=c.parentElement.clientWidth||300,h=120;
   c.width=w*dpr;c.height=h*dpr;c.style.width=w+'px';c.style.height=h+'px';
   const ctx=c.getContext('2d');ctx.scale(dpr,dpr);
-  const pd={t:8,r:8,b:22,l:44};
-  const cw=w-pd.l-pd.r,ch=h-pd.t-pd.b;
+  const pd={t:8,r:8,b:22,l:44},cw=w-pd.l-pd.r,ch=h-pd.t-pd.b;
   const mn=Math.min(...data),mx=Math.max(...data),rng=mx-mn||1;
-  const xs=data.length>1?cw/(data.length-1):cw;
-  const ys=v=>ch-((v-mn)/rng)*ch;
+  const xs=data.length>1?cw/(data.length-1):cw,ys=v=>ch-((v-mn)/rng)*ch;
   ctx.strokeStyle='rgba(0,0,0,.06)';ctx.lineWidth=1;
   [0,.5,1].forEach(t=>{const y=pd.t+t*ch;ctx.beginPath();ctx.moveTo(pd.l,y);ctx.lineTo(pd.l+cw,y);ctx.stroke();});
   ctx.beginPath();ctx.moveTo(pd.l,pd.t+ys(data[0]));
@@ -870,15 +2100,20 @@ function drawC(cid,eid,labels,data,stroke,fill){
   [0,.5,1].forEach(t=>{ctx.fillText('$'+((mn+t*rng)|0),pd.l-4,pd.t+ch-t*ch+3);});
 }
 
-function saveGS(){const url=$('gs-url').value.trim();if(!url){toast('Enter URL','err');return;}localStorage.setItem(GK,url);toast('Saved','ok');}
-async function syncSheets(){const d=loadJ();if(!d.length){toast('No data','err');return;}const url=localStorage.getItem(GK);if(!url){toast('Add URL in Settings','err');return;}toast('Syncing…','ok');let ok=0;for(const e of d){try{await fetch(url,{method:'POST',body:JSON.stringify(e),headers:{'Content-Type':'application/json'}});ok++;}catch{}}toast(`Synced ${ok}`,'ok');}
-async function syncOne(e,url){try{await fetch(url,{method:'POST',body:JSON.stringify(e),headers:{'Content-Type':'application/json'}});}catch{}}
-function exportCSV(){const d=loadJ();if(!d.length){toast('No data','err');return;}const h='Date,LP Before,LP After,HL PnL,Fees,Trade PnL,Net,Range Low,Range High,Cum PnL,Type\n';const rows=d.map(e=>[e.date,e.lpBefore,e.lpAfter,e.hlPnl,e.fees,e.tradePnl,e.net,e.rangeLow,e.rangeHigh,e.cum,e.evtType].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h+rows],{type:'text/csv'}));a.download=`avax_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast('Exported','ok');}
-function clearJ(){if(confirm('Delete all entries?')){localStorage.removeItem(SK);renderJ();toast('Cleared','ok');}}
+// ── KEY MANAGEMENT ──
+function saveKey(){const k=$('key-input').value.trim();if(!k.startsWith('sk-')){toast('Invalid key','err');return;}localStorage.setItem(KK,k);$('key-input').value='';updateKeyStatus();toast('API key saved','ok');}
+function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem(KK);updateKeyStatus();toast('Removed','ok');}
+function updateKeyStatus(){const k=localStorage.getItem(KK);const el=$('key-status');if(!el)return;el.innerHTML=k&&k.startsWith('sk-')?`<div class="key-ok">✓ Key saved · ends …${k.slice(-6)}</div>`:`<div class="key-none">✗ No key — add above</div>`;}
+function saveGS(){const u=$('gs-url').value.trim();if(!u){toast('Enter URL','err');return;}localStorage.setItem(GK,u);toast('Saved','ok');}
+async function syncSheets(){const d=loadJ();if(!d.length){toast('No data','err');return;}const u=localStorage.getItem(GK);if(!u){toast('Add URL in Settings','err');return;}toast('Syncing…','ok');let ok=0;for(const e of d){try{await fetch(u,{method:'POST',body:JSON.stringify(e),headers:{'Content-Type':'application/json'}});ok++;}catch{}}toast(`Synced ${ok}`,'ok');}
+async function syncOne(e,u){try{await fetch(u,{method:'POST',body:JSON.stringify(e),headers:{'Content-Type':'application/json'}});}catch{}}
+function exportCSV(){const d=loadJ();if(!d.length){toast('No data','err');return;}const h='Date,LP Value,AVAX Price,BLACK Sold $,Trade P&L $,Net $,Cumulative $,Event\n';const rows=d.map(e=>[e.date,e.lpVal||0,e.avaxPx||0,e.blackSold||0,e.tradePnl||0,e.net,e.cum,e.evtType].join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([h+rows],{type:'text/csv'}));a.download=`avax_${new Date().toISOString().slice(0,10)}.csv`;a.click();toast('Exported','ok');}
+function clearJ(){if(confirm('Delete all?')){localStorage.removeItem(SK);renderJ();toast('Cleared','ok');}}
 
 // ── INIT ──
 updateKeyStatus();
 const su=localStorage.getItem(GK);if(su&&$('gs-url'))$('gs-url').value=su;
+loadStrip();
 </script>
 </body>
 </html>
