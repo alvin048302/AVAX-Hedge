@@ -617,6 +617,9 @@ let _hlPriceForCheck=0;  // set in runAnalysis, read in render
 let _oiChange='unknown'; // set in runAnalysis, read in render
 let _session='';         // set in runAnalysis, read in render
 let _fi=null;            // set in runAnalysis, read in render
+let _hlPx=0;             // set in runAnalysis, read in render
+let _blackUsdc=0;        // set in runAnalysis, read in render
+let _hedgeEntry=0;       // set in runAnalysis, read in render
 async function fetchHL(){
   try{
     const r=await fetch('https://api.hyperliquid.xyz/info',{
@@ -815,12 +818,12 @@ async function runAnalysis(){
 
   const avax=pv($('i_avax').value);
   const usdc=pv($('i_usdc').value);
-  const blackUsdc=pv($('i_black')?.value)||0;
+  const blackUsdc=pv($('i_black')?.value)||0;_blackUsdc=blackUsdc;
   const apy=35;
   const daysOut=pv($('i_daysout').value);
   const dir=_dir||'none';
   const hedgeStatus=$('i_hedge').value;
-  const hedgeEntry=pv($('i_hedge_entry')?.value)||9.71;
+  const hedgeEntry=pv($('i_hedge_entry')?.value)||9.71;_hedgeEntry=hedgeEntry;
   const pe=pv($('i_pe')?.value)||0;
   const upnl=pv($('i_upnl')?.value)||0;
   const isHalf=dir.includes('half');
@@ -830,7 +833,7 @@ async function runAnalysis(){
   const a_lo=_storedRange.lo||9.25;
   const a_hi=_storedRange.hi||10.50;
   _hlPriceForCheck=_hl?.px||0;
-  const hlPx=_hl?.px||0;
+  const hlPx=_hl?.px||0;_hlPx=hlPx;
   const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%/hr':'unknown';
   const hlOI=_hl?_hl.oi.toFixed(0)+' AVAX':'unknown';
 
@@ -1212,8 +1215,9 @@ rebalance_down (LP exited bottom, ~100% AVAX ~${avax>0?avax:200} AVAX):
     render(a,apy,avax,usdc,dirBase,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus);
   }catch(err){
     stopLoader();
-    $('result-content').innerHTML=`<div style="background:var(--rl);border:1.5px solid var(--rb);border-radius:12px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">Analysis Failed</div><div style="font-size:11px;color:var(--ink2)">${err.message}</div></div>`;
     $('result-content').style.display='block';
+    const errTarget=$('r-decision')||$('result-content');
+    errTarget.innerHTML=`<div style="background:var(--rl);border:1.5px solid var(--rb);border-radius:12px;padding:14px;margin-bottom:12px"><div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px">Analysis Failed</div><div style="font-size:11px;color:var(--ink2)">${err.message}</div></div>`;
     toast(err.message.slice(0,50),'err');
   }finally{
     btn.classList.remove('loading');
@@ -1519,7 +1523,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     } else {
       // Selling AVAX scenario (down move)
       const avaxAmt=avax>0?avax:200;
-      const hedgeProfit=_hl&&_hl.px>0?Math.max(0,500*(hedgeEntry-_hl.px)/hedgeEntry):0;
+      const hedgeProfit=_hl&&_hl.px>0?Math.max(0,500*(_hedgeEntry-_hl.px)/_hedgeEntry):0;
       const reserveUsdc=500;
       const totalUsdcAvail=hedgeProfit+reserveUsdc;
       const usdcNeeded=avaxAmt*px*0.40; // 60% AVAX / 40% USDC — asymmetric bullish bias
@@ -1586,8 +1590,8 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   </table>`;
 
   // ── 8. LP SNAPSHOT ──
-  const lpValueNow=avax>0&&hlPx>0?(avax*hlPx+usdc):realLp;
-  const avaxPct=avax>0&&lpValueNow>0?Math.round((avax*hlPx/lpValueNow)*100):50;
+  const lpValueNow=avax>0&&_hlPx>0?(avax*_hlPx+usdc):realLp;
+  const avaxPct=avax>0&&lpValueNow>0?Math.round((avax*_hlPx/lpValueNow)*100):50;
   const usdcPct=100-avaxPct;
   const currentApy=pv($('i_apy_display')?.value)||apy||35;
   const apyOk=currentApy>=30;
@@ -1595,7 +1599,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   $('r-fees').innerHTML=`
     <div class="jrow" style="padding:9px 14px"><span>LP value tonight</span><span style="color:var(--blue);font-weight:600">${f2(lpValueNow)}</span></div>
     <div class="jrow" style="padding:9px 14px"><span>Composition</span><span>${avaxPct}% AVAX · ${usdcPct}% USDC</span></div>
-    <div class="jrow" style="padding:9px 14px"><span>BLACK sold tonight</span><span style="color:var(--green);font-weight:600">${blackUsdc>0?'+'+f2(blackUsdc):'—  enter above'}</span></div>
+    <div class="jrow" style="padding:9px 14px"><span>BLACK sold tonight</span><span style="color:var(--green);font-weight:600">${_blackUsdc>0?'+'+f2(_blackUsdc):'—  enter above'}</span></div>
     <div class="jrow" style="padding:9px 14px"><span>Income source</span><span style="color:var(--green)">BLACK emissions only</span></div>
     <div class="jrow" style="padding:9px 14px"><span>Trading fees while staked</span><span style="color:var(--amber)">Go to veNFT voters ✗</span></div>
     <div class="jrow" style="padding:9px 14px"><span>Crash hedge TP</span><span style="color:var(--green)">$${(lo*0.60).toFixed(2)}</span></div>
