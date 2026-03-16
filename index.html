@@ -68,6 +68,32 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 @keyframes spin{to{transform:rotate(360deg)}}
 /* DECISION BOX — hero element */
 .decision{border-radius:16px;padding:18px;margin-bottom:12px;border:2px solid}
+/* DIRECT ACTION BOX — v12 hero */
+.dab{border-radius:18px;padding:20px;margin-bottom:14px;border:3px solid}
+.dab.dab-go{background:#f0fdf4;border-color:#16a34a}
+.dab.dab-go-half{background:#fffbeb;border-color:#d97706}
+.dab.dab-wait{background:#fef2f2;border-color:#dc2626}
+.dab.dab-lp{background:#eff6ff;border-color:#2563eb}
+.dab-label{font-size:9px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:6px;opacity:.7}
+.dab-go .dab-label{color:#16a34a}
+.dab-go-half .dab-label{color:#d97706}
+.dab-wait .dab-label{color:#dc2626}
+.dab-lp .dab-label{color:#2563eb}
+.dab-cmd{font-size:26px;font-weight:900;letter-spacing:-1px;line-height:1.1;margin-bottom:8px}
+.dab-go .dab-cmd{color:#16a34a}
+.dab-go-half .dab-cmd{color:#d97706}
+.dab-wait .dab-cmd{color:#dc2626}
+.dab-lp .dab-cmd{color:#2563eb}
+.dab-levels{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0;background:rgba(255,255,255,.6);border-radius:10px;padding:10px}
+.dab-lv{text-align:center}
+.dab-lv-lbl{font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink4);margin-bottom:3px}
+.dab-lv-val{font-family:'DM Mono',monospace;font-size:15px;font-weight:600;color:var(--ink)}
+.dab-lv-val.entry{color:var(--blue)}
+.dab-lv-val.tp{color:var(--green)}
+.dab-lv-val.sl{color:var(--red)}
+.dab-lv-val.rr{color:var(--amber)}
+.dab-why{font-size:11px;color:var(--ink2);line-height:1.6;margin-top:8px;padding-top:8px;border-top:1px solid rgba(0,0,0,.07)}
+.dab-size{display:inline-block;margin-top:8px;background:rgba(0,0,0,.06);border-radius:7px;padding:5px 10px;font-size:11px;font-weight:700;color:var(--ink2)}
 .decision.act-now{background:var(--rl);border-color:var(--rb)}
 .decision.wait{background:var(--al);border-color:var(--ab)}
 .decision.ok{background:var(--gl);border-color:var(--gb)}
@@ -258,7 +284,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v11</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v12</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -1234,38 +1260,89 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const lo=a.range_low,hi=a.range_high,mid=((lo+hi)/2);
   const pct=a.lp_pct||50;
 
-  // ── 1. DECISION CARD (hero) ──
-  const decTypeMap={
-    'in_range':'ok',
-    'wait_falling':'wait',
-    'wait_stabilise':'wait',
-    'wait_btc':'wait',
-    'rebalance_up':'act-now',
-    'rebalance_down':'act-now'
-  };
-  const decType=decTypeMap[a.decision]||'ok';
-  const decIco={'ok':'✅','wait':'⏳','act-now':a.rebal_direction==='down'?'🔴':'🔵'}[decType];
+  // ── 1. DIRECT ACTION BOX (hero — replaces old decision card) ──
+  const sig=a.signal||'wait';
+  const conf=a.confidence||50;
+  const lpShift=a.lp_shift_recommended===true;
+  const lpExited=a.decision==='rebalance_up'||a.decision==='rebalance_down';
+  const waitLP=a.decision==='wait_falling'||a.decision==='wait_stabilise'||a.decision==='wait_btc'||a.decision==='wait_chop_72h'||a.decision==='wait_second_level';
+  const veto=a.veto_fired===true;
 
-  let stepsHtml='';
-  if(a.action_steps&&a.action_steps.length){
-    const cmap={g:'g',r:'r',b:'b',a:'a'};
-    stepsHtml=`<div class="actions">${a.action_steps.map(s=>`
-      <div class="action-step">
-        <div class="asn ${cmap[s.c]||'b'}">${s.n}</div>
-        <div><div class="as-title">${s.t}</div><div class="as-body">${s.b}</div></div>
-      </div>`).join('')}</div>`;
+  // Determine the single master instruction
+  let dabClass,dabCmd,dabSub,dabShowLevels=false,dabWhy='';
+
+  if(lpExited){
+    // LP out of range — this is the priority action
+    dabClass='dab-lp';
+    const dir=a.rebal_direction==='up'?'UP':'DOWN';
+    dabCmd=`REBALANCE LP ${dir} — DO THIS FIRST`;
+    dabSub=a.rebal_reason||`LP exited range ${dir==='UP'?'top':'bottom'}. See calculator below.`;
+    dabWhy=`LP rebalance takes priority over any trade tonight. Complete the steps in the Rebalance Calculator below, then re-analyse before trading.`;
+  } else if(waitLP){
+    dabClass='dab-wait';
+    dabCmd='WAIT — DO NOT ACT TONIGHT';
+    dabSub=a.decision_reason||'LP conditions require patience.';
+    dabWhy=a.signal_why||'Check again tomorrow. No LP action, no trade tonight.';
+  } else if(lpShift){
+    dabClass='dab-lp';
+    dabCmd='SHIFT LP RANGE TONIGHT';
+    dabSub=`Move to $${(a.lp_new_range_low||0).toFixed(2)} → $${(a.lp_new_range_high||0).toFixed(2)}`;
+    dabWhy=a.lp_shift_reason||'LP near range exit — shift now to avoid impermanent loss.';
+  } else if(veto){
+    dabClass='dab-wait';
+    dabCmd='NO TRADE — VETO FIRED';
+    dabSub=a.veto_reason||'Hard gate condition triggered.';
+    dabWhy=a.signal_why||'LP is running fine. No trade tonight.';
+  } else if(sig==='long'||sig==='short'){
+    const isHalfSize=a.entry_size==='mixed';
+    if(conf>=65&&!isHalfSize){
+      dabClass='dab-go';
+      dabCmd=`PLACE ${sig.toUpperCase()} — $1,000 FULL SIZE`;
+      dabSub=`${conf}% confidence · Strong conditions · Entry $${(a.entry||px).toFixed(2)}`;
+    } else if(conf>=55||isHalfSize){
+      dabClass='dab-go-half';
+      dabCmd=`PLACE ${sig.toUpperCase()} — $500 HALF SIZE`;
+      dabSub=`${conf}% confidence · Mixed conditions · Entry $${(a.entry||px).toFixed(2)}`;
+    } else {
+      dabClass='dab-wait';
+      dabCmd=`SKIP TRADE — CONFIDENCE TOO LOW`;
+      dabSub=`${conf}% is below 55% threshold. Signal: ${sig.toUpperCase()}.`;
+    }
+    dabShowLevels=conf>=55;
+    dabWhy=a.signal_why||'';
+  } else if(sig==='remove_lp'){
+    dabClass='dab-wait';
+    dabCmd='REMOVE LP — AVAX DOWN 40%+';
+    dabSub='Do NOT rebalance. Remove LP entirely and hold AVAX.';
+    dabWhy='Rebalancing here permanently destroys gains. See Trade Signal below for full steps.';
+  } else {
+    // wait signal
+    dabClass='dab-wait';
+    dabCmd='NO TRADE TONIGHT';
+    dabSub=a.signal_why||'Signal conditions not met.';
+    dabWhy=a.signal_why||'LP is running fine. Check again tomorrow.';
   }
 
+  const notional=(a.entry_size==='strong')?1000:500;
+  const margin=notional/2;
+  const sz=px>0?(notional/px).toFixed(1):'—';
+
   $('r-decision').innerHTML=`
-    <div class="decision ${decType}">
-      <div class="dec-head">
-        <div class="dec-ico">${decIco}</div>
-        <div>
-          <div class="dec-title">${a.action_title||a.decision.toUpperCase().replace('_',' ')}</div>
-          <div class="dec-sub">${a.decision_reason||''}</div>
-        </div>
+    <div class="dab ${dabClass}">
+      <div class="dab-label">Tonight's Instruction</div>
+      <div class="dab-cmd">${dabCmd}</div>
+      <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px">${dabSub}</div>
+      ${dabShowLevels&&(sig==='long'||sig==='short')?`
+      <div class="dab-levels">
+        <div class="dab-lv"><div class="dab-lv-lbl">Entry</div><div class="dab-lv-val entry">$${(a.entry||px).toFixed(2)}</div></div>
+        <div class="dab-lv"><div class="dab-lv-lbl">TP1</div><div class="dab-lv-val tp">$${a.tp1?.toFixed(2)||'—'}</div></div>
+        <div class="dab-lv"><div class="dab-lv-lbl">SL</div><div class="dab-lv-val sl">$${a.sl?.toFixed(2)||'—'}</div></div>
+        <div class="dab-lv"><div class="dab-lv-lbl">R:R</div><div class="dab-lv-val rr">${a.rr||'—'}:1</div></div>
       </div>
-      <div class="dec-body">${stepsHtml}</div>
+      <div class="dab-size">${a.entry_size==='strong'?'$1,000 notional · $500 margin':'$500 notional · $250 margin'} · ${sz} AVAX · ${conf>=65?'✅ FULL SIZE':'⚠️ HALF SIZE — add if confirms in 4h'}</div>
+      ${a.tp2?`<div style="font-size:11px;color:var(--ink3);margin-top:6px">TP2: $${a.tp2.toFixed(2)} · Close remaining 50% there</div>`:''}
+      `:''}
+      <div class="dab-why">${dabWhy}</div>
     </div>`;
 
   // ── 2. PRICE ──
@@ -1457,9 +1534,9 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const entryType=a.entry_type||'limit';
   const entrySize=a.entry_size||'strong';
   // Stage 1 sizing: strong=$1,000 notional, mixed=$500 notional
-  const notional=entrySize==='strong'?1000:500;
-  const margin=notional/2;
-  const sz=(notional/px).toFixed(1);
+  const tradeNotional=entrySize==='strong'?1000:500;
+  const tradeMargin=tradeNotional/2;
+  const tradeSz=(tradeNotional/px).toFixed(1);
   // Save range for next session
   if(a.range_low&&a.range_high){
     sessionStorage.setItem('avax_lp_range',JSON.stringify({lo:a.range_low,hi:a.range_high}));
@@ -1471,7 +1548,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     ${isHalf?`<div style="background:rgba(255,255,255,.5);border-radius:7px;padding:8px 10px;margin-bottom:8px;font-size:11px;color:var(--amber)"><b>TP1 already hit.</b> Running remaining 50% toward TP2 at $${a.tp2?.toFixed(2)||'—'}. Monitor and close if signal weakens.</div>`:''}
     ${td!=='wait'&&a.signal!=='remove_lp'?`<div class="tb-grid">
       <div class="tb-cell"><div class="tb-lbl">Entry (${entryType.toUpperCase()})</div><div class="tb-val bk">$${(a.entry||px).toFixed(2)}</div></div>
-      <div class="tb-cell"><div class="tb-lbl">${entrySize==='strong'?'STRONG · $1,000':'MIXED · $500'}</div><div class="tb-val bk">${sz} AVAX · $${margin} margin</div></div>
+      <div class="tb-cell"><div class="tb-lbl">${entrySize==='strong'?'STRONG · $1,000':'MIXED · $500'}</div><div class="tb-val bk">${tradeSz} AVAX · $${tradeMargin} margin</div></div>
       <div class="tb-cell"><div class="tb-lbl">TP1 (50%)</div><div class="tb-val tp">$${a.tp1?.toFixed(2)||'—'}</div></div>
       <div class="tb-cell"><div class="tb-lbl">TP2 (50%)</div><div class="tb-val tp">$${a.tp2?.toFixed(2)||'—'}</div></div>
       <div class="tb-cell"><div class="tb-lbl">SL (1.2×ATR)</div><div class="tb-val sl">$${a.sl?.toFixed(2)||'—'}</div></div>
