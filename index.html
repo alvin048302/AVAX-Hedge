@@ -225,13 +225,10 @@ canvas{display:block;width:100%!important;height:100%!important}
 /* SAVE BUTTON */
 .save-btn{flex:1;background:var(--gl);border:1.5px solid var(--gb);border-radius:14px;padding:17px 10px;font-size:14px;font-weight:700;color:var(--green);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
 .save-btn:active{transform:scale(.98)}
-/* TEST DATA */
 .test-btn{flex:1;background:var(--off);border:1.5px solid var(--bd);border-radius:14px;padding:14px 10px;font-size:13px;font-weight:700;color:var(--ink3);cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:7px}
 .test-btn:active{transform:scale(.98)}.test-btn.running{pointer-events:none;color:var(--blue);border-color:var(--bb)}
 .trow{display:flex;justify-content:space-between;align-items:center;padding:7px 14px;border-bottom:1px solid var(--off3);font-size:11px}
-.trow:last-child{border-bottom:none}
-.trow span:first-child{color:var(--ink3);flex:1}
-.trow .tval{font-family:'DM Mono',monospace;font-weight:500;font-size:11px;text-align:right}
+.trow:last-child{border-bottom:none}.trow span:first-child{color:var(--ink3);flex:1}.trow .tval{font-family:'DM Mono',monospace;font-weight:500;font-size:11px;text-align:right}
 .tsec{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);padding:8px 14px 4px;background:var(--off);border-bottom:1px solid var(--off3)}
 .tscore{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:5px;font-size:10px;font-weight:700;font-family:'DM Mono',monospace}
 .tscore.hi{background:var(--gl);color:var(--green)}.tscore.med{background:var(--al);color:var(--amber)}.tscore.lo{background:var(--rl);color:var(--red)}
@@ -261,7 +258,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v8</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v9</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -300,6 +297,8 @@ canvas{display:block;width:100%!important;height:100%!important}
           <div class="flbl">Pool APY % <span class="fhint">from Blackhole UI</span></div>
           <input type="number" id="i_apy_display" inputmode="decimal" placeholder="35" value="35" step="1">
         </div>
+      </div>
+      <div class="g2">
         <div class="field">
           <div class="flbl">Crash hedge</div>
           <select id="i_hedge">
@@ -307,11 +306,10 @@ canvas{display:block;width:100%!important;height:100%!important}
             <option value="closed">Closed — need reset</option>
           </select>
         </div>
-      </div>
-      <div class="field" style="margin-top:2px">
-        <div class="flbl">Hedge entry price $ <span class="fhint">when you opened the short</span></div>
-        <input type="number" id="i_hedge_entry" inputmode="decimal" placeholder="9.71" step="0.01" value="9.71">
-      </div>
+        <div class="field">
+          <div class="flbl">Hedge entry price $ <span class="fhint">when you opened the short</span></div>
+          <input type="number" id="i_hedge_entry" inputmode="decimal" placeholder="9.71" step="0.01" value="9.71">
+        </div>
       </div>
     </div>
 
@@ -411,11 +409,11 @@ canvas{display:block;width:100%!important;height:100%!important}
           <div class="loading-ttl">AI Analysing AVAX…</div>
           <div class="loading-sub">Searching live data · running decision tree · generating instructions</div>
           <div class="loading-prog">
-            <div class="lp-step" id="ls1"><div class="lp-dot"></div>Fetching live AVAX price, funding & OI from Hyperliquid</div>
+            <div class="lp-step" id="ls1"><div class="lp-dot"></div>Fetching live AVAX price, funding &amp; OI from Hyperliquid</div>
             <div class="lp-step" id="ls2"><div class="lp-dot"></div>Searching AVAX daily/4H chart — RSI, MACD, EMA, ATR</div>
-            <div class="lp-step" id="ls3"><div class="lp-dot"></div>Checking BTC trend & macro filter</div>
+            <div class="lp-step" id="ls3"><div class="lp-dot"></div>Checking BTC trend &amp; macro filter</div>
             <div class="lp-step" id="ls4"><div class="lp-dot"></div>Running 5-layer decision tree — LP zone, regime, signal</div>
-            <div class="lp-step" id="ls5"><div class="lp-dot"></div>Calculating trade size, SL/TP & LP range action</div>
+            <div class="lp-step" id="ls5"><div class="lp-dot"></div>Calculating trade size, SL/TP &amp; LP range action</div>
           </div>
         </div>
       </div>
@@ -438,15 +436,14 @@ canvas{display:block;width:100%!important;height:100%!important}
         <div class="card" id="r-fees"></div>
         <div id="r-src"></div>
         <div class="ats" id="r-ts"></div>
-        <!-- Confirm trade placed button — shown when trade signal is active -->
         <div id="r-confirm-wrap" style="display:none;margin-top:4px">
           <div class="slbl">Execution Confirmation</div>
           <div style="background:var(--gl);border:1.5px solid var(--gb);border-radius:13px;padding:13px;margin-bottom:12px">
             <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:8px">Did you place the trade on Hyperliquid?</div>
-            <div style="font-size:10px;color:var(--ink3);margin-bottom:10px;line-height:1.5">Tap to record that a trade was placed. This creates a journal entry with the exact time, distinguishing "signal seen" from "trade executed".</div>
+            <div style="font-size:10px;color:var(--ink3);margin-bottom:10px;line-height:1.5">Tap to record trade placement with timestamp — separates "signal seen" from "trade executed".</div>
             <div class="g2">
-              <button class="bsm green" onclick="confirmTrade(true)">✅ Yes — Trade Placed</button>
-              <button class="bsm" onclick="confirmTrade(false)">⏭ No Trade Tonight</button>
+              <button class="bsm green" onclick="confirmTrade(true)">Yes — Trade Placed</button>
+              <button class="bsm" onclick="confirmTrade(false)">No Trade Tonight</button>
             </div>
           </div>
         </div>
@@ -468,12 +465,10 @@ canvas{display:block;width:100%!important;height:100%!important}
       <div class="kpi"><div class="kl">Events</div><div class="kv bl" id="j-cnt">0</div><div class="ks">Logged</div></div>
       <div class="kpi"><div class="kl">Win Rate</div><div class="kv" id="j-wr">—</div><div class="ks">Trades</div></div>
     </div>
-    <!-- CONDITION WIN RATE STATS — unlocks after 5 trade closes -->
     <div id="j-stats-wrap" style="display:none">
       <div class="slbl">Trade Edge Analysis</div>
       <div class="card" id="j-stats"></div>
     </div>
-
     <div class="slbl">LP Value</div>
     <div class="card cp"><div class="cw"><canvas id="c-lp"></canvas><div class="ce" id="ce-lp">Log events to see chart</div></div></div>
     <div class="slbl">Cumulative P&L</div>
@@ -705,8 +700,6 @@ async function runAnalysis(){
 
   const avax=pv($('i_avax').value);
   const usdc=pv($('i_usdc').value);
-  // CHANGE 1: Store HL price for cross-check after search
-  const _hlPriceForCheck=_hl?.px||0;
   const blackUsdc=pv($('i_black')?.value)||0;
   const apy=35;
   const daysOut=pv($('i_daysout').value);
@@ -718,6 +711,10 @@ async function runAnalysis(){
   const isHalf=dir.includes('half');
   const dirBase=dir.replace('_half','');
   const lpVal=avax>0&&usdc>0?(avax*(_hl?.px||10)+usdc):3749;
+  const _storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
+  const a_lo=_storedRange.lo||9.25;
+  const a_hi=_storedRange.hi||10.50;
+  const _hlPriceForCheck=_hl?.px||0;
   // LP range from last analysis or default
   const _storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
   const a_lo=_storedRange.lo||9.25;
@@ -752,43 +749,33 @@ async function runAnalysis(){
   // ── LAST 3 TRADE OUTCOMES (Priority 5) ──
   const jd=loadJ();
   const lastTrades=jd.filter(e=>['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType)).slice(0,3);
+  // Personal win rate stats for AI learning
+  let personalStatsCtx='';
+  const allTrades=jd.filter(e=>e.trade&&['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType));
+  if(allTrades.length>=10){
+    const wrBy=(filter,label)=>{const s=allTrades.filter(filter);if(s.length<3)return'';const w=s.filter(e=>e.tradePnl>0).length;return label+':'+Math.round(w/s.length*100)+'%('+s.length+')'};
+    const stats=[
+      wrBy(e=>e.trade.regime==='uptrend','Uptrend'),
+      wrBy(e=>e.trade.regime==='downtrend','Downtrend'),
+      wrBy(e=>e.trade.lp_pct>50,'LP-upper'),
+      wrBy(e=>e.trade.rsi>=55&&e.trade.rsi<=70,'RSI55-70'),
+      wrBy(e=>e.trade.btc_trend==='neutral','BTC-neutral'),
+      wrBy(e=>e.trade.btc_trend==='bearish','BTC-bearish'),
+    ].filter(Boolean).join(', ');
+    if(stats)personalStatsCtx=' | PERSONAL WIN RATES: '+stats;
+  }
   let recentTradeCtx='No trades logged yet.';
   if(lastTrades.length>0){
     const summary=lastTrades.map((e,i)=>{
       const outcome=e.tradePnl>0?`WIN +$${e.tradePnl.toFixed(0)}`:e.tradePnl<0?`LOSS -$${Math.abs(e.tradePnl).toFixed(0)}`:'BREAKEVEN';
-      // Include conditions if available
-      const cond=e.trade?` [${e.trade.regime||''} · RSI${e.trade.rsi||'?'} · LP${e.trade.lp_zone||'?'}]`:'';
-      return `Trade ${i+1}: ${outcome} (${e.evtType.replace('trade_','').toUpperCase()})${cond} on ${e.date.slice(0,10)}`;
+      return `Trade ${i+1}: ${outcome} (${e.evtType.replace('trade_','').toUpperCase()}) on ${e.date.slice(0,10)}`;
     }).join(' | ');
     const recentWins=lastTrades.filter(e=>e.tradePnl>0).length;
     const streak=recentWins===3?'3/3 wins — strong trend, hold full size':
                  recentWins===2?'2/3 wins — system working, normal size':
-                 recentWins===1?'1/3 wins — choppy market, reduce to mixed size':
-                 '0/3 wins — reduce to mixed size, review conditions';
+                 recentWins===1?'1/3 wins — choppy market, reduce to 50% size':
+                 '0/3 wins — do NOT trade tonight, review conditions';
     recentTradeCtx=`${summary} → ${streak}`;
-  }
-
-  // Build personalised stats context for AI (if enough data)
-  const allTrades=jd.filter(e=>e.trade&&['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType));
-  let personalStatsCtx='';
-  if(allTrades.length>=10){
-    const wrByCondition=(filter,label)=>{
-      const subset=allTrades.filter(filter);
-      if(subset.length<3)return'';
-      const wins=subset.filter(e=>e.tradePnl>0).length;
-      return `${label}: ${Math.round(wins/subset.length*100)}% (${subset.length} trades)`;
-    };
-    const stats=[
-      wrByCondition(e=>e.trade.regime==='uptrend','Uptrend'),
-      wrByCondition(e=>e.trade.regime==='downtrend','Downtrend'),
-      wrByCondition(e=>e.trade.lp_pct>50,'LP upper half'),
-      wrByCondition(e=>e.trade.lp_pct<=50,'LP lower half'),
-      wrByCondition(e=>e.trade.rsi>=55&&e.trade.rsi<=70,'RSI 55-70'),
-      wrByCondition(e=>e.trade.btc_trend==='neutral','BTC neutral'),
-      wrByCondition(e=>e.trade.btc_trend==='bearish','BTC bearish'),
-    ].filter(Boolean).join(', ');
-    if(stats)personalStatsCtx=`
-- USER PERSONAL WIN RATES FROM JOURNAL: ${stats}`;
   }
 
   const btn=$('abtn');
@@ -810,7 +797,7 @@ USER POSITION
 - Trade entry price: ${pe>0?'$'+pe:'none'}
 - Trade unrealised P&L: ${upnl!==0?'$'+upnl:'none'}
 - Crash hedge $500 1x short: ${hedgeStatus}
-- Crash hedge entry price: $${hedgeEntry.toFixed(2)} (used for profit calculation)
+- Crash hedge entry price: $${hedgeEntry.toFixed(2)}
 
 LIVE DATA (do not search for these)
 - AVAX mark price: ${hlPx>0?'$'+hlPx.toFixed(2):'not available'}
@@ -841,9 +828,7 @@ days_out >= 1 AND exited bottom:
   days_out >= 2 AND price sideways - TWO-LEVEL TRIGGER:
     Price exited range_low but still above NEXT major support below: decision = "wait_second_level" - wait longer, high reversal probability
     Price also broke below NEXT major support below range: decision = "rebalance_down" - signal = "wait"
-    CHOP PROTECTION: If this is the 2nd LP exit within 30 days (user has rebalanced recently):
-      Extend wait to 72h minimum (not 48h) before confirming rebalance_down
-      High probability this is chop not new downtrend - set decision = "wait_chop_72h"
+    CHOP PROTECTION: If this is 2nd LP exit within 30 days, extend wait to 72h: decision = "wait_chop_72h"
 unclear: decision = "in_range"
 
 STEP 3 - LP ZONE CHECK (always when in_range)
@@ -874,7 +859,7 @@ atr_pct = ATR / price x 100
 atr_pct < 3%: vol_regime = "low" - signal = "wait". Market too quiet. Hard gate.
 atr_pct 3-7%: vol_regime = "normal" - continue
 atr_pct 7-12%: vol_regime = "high" - continue, entry_size = "mixed"
-atr_pct > 12%: vol_regime = "extreme" - signal = "wait". Too volatile for any trade. Hard gate.
+atr_pct > 12%: vol_regime = "extreme" - signal = "wait". Hard gate. Too volatile for any trade.
 
 LAYER 2 - MARKET REGIME
 Price above EMA20 AND EMA20 above EMA200: regime = "uptrend" - long preferred
@@ -895,13 +880,6 @@ HARD VETO (skip trade):
 
 SOFT VETO (reduce to mixed size, do not skip):
 4. Funding > +0.02%/hr AND direction = long
-
-HEDGE LIQUIDATION WARNING (not a veto but flag it):
-  If vol_regime = "normal" or "high" AND regime = "uptrend" AND lp_pct > 75%:
-    Calculate: hedge_liq_price = hedge_entry_price x 1.9 (approx 1x leverage liquidation)
-    If current price > hedge_liq_price x 0.85 (within 15% of liquidation):
-      hedge_liquidation_risk = true
-      hedge_liquidation_reason = "AVAX approaching hedge liquidation. Consider closing hedge when LP shifts range upward.
 5. Funding < -0.02%/hr AND direction = short
 6. OI falling strongly AND price rising
 7. Last 3 trades = 0/3 wins - reduce to mixed size only, still trade
@@ -1033,11 +1011,10 @@ rebalance_down (LP exited bottom, ~100% AVAX ~${avax>0?avax:200} AVAX):
   rebal_direction = "down"
   USDC from crash hedge profit + $500 reserve
   ASYMMETRIC deployment: 60% AVAX / 40% USDC (not 50/50 - preserve more AVAX)
-  HEDGE RESET RULE: Do NOT immediately reset crash hedge after rebalance_down if overall trend is still down.
-    Keep original hedge running OR reset only after price recovers >= 15% from crash low.
-    Reason: resetting hedge at each rebalance progressively reduces total crash protection.
-    Only reset when: price has stabilised and new range is confirmed holding 48h+.
   Sell MINIMUM AVAX - only the shortfall after hedge+reserve
+  HEDGE RESET RULE: Do NOT reset crash hedge immediately after rebalance_down if trend still down.
+    Keep original hedge running. Only reset after price recovers >= 15% from the crash low.
+    Reason: resetting at each rebalance progressively reduces total crash protection.
   NEW RANGE from real S/R levels from search:
     rebal_new_low = nearest support below price
     rebal_new_high = nearest resistance above price with 15% asymmetric bullish upside bias
@@ -1097,8 +1074,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     'wait_stabilise':'wait',
     'wait_btc':'wait',
     'rebalance_up':'act-now',
-    'rebalance_down':'act-now',
-    'wait_chop_72h':'wait'
+    'rebalance_down':'act-now'
   };
   const decType=decTypeMap[a.decision]||'ok';
   const decIco={'ok':'✅','wait':'⏳','act-now':a.rebal_direction==='down'?'🔴':'🔵'}[decType];
@@ -1127,23 +1103,20 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
 
   // ── 2. PRICE ──
   const chgC=a.change24h>=0?'var(--green)':'var(--red)';
-  // CHANGE 1: Price cross-check — compare HL API price vs search price
   const searchPx=a.price||0;
   const priceDiff=_hlPriceForCheck>0&&searchPx>0?Math.abs(_hlPriceForCheck-searchPx)/_hlPriceForCheck*100:0;
   const priceConflict=priceDiff>1.0;
-  // CHANGE 2: Data staleness — AI returns data_age_hours if available
   const dataAge=a.data_age_hours||0;
   const dataStale=dataAge>4;
-  $('r-price').innerHTML=`<div class="card cp" style="margin-bottom:${priceConflict||dataStale?'4px':'12px'}">
+  $('r-price').innerHTML=`<div class="card cp" style="margin-bottom:12px">
     <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:3px">
       <span style="font-family:'DM Mono',monospace;font-size:30px;font-weight:500">$${px.toFixed(2)}</span>
       <span style="font-size:12px;font-weight:600;color:${chgC};padding:2px 8px;border-radius:6px;background:${a.change24h>=0?'var(--gl)':'var(--rl)'}">${a.change24h>=0?'+':''}${(a.change24h||0).toFixed(2)}%</span>
-      ${_hlPriceForCheck>0?`<span style="font-size:10px;color:var(--ink4)">HL: $${_hlPriceForCheck.toFixed(2)}</span>`:''}
     </div>
-    <div style="font-size:10px;color:var(--ink4);font-family:'DM Mono',monospace">AVAX · 24h change · ${new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'})}</div>
+    <div style="font-size:10px;color:var(--ink4);font-family:'DM Mono',monospace">AVAX · 24h change · ${new Date().toLocaleDateString('en-SG',{day:'numeric',month:'short'})}${_hlPriceForCheck>0?' · HL: $'+_hlPriceForCheck.toFixed(2):''}</div>
   </div>
-  ${priceConflict?`<div style="background:var(--al);border:1px solid var(--ab);border-radius:9px;padding:8px 12px;margin-bottom:4px;font-size:10px;color:var(--amber)">⚠️ <b>Price conflict:</b> HL API $${_hlPriceForCheck.toFixed(2)} vs search $${searchPx.toFixed(2)} (${priceDiff.toFixed(1)}% gap). Verify price before trading.</div>`:''}
-  ${dataStale?`<div style="background:var(--al);border:1px solid var(--ab);border-radius:9px;padding:8px 12px;margin-bottom:12px;font-size:10px;color:var(--amber)">⚠️ <b>Stale data:</b> TA data may be up to ${dataAge}h old. RSI/MACD values may have changed.</div>`:'<div style="margin-bottom:12px"></div>'}`;
+  ${priceConflict?`<div style="background:var(--al);border:1px solid var(--ab);border-radius:9px;padding:7px 12px;margin-bottom:4px;font-size:10px;color:var(--amber)">⚠️ Price conflict: HL $${_hlPriceForCheck.toFixed(2)} vs search $${searchPx.toFixed(2)} (${priceDiff.toFixed(1)}% gap). Verify before trading.</div>`:''}
+  ${dataStale?`<div style="background:var(--al);border:1px solid var(--ab);border-radius:9px;padding:7px 12px;margin-bottom:8px;font-size:10px;color:var(--amber)">⚠️ Stale data: TA may be up to ${dataAge}h old. RSI/MACD may have changed.</div>`:'<div style="margin-bottom:12px"></div>'}`;
 
   // ── 3. METRICS ──
   const rsiC=a.rsi>60?'up':a.rsi<40?'dn':'neu';
@@ -1177,14 +1150,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     <div class="rb-track"><div class="rb-pin" style="left:${pin}%"></div></div>
     <div class="rb-lbls"><span>$${lo.toFixed(2)}</span><span>$${px.toFixed(2)} (${pct.toFixed(0)}%)</span><span>$${hi.toFixed(2)}</span></div>
     ${daysOut>0?`<div style="margin-top:8px;padding:7px 10px;background:${a.decision.includes('rebalance')?'var(--rl)':'var(--al)'};border-radius:7px;font-size:11px;color:${a.decision.includes('rebalance')?'var(--red)':'var(--amber)'}">LP has been out of range for <b>${daysOut} day${daysOut!==1?'s':''}</b>. ${a.decision.includes('rebalance')?'Rebalance required — see actions above.':'Continue waiting for stabilisation.'}</div>`:''}
-    <div class="rh-why">${(()=>{
-      const reg=a.regime||'';
-      if(reg==='uptrend')return'📈 <b>Uptrend detected</b> — LP is actively selling AVAX into rising price. Watch near-exit warning. Consider proactive range shift or temporary LP removal if breakout is sustained above $12+.';
-      if(reg==='downtrend')return'📉 <b>Downtrend detected</b> — LP is accumulating AVAX as price falls. Aligns with long-term hold thesis ✅. Hedge running provides protection.';
-      if(reg==='ranging')return'↔️ <b>Ranging market</b> — optimal conditions for LP ✅. Price oscillating within range generates maximum BLACK emissions with minimal IL.';
-      if(reg==='choppy')return'⚡ <b>Choppy market</b> — LP earning fees but range exits likely. 72h rule active for any rebalance decisions.';
-      return'LP earning BLACK emissions. Monitor range position nightly.';
-    })()}</div>
+    <div class="rh-why">${(()=>{const reg=a.regime||'';if(reg==='uptrend')return'📈 <b>Uptrend</b> — LP selling AVAX into strength. Watch near-exit warning. Shift range or remove LP if breakout sustained above $12+.';if(reg==='downtrend')return'📉 <b>Downtrend</b> — LP accumulating AVAX as price falls. Aligns with long-term hold thesis.';if(reg==='ranging')return'↔️ <b>Ranging market</b> — optimal for LP. Price oscillation generates maximum BLACK emissions.';if(reg==='choppy')return'⚡ <b>Choppy</b> — LP earning but range exits likely. 72h rule active for rebalance decisions.';return'LP earning BLACK emissions. Monitor range nightly.';})()}</div>
   </div>`;
 
   // ── 4b. LP NEAR-EXIT / RANGE ACTION ──
@@ -1317,6 +1283,10 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const cL=tc>=70?`${tc}% HIGH`:tc>=50?`${tc}% MED`:`${tc}% WAIT`;
   const tCls=td==='long'?'long':td==='short'?'short':'wait';
   const tDir=td==='long'?'▲ LONG':td==='short'?'▼ SHORT':'⏸ WAIT';
+  // Save LP range for next session
+  if(a.range_low&&a.range_high){
+    sessionStorage.setItem('avax_lp_range',JSON.stringify({lo:a.range_low,hi:a.range_high}));
+  }
   const entryType=a.entry_type||'limit';
   const entrySize=a.entry_size||'strong';
   // Stage 1 sizing: strong=$1,000 notional, mixed=$500 notional
@@ -1348,18 +1318,6 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     </div>`:''}`}
     ${td!=='wait'&&a.signal!=='remove_lp'?`<div class="tb-reason">${a.signal_why||''}</div>`:''}
   </div>`;
-
-  // ── 5b. HEDGE LIQUIDATION WARNING ──
-  if(a.hedge_liquidation_risk){
-    const hedgeLiqPx=(hedgeEntry*1.9).toFixed(2);
-    const existing=$('r-trade');
-    if(existing){
-      const warn=document.createElement('div');
-      warn.style.cssText='background:var(--al);border:1.5px solid var(--ab);border-radius:10px;padding:10px 13px;margin-top:8px;font-size:11px;color:var(--amber);line-height:1.6';
-      warn.innerHTML=`⚠️ <b>Hedge liquidation risk:</b> ${a.hedge_liquidation_reason||'AVAX approaching hedge liquidation at ~$'+hedgeLiqPx}. When shifting LP range upward, consider closing crash hedge and opening fresh one at new range_high × 1.10 as SL.`;
-      existing.after(warn);
-    }
-  }
 
   // ── 6. REBALANCE CALCULATOR ──
   const rw=$('r-rebal-wrap'),rb=$('r-rebal');
@@ -1466,9 +1424,8 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const lpValueNow=avax>0&&hlPx>0?(avax*hlPx+usdc):realLp;
   const avaxPct=avax>0&&lpValueNow>0?Math.round((avax*hlPx/lpValueNow)*100):50;
   const usdcPct=100-avaxPct;
-  // APY viability check — user enters current APY in BLACK emissions
   const currentApy=pv($('i_apy_display')?.value)||apy||35;
-  const apyOk=currentApy>=25;
+  const apyOk=currentApy>=30;
   const apyWarn=currentApy>0&&currentApy<25;
   $('r-fees').innerHTML=`
     <div class="jrow" style="padding:9px 14px"><span>LP value tonight</span><span style="color:var(--blue);font-weight:600">${f2(lpValueNow)}</span></div>
@@ -1478,12 +1435,8 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     <div class="jrow" style="padding:9px 14px"><span>Trading fees while staked</span><span style="color:var(--amber)">Go to veNFT voters ✗</span></div>
     <div class="jrow" style="padding:9px 14px"><span>Crash hedge TP</span><span style="color:var(--green)">$${(lo*0.60).toFixed(2)}</span></div>
     <div class="jrow" style="padding:9px 14px"><span>Crash hedge SL</span><span style="color:var(--amber)">$${(hi*1.10).toFixed(2)}</span></div>
-    ${apyWarn?`<div style="margin:8px 14px 6px;background:var(--rl);border:1px solid var(--rb);border-radius:8px;padding:9px 11px;font-size:11px;color:var(--red);line-height:1.6">
-      🔴 <b>APY too low for LP</b><br>
-      Current BLACK APY appears below 25%. LP may not justify impermanent loss.<br>
-      <b>Consider:</b> removing LP and holding AVAX directly until APY recovers above 30%.
-    </div>`:''}
-    ${apyOk&&currentApy>=30?`<div style="margin:8px 14px 6px;background:var(--gl);border:1px solid var(--gb);border-radius:8px;padding:7px 11px;font-size:10px;color:var(--green)">✅ APY viable — BLACK yield justifies IL cost at current range</div>`:''}
+    ${apyWarn?`<div style="margin:8px 14px 6px;background:var(--rl);border:1px solid var(--rb);border-radius:8px;padding:9px 11px;font-size:11px;color:var(--red);line-height:1.6">🔴 <b>APY below 25%</b> — LP may not justify impermanent loss. Consider removing LP and holding AVAX until APY recovers above 30%.</div>`:''}
+    ${apyOk?`<div style="margin:8px 14px 6px;background:var(--gl);border:1px solid var(--gb);border-radius:8px;padding:7px 11px;font-size:10px;color:var(--green)">✅ APY viable — BLACK yield justifies IL cost at current range</div>`:''}
   `;
 
   // ── 9. SOURCES ──
@@ -1495,35 +1448,24 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
   const p=v=>String(v).padStart(2,'0');
   $('r-ts').textContent=`Analysis ${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())} SGT`;
-  // Show confirm trade button when signal is active
+  // Show confirm trade button when signal active
   const confirmWrap=$('r-confirm-wrap');
-  if(confirmWrap){
-    confirmWrap.style.display=(a.signal==='long'||a.signal==='short')?'block':'none';
-  }
-  // CHANGE 1: Save pending trade context for learning
+  if(confirmWrap) confirmWrap.style.display=(a.signal==='long'||a.signal==='short')?'block':'none';
+
+  // Save pending trade context for learning layer
   if(a.signal==='long'||a.signal==='short'){
-    const pendingCtx={
+    try{sessionStorage.setItem('avax_pending_trade',JSON.stringify({
       signal_date:new Date().toISOString(),
-      direction:a.signal,
-      entry_size:a.entry_size||'strong',
-      confidence:a.confidence||0,
-      entry:a.entry||px,
-      tp1:a.tp1||0,
-      tp2:a.tp2||0,
-      sl:a.sl||0,
-      regime:a.regime||'',
-      vol_regime:a.vol_regime||'',
-      rsi:a.rsi||0,
-      macd:a.macd||'',
-      btc_trend:a.btc_trend||'',
-      oi_change:a.oi_change||'',
-      atr_pct:a.atr_pct||0,
-      lp_zone:a.lp_zone||'',
-      lp_pct:a.lp_pct||0,
-      days_out:daysOut
-    };
-    try{sessionStorage.setItem('avax_pending_trade',JSON.stringify(pendingCtx));}catch(e){}
+      direction:a.signal, entry_size:a.entry_size||'strong',
+      confidence:a.confidence||0, entry:a.entry||px,
+      tp1:a.tp1||0, tp2:a.tp2||0, sl:a.sl||0,
+      regime:a.regime||'', vol_regime:a.vol_regime||'',
+      rsi:a.rsi||0, macd:a.macd||'', btc_trend:a.btc_trend||'',
+      oi_change:a.oi_change||'', atr_pct:a.atr_pct||0,
+      lp_zone:a.lp_zone||'', lp_pct:a.lp_pct||0, days_out:daysOut
+    }));}catch(e){}
   }
+
   setTimeout(()=>$('results').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
@@ -1544,8 +1486,7 @@ function logEvent(){
   const prev=j.length?j[0].cum:0;
   const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
   const p=v=>String(v).padStart(2,'0');
-
-  // CHANGE 2: Enrich trade close entries with pending conditions
+  // Enrich trade closes with conditions from pending context
   const isTradeClose=['trade_tp1','trade_tp2','trade_sl'].includes(evtType);
   let tradeCtx=null;
   if(isTradeClose){
@@ -1553,21 +1494,17 @@ function logEvent(){
       const raw=sessionStorage.getItem('avax_pending_trade');
       if(raw){
         const ctx=JSON.parse(raw);
-        const openedAt=new Date(ctx.signal_date);
-        const hoursHeld=+((now-openedAt)/3600000).toFixed(1);
+        const hoursHeld=+((now-new Date(ctx.signal_date))/3600000).toFixed(1);
         tradeCtx={...ctx,result:_tradeEvt,hours_held:hoursHeld};
         sessionStorage.removeItem('avax_pending_trade');
       }
     }catch(e){}
   }
-
   const entry={
     date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
-    lpVal:+lpVal.toFixed(0),
-    avaxPx:+px.toFixed(2),
-    blackSold:+blackSold.toFixed(2),
-    tradePnl:+tradePnl.toFixed(2),
-    net,cum:+(prev+net).toFixed(2),evtType,
+    lpVal:+lpVal.toFixed(0), avaxPx:+px.toFixed(2),
+    blackSold:+blackSold.toFixed(2), tradePnl:+tradePnl.toFixed(2),
+    net, cum:+(prev+net).toFixed(2), evtType,
     ...(tradeCtx?{trade:tradeCtx}:{})
   };
   j.unshift(entry);saveJ(j);
@@ -1578,41 +1515,34 @@ function logEvent(){
 }
 function confirmTrade(placed){
   if(!placed){
-    // User chose no trade — just record as routine
-    if($('i_tpnl'))$('i_tpnl').value='0';
     setTrade('nothing',document.querySelector('#trade-btns .tbtn'));
     logEvent();
     toast('Recorded: no trade tonight','ok');
     return;
   }
-  // Record that a trade was placed
   const avax=pv($('i_avax')?.value)||0;
   const usdc=pv($('i_usdc')?.value)||0;
   const px=_hl?.px||0;
   const lpVal=avax>0&&usdc>0&&px>0?(avax*px+usdc):0;
   const blackSold=pv($('i_black')?.value)||0;
-  const j=loadJ();
-  const prev=j.length?j[0].cum:0;
+  const j=loadJ(); const prev=j.length?j[0].cum:0;
   const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
   const p=v=>String(v).padStart(2,'0');
   const dir=_dir||'none';
   const notional=dir!=='none'?1000:0;
   const entry={
     date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
-    lpVal:+lpVal.toFixed(0),
-    avaxPx:+px.toFixed(2),
-    blackSold:+blackSold.toFixed(2),
-    tradePnl:0,
-    net:+blackSold.toFixed(2),
-    cum:+(prev+blackSold).toFixed(2),
-    evtType:'trade_new',
-    note:`Trade placed: ${dir.toUpperCase()} $${notional} notional`
+    lpVal:+lpVal.toFixed(0), avaxPx:+px.toFixed(2),
+    blackSold:+blackSold.toFixed(2), tradePnl:0,
+    net:+blackSold.toFixed(2), cum:+(prev+blackSold).toFixed(2),
+    evtType:'trade_new', note:`Trade placed: ${dir.toUpperCase()} $${notional} notional`
   };
   j.unshift(entry);saveJ(j);
   const gu=localStorage.getItem(GK);if(gu)syncOne(entry,gu);
-  toast('✅ Trade placement recorded','ok');
+  toast('Trade placement recorded','ok');
   const cw=$('r-confirm-wrap');if(cw)cw.style.display='none';
 }
+
 function renderJ(){
   const d=loadJ();
   let tBlack=0,tTrade=0,tNet=0,wins=0,losses=0,lastLp=0;
@@ -1635,7 +1565,6 @@ function renderJ(){
 
   // Render trade performance card
   renderPerf(d);
-  // Render condition stats panel
   renderStats(d);
 
   if(d.length>=2){
@@ -1662,11 +1591,11 @@ function renderJ(){
       <div class="jrow"><span>Net tonight</span><span style="color:${e.net>=0?'var(--green)':'var(--red)'}"><b>${fs(e.net)}</b></span></div>
       <div class="jrow"><span>Cumulative</span><span style="color:${e.cum>=0?'var(--green)':'var(--red)'}"><b>${fs(e.cum)}</b></span></div>
       ${e.trade?(
-        '<div style="margin-top:6px;padding:7px 10px;background:var(--off);border-radius:7px;font-size:10px;color:var(--ink3);line-height:1.8">'
-        +'<span style="font-weight:700;color:var(--ink2)">'+(e.trade.direction||'').toUpperCase()+' · '+(e.trade.entry_size||'').toUpperCase()+' · '+(e.trade.confidence||0)+'% conf</span><br>'
+        '<div style="margin-top:6px;padding:7px 10px;background:var(--off);border-radius:7px;font-size:10px;color:var(--ink3);line-height:1.9">'
+        +'<b>'+(e.trade.direction||'').toUpperCase()+' · '+(e.trade.entry_size||'').toUpperCase()+' · '+(e.trade.confidence||0)+'% conf</b><br>'
         +'Entry $'+(e.trade.entry?.toFixed(2)||'—')+' · TP1 $'+(e.trade.tp1?.toFixed(2)||'—')+' · SL $'+(e.trade.sl?.toFixed(2)||'—')+'<br>'
         +(e.trade.regime?'Regime: '+e.trade.regime+' · ':'')+' RSI '+(e.trade.rsi||'—')+' · MACD '+(e.trade.macd||'—')+' · BTC '+(e.trade.btc_trend||'—')+'<br>'
-        +'LP '+(e.trade.lp_zone||'—')+' half ('+(e.trade.lp_pct||0)+'%) · '+(e.trade.hours_held||0)+'h held'
+        +'LP '+(e.trade.lp_zone||'—')+' ('+(e.trade.lp_pct||0)+'%) · '+(e.trade.hours_held||0)+'h held'
         +'</div>'
       ):''}
     </div></div>`).join('');
@@ -1675,295 +1604,104 @@ function renderJ(){
 async function runDataTest(){
   const key=localStorage.getItem(KK)||'';
   if(!key.startsWith('sk-')){toast('Add API key in Settings first','err');return;}
-
   const btn=$('tbtn'),btxt=$('tbtn-txt');
-  btn.classList.add('running');
-  btxt.textContent='Testing…';
-
-  // Refresh HL data
+  btn.classList.add('running');btxt.textContent='Testing…';
   _hl=await fetchHL();
   const hlPx=_hl?.px||0;
   const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%':null;
   const hlOI=_hl?(_hl.oi/1000).toFixed(0)+'K AVAX':null;
-
-  // Read inputs
-  const avax=pv($('i_avax')?.value)||0;
-  const usdc=pv($('i_usdc')?.value)||0;
-  const daysOut=pv($('i_daysout')?.value)||0;
+  const avax=pv($('i_avax')?.value)||0, usdc=pv($('i_usdc')?.value)||0;
   const hedgeEntry=pv($('i_hedge_entry')?.value)||9.71;
-  const apy=pv($('i_apy_display')?.value)||35;
+  const apy2=pv($('i_apy_display')?.value)||35;
   const storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
-  const lo=storedRange.lo||9.25, hi=storedRange.hi||10.50;
-  const lpVal=avax>0&&usdc>0&&hlPx>0?(avax*hlPx+usdc):0;
-  const lp_pct=lpVal>0?((hlPx-lo)/(hi-lo)*100).toFixed(0):50;
-
-  // LP ratio sanity
-  const expectedAvaxPct=lpVal>0?Math.round(avax*hlPx/lpVal*100):50;
-  const expectedUsdcPct=100-expectedAvaxPct;
-  const lpRatioOk=avax>0&&usdc>0&&hlPx>0;
-
-  // Hedge checks
+  const tlo=storedRange.lo||9.25, thi=storedRange.hi||10.50;
+  const lpVal2=avax>0&&usdc>0&&hlPx>0?(avax*hlPx+usdc):0;
+  const lp_pct2=hlPx>0&&lpVal2>0?((hlPx-tlo)/(thi-tlo)*100).toFixed(0):50;
+  const expAvaxPct=lpVal2>0?Math.round(avax*hlPx/lpVal2*100):50;
   const hedgeLiq=(hedgeEntry*1.9).toFixed(2);
   const hedgeLiqSafe=hlPx>0&&hlPx<hedgeEntry*1.7;
-  const hedgeProfit=hlPx>0?Math.max(0,500*(hedgeEntry-hlPx)/hedgeEntry).toFixed(0):0;
-
-  const testSys=`You are a data accuracy auditor for a crypto trading system. Run exactly 2 web searches to verify data quality. Return only valid JSON.
-
-LIVE DATA TO VERIFY (fetched from Hyperliquid API seconds ago):
-- AVAX price: ${hlPx>0?'$'+hlPx.toFixed(2):'unavailable'}
-- Funding rate: ${hlFund||'unavailable'}
-- Open interest: ${hlOI||'unavailable'}
-
-USER INPUTS TO SANITY CHECK:
-- AVAX in LP: ${avax}
-- USDC in LP: $${usdc}
-- LP range: $${lo.toFixed(2)} to $${hi.toFixed(2)}
-- Pool APY: ${apy}%
-- Days out of range: ${daysOut}
-- Hedge entry: $${hedgeEntry}
-
-STEP 1: Search "AVAX price live current USD"
-  Get price from 2-3 sources (CoinGecko, CoinMarketCap, exchange)
-  Compare each vs HL API price $${hlPx.toFixed(2)}
-
-STEP 2: Search "AVAX RSI MACD EMA20 EMA200 ATR technical analysis today"
-  Get current RSI, MACD direction, EMA20, EMA200, ATR
-  Note how old the data is (hours)
-  Check if values are internally consistent:
-    RSI>60 + MACD bullish + price above EMA20 = consistent
-    RSI<40 + MACD bullish = inconsistent
-    ATR should be $0.30-$1.50 for AVAX currently
-
-Return this exact JSON:
-{
-  "price_hl": ${hlPx>0?hlPx.toFixed(2):0},
-  "price_source1": 9.71,
-  "price_source1_name": "CoinGecko",
-  "price_source2": 9.73,
-  "price_source2_name": "CoinMarketCap",
-  "price_max_gap_pct": 0.21,
-  "price_confidence": "high",
-  "price_verdict": "All sources within 0.3%. Data reliable.",
-  "rsi": 57,
-  "rsi_sources": 2,
-  "rsi_age_hours": 1.5,
-  "macd": "bullish",
-  "macd_consistent_with_rsi": true,
-  "ema20": 9.25,
-  "ema200": 16.91,
-  "ema_price_consistent": true,
-  "atr": 0.51,
-  "atr_plausible": true,
-  "ta_confidence": "medium",
-  "ta_verdict": "RSI and MACD agree. EMA20 data 2h old — may have shifted slightly.",
-  "btc_trend": "neutral",
-  "btc_confidence": "high",
-  "overall_confidence": "medium",
-  "overall_verdict": "Price data highly reliable. TA data moderate — RSI/EMA may be 1-3h old. Safe to run full analysis.",
-  "recommendation": "proceed",
-  "data_age_hours": 2,
-  "warnings": []
-}
-
-confidence values: "high" / "medium" / "low"
-recommendation: "proceed" / "proceed_with_caution" / "re-run_later"`;
-
+  const hedgeProfit2=hlPx>0?Math.max(0,500*(hedgeEntry-hlPx)/hedgeEntry).toFixed(0):0;
   const panel=$('test-panel'),result=$('test-result');
   if(panel)panel.style.display='block';
-  if(result)result.innerHTML=`<div style="padding:20px;text-align:center"><div style="font-size:24px;margin-bottom:8px;animation:bob 1.5s ease-in-out infinite">🔍</div><div style="font-size:12px;color:var(--ink4)">Running data accuracy test…</div></div>`;
+  if(result)result.innerHTML='<div style="padding:20px;text-align:center"><div style="font-size:24px;margin-bottom:8px">🔍</div><div style="font-size:12px;color:var(--ink4)">Running data accuracy test…</div></div>';
   if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
-
+  const testSys=`You are a data accuracy auditor. Run exactly 2 web searches. Return only valid JSON.
+LIVE DATA (from Hyperliquid API):
+- AVAX price: ${hlPx>0?'$'+hlPx.toFixed(2):'unavailable'}
+- Funding: ${hlFund||'unavailable'} | OI: ${hlOI||'unavailable'}
+SEARCH 1: "AVAX price live current USD" — get price from 2-3 sources, compare vs $${hlPx.toFixed(2)}
+SEARCH 2: "AVAX RSI MACD EMA20 ATR technical analysis today" — get values, note data age in hours, check consistency
+Return JSON: {"price_hl":${hlPx.toFixed(2)},"price_source1":9.71,"price_source1_name":"CoinGecko","price_source2":9.73,"price_source2_name":"CMC","price_max_gap_pct":0.21,"price_confidence":"high","price_verdict":"ok","rsi":57,"rsi_sources":2,"rsi_age_hours":1.5,"macd":"bullish","macd_consistent_with_rsi":true,"ema20":9.25,"ema200":16.91,"ema_price_consistent":true,"atr":0.51,"atr_plausible":true,"ta_confidence":"medium","ta_verdict":"ok","btc_trend":"neutral","overall_confidence":"medium","overall_verdict":"Price reliable. TA moderate — 2h old.","recommendation":"proceed","data_age_hours":2,"warnings":[]}`;
   try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:800,
-        tools:[{type:'web_search_20250305',name:'web_search'}],
-        system:testSys,
-        messages:[{role:'user',content:'Run data accuracy test now. Return only the JSON.'}]
-      })
-    });
+    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,tools:[{type:'web_search_20250305',name:'web_search'}],system:testSys,messages:[{role:'user',content:'Run data accuracy test now. Return only JSON.'}]})});
     if(!res.ok)throw new Error('API error '+res.status);
     const data=await res.json();
-    let raw='';
-    for(const b of(data.content||[])){if(b.type==='text')raw+=b.text;}
+    let raw='';for(const b of(data.content||[])){if(b.type==='text')raw+=b.text;}
     const s=raw.indexOf('{'),e2=raw.lastIndexOf('}');
     if(s<0||e2<=s)throw new Error('No JSON');
     const t=JSON.parse(raw.slice(s,e2+1));
-
-    // Render results
-    const now=new Date(),sgt=new Date(now.getTime()+(8*60-now.getTimezoneOffset())*60000);
+    const now2=new Date(),sgt2=new Date(now2.getTime()+(8*60-now2.getTimezoneOffset())*60000);
     const p2=v=>String(v).padStart(2,'0');
-    const timeStr=`${p2(sgt.getUTCHours())}:${p2(sgt.getUTCMinutes())} SGT`;
-    const timeEl=$('test-time');if(timeEl)timeEl.textContent=`Tested ${timeStr}`;
-
-    const confBadge=(c)=>{
-      const cls=c==='high'?'hi':c==='medium'?'med':'lo';
-      const lbl=c==='high'?'HIGH':c==='medium'?'MED':'LOW';
-      return `<span class="tscore ${cls}">${lbl}</span>`;
-    };
-    const tick=(ok)=>ok?'<span style="color:var(--green)">✅</span>':'<span style="color:var(--red)">⚠️</span>';
-
-    // Price gap
+    const timeEl=$('test-time');if(timeEl)timeEl.textContent=`Tested ${p2(sgt2.getUTCHours())}:${p2(sgt2.getUTCMinutes())} SGT`;
+    const cb=(c)=>{const cls=c==='high'?'hi':c==='medium'?'med':'lo';return '<span class="tscore '+cls+'">'+(c||'—').toUpperCase()+'</span>';};
+    const tk=(ok)=>ok?'<span style="color:var(--green)">✅</span>':'<span style="color:var(--red)">⚠️</span>';
     const gapPct=t.price_max_gap_pct||0;
-    const gapOk=gapPct<1.0;
-    const gapWarn=gapPct>=1.0&&gapPct<2.0;
-    const gapBad=gapPct>=2.0;
-    const gapCol=gapBad?'var(--red)':gapWarn?'var(--amber)':'var(--green)';
-
-    // Overall verdict style
     const ov=t.overall_confidence||'medium';
     const ovCls=ov==='high'?'ok':ov==='medium'?'warn':'err';
     const recIco=t.recommendation==='proceed'?'✅':t.recommendation==='proceed_with_caution'?'⚠️':'🔴';
-
-    result.innerHTML=`
-      <!-- OVERALL VERDICT -->
-      <div class="tverdict ${ovCls}">
-        <b>${recIco} ${t.recommendation==='proceed'?'SAFE TO ANALYSE':t.recommendation==='proceed_with_caution'?'PROCEED WITH AWARENESS':'WAIT — DATA ISSUES'}</b><br>
-        ${t.overall_verdict||''}
-      </div>
-
-      <!-- PRICE FEEDS -->
-      <div class="tsec">Price Feeds</div>
-      <div class="trow"><span>Hyperliquid API</span><span class="tval">$${(t.price_hl||hlPx).toFixed(2)} ${tick(true)}</span></div>
-      ${t.price_source1?`<div class="trow"><span>${t.price_source1_name||'Source 1'}</span><span class="tval">$${t.price_source1.toFixed(2)} ${tick(Math.abs(t.price_source1-hlPx)/hlPx*100<1)}</span></div>`:''}
-      ${t.price_source2?`<div class="trow"><span>${t.price_source2_name||'Source 2'}</span><span class="tval">$${t.price_source2.toFixed(2)} ${tick(Math.abs(t.price_source2-hlPx)/hlPx*100<1)}</span></div>`:''}
-      <div class="trow"><span>Max price gap</span><span class="tval" style="color:${gapCol}">${gapPct.toFixed(2)}% ${gapBad?'⚠️':''}</span></div>
-      <div class="trow"><span>Price confidence</span><span class="tval">${confBadge(t.price_confidence||'high')}</span></div>
-
-      <!-- TECHNICAL INDICATORS -->
-      <div class="tsec">Technical Indicators</div>
-      <div class="trow"><span>RSI (14)</span><span class="tval">${t.rsi||'—'} · ${t.rsi_sources||1} source${(t.rsi_sources||1)>1?'s':''} · ${t.rsi_age_hours||'?'}h old</span></div>
-      <div class="trow"><span>MACD</span><span class="tval">${(t.macd||'—').toUpperCase()} ${tick(t.macd_consistent_with_rsi!==false)}</span></div>
-      <div class="trow"><span>EMA 20</span><span class="tval">$${t.ema20?.toFixed(2)||'—'} ${tick(t.ema_price_consistent!==false)}</span></div>
-      <div class="trow"><span>EMA 200</span><span class="tval">$${t.ema200?.toFixed(2)||'—'}</span></div>
-      <div class="trow"><span>ATR (daily)</span><span class="tval">$${t.atr?.toFixed(2)||'—'} ${tick(t.atr_plausible!==false)}</span></div>
-      <div class="trow"><span>TA data age</span><span class="tval" style="color:${(t.data_age_hours||0)>4?'var(--amber)':'var(--green)'}">${t.data_age_hours||'?'}h old</span></div>
-      <div class="trow"><span>TA confidence</span><span class="tval">${confBadge(t.ta_confidence||'medium')}</span></div>
-
-      <!-- LIVE FEEDS -->
-      <div class="tsec">Live Market Data</div>
-      <div class="trow"><span>Funding rate</span><span class="tval">${hlFund||'—'}/hr ${tick(!!hlFund)}</span></div>
-      <div class="trow"><span>Open interest</span><span class="tval">${hlOI||'—'} ${tick(!!hlOI)}</span></div>
-      <div class="trow"><span>BTC trend</span><span class="tval">${(t.btc_trend||'—').toUpperCase()}</span></div>
-
-      <!-- YOUR LP INPUTS -->
-      <div class="tsec">Your LP Inputs</div>
-      ${lpRatioOk?`
-      <div class="trow"><span>LP value</span><span class="tval" style="color:var(--blue)">$${lpVal.toFixed(0)}</span></div>
-      <div class="trow"><span>Composition</span><span class="tval">${expectedAvaxPct}% AVAX · ${expectedUsdcPct}% USDC</span></div>
-      <div class="trow"><span>Range position</span><span class="tval">${lp_pct}% through $${lo.toFixed(2)}→$${hi.toFixed(2)}</span></div>
-      <div class="trow"><span>Pool APY</span><span class="tval" style="color:${apy>=30?'var(--green)':apy>=25?'var(--amber)':'var(--red)'}">${apy}% ${apy>=30?'✅':apy>=25?'⚠️':'🔴'}</span></div>
-      `:`<div class="trow"><span>LP inputs</span><span class="tval" style="color:var(--amber)">Enter AVAX + USDC above</span></div>`}
-
-      <!-- HEDGE CHECK -->
-      <div class="tsec">Crash Hedge</div>
-      <div class="trow"><span>Entry price</span><span class="tval">$${hedgeEntry.toFixed(2)}</span></div>
-      <div class="trow"><span>Liquidation at</span><span class="tval" style="color:${hedgeLiqSafe?'var(--green)':'var(--red)'}">~$${hedgeLiq} ${hedgeLiqSafe?'✅ safe':'⚠️ close'}</span></div>
-      <div class="trow"><span>Unrealised profit</span><span class="tval" style="color:var(--green)">+$${hedgeProfit}</span></div>
-
-      ${t.warnings&&t.warnings.length?`<div class="tsec">Warnings</div>${t.warnings.map(w=>`<div class="trow"><span style="color:var(--amber)">⚠️ ${w}</span></div>`).join('')}`:''}
-    `;
+    const recTxt=t.recommendation==='proceed'?'SAFE TO ANALYSE':t.recommendation==='proceed_with_caution'?'PROCEED WITH AWARENESS':'WAIT — DATA ISSUES';
+    result.innerHTML=
+      '<div class="tverdict '+ovCls+'"><b>'+recIco+' '+recTxt+'</b><br>'+(t.overall_verdict||'')+'</div>'
+      +'<div class="tsec">Price Feeds</div>'
+      +'<div class="trow"><span>Hyperliquid API</span><span class="tval">$'+(t.price_hl||hlPx).toFixed(2)+' '+tk(true)+'</span></div>'
+      +(t.price_source1?'<div class="trow"><span>'+(t.price_source1_name||'Source 1')+'</span><span class="tval">$'+t.price_source1.toFixed(2)+' '+tk(Math.abs(t.price_source1-hlPx)/hlPx*100<1)+'</span></div>':'')
+      +(t.price_source2?'<div class="trow"><span>'+(t.price_source2_name||'Source 2')+'</span><span class="tval">$'+t.price_source2.toFixed(2)+' '+tk(Math.abs(t.price_source2-hlPx)/hlPx*100<1)+'</span></div>':'')
+      +'<div class="trow"><span>Max gap</span><span class="tval" style="color:'+(gapPct>=2?'var(--red)':gapPct>=1?'var(--amber)':'var(--green)')+'">'+gapPct.toFixed(2)+'%</span></div>'
+      +'<div class="trow"><span>Price confidence</span><span class="tval">'+cb(t.price_confidence)+'</span></div>'
+      +'<div class="tsec">Technical Indicators</div>'
+      +'<div class="trow"><span>RSI (14)</span><span class="tval">'+(t.rsi||'—')+' · '+(t.rsi_sources||1)+' src · '+(t.rsi_age_hours||'?')+'h old</span></div>'
+      +'<div class="trow"><span>MACD</span><span class="tval">'+(t.macd||'—').toUpperCase()+' '+tk(t.macd_consistent_with_rsi!==false)+'</span></div>'
+      +'<div class="trow"><span>EMA 20</span><span class="tval">$'+(t.ema20?.toFixed(2)||'—')+' '+tk(t.ema_price_consistent!==false)+'</span></div>'
+      +'<div class="trow"><span>ATR (daily)</span><span class="tval">$'+(t.atr?.toFixed(2)||'—')+' '+tk(t.atr_plausible!==false)+'</span></div>'
+      +'<div class="trow"><span>Data age</span><span class="tval" style="color:'+((t.data_age_hours||0)>4?'var(--amber)':'var(--green)')+'">'+( t.data_age_hours||'?')+'h</span></div>'
+      +'<div class="trow"><span>TA confidence</span><span class="tval">'+cb(t.ta_confidence)+'</span></div>'
+      +'<div class="tsec">Live Market Data</div>'
+      +'<div class="trow"><span>Funding</span><span class="tval">'+(hlFund||'—')+' '+tk(!!hlFund)+'</span></div>'
+      +'<div class="trow"><span>Open interest</span><span class="tval">'+(hlOI||'—')+' '+tk(!!hlOI)+'</span></div>'
+      +'<div class="trow"><span>BTC trend</span><span class="tval">'+(t.btc_trend||'—').toUpperCase()+'</span></div>'
+      +(lpVal2>0?'<div class="tsec">Your LP Inputs</div>'
+        +'<div class="trow"><span>LP value</span><span class="tval" style="color:var(--blue)">$'+lpVal2.toFixed(0)+'</span></div>'
+        +'<div class="trow"><span>Composition</span><span class="tval">'+expAvaxPct+'% AVAX · '+(100-expAvaxPct)+'% USDC</span></div>'
+        +'<div class="trow"><span>Range position</span><span class="tval">'+lp_pct2+'% through $'+tlo.toFixed(2)+'→$'+thi.toFixed(2)+'</span></div>'
+        +'<div class="trow"><span>Pool APY</span><span class="tval" style="color:'+(apy2>=30?'var(--green)':apy2>=25?'var(--amber)':'var(--red)')+'">'+apy2+'%</span></div>':'')
+      +'<div class="tsec">Crash Hedge</div>'
+      +'<div class="trow"><span>Entry</span><span class="tval">$'+hedgeEntry.toFixed(2)+'</span></div>'
+      +'<div class="trow"><span>Liq at</span><span class="tval" style="color:'+(hedgeLiqSafe?'var(--green)':'var(--red)')+'">~$'+hedgeLiq+'</span></div>'
+      +'<div class="trow"><span>Profit now</span><span class="tval" style="color:var(--green)">+$'+hedgeProfit2+'</span></div>'
+      +(t.warnings&&t.warnings.length?'<div class="tsec">Warnings</div>'+t.warnings.map(w=>'<div class="trow"><span style="color:var(--amber)">⚠️ '+w+'</span></div>').join(''):'');
   }catch(err){
-    if(result)result.innerHTML=`<div style="padding:14px;font-size:11px;color:var(--red)">Test failed: ${err.message}. Check API key in Settings.</div>`;
+    if(result)result.innerHTML='<div style="padding:14px;font-size:11px;color:var(--red)">Test failed: '+err.message+'</div>';
   }
-
-  btn.classList.remove('running');
-  btxt.textContent='Test Data';
+  btn.classList.remove('running');btxt.textContent='Test Data';
 }
 
 function renderStats(d){
   const wrap=$('j-stats-wrap'),card=$('j-stats');
   if(!wrap||!card)return;
-
-  // Only trades with full condition context
   const trades=d.filter(e=>e.trade&&['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType));
-  const n=trades.length;
-
-  if(n<5){
-    wrap.style.display='none';
-    return;
-  }
+  if(trades.length<5){wrap.style.display='none';return;}
   wrap.style.display='block';
-
-  // Helper: win rate for a subset
-  const wr=(arr)=>{
-    if(!arr.length)return null;
-    const wins=arr.filter(e=>e.tradePnl>0).length;
-    return {wins,total:arr.length,pct:Math.round(wins/arr.length*100)};
-  };
-
-  // Group by condition
-  const groups={
-    'Uptrend':  trades.filter(e=>e.trade.regime==='uptrend'),
-    'Downtrend':trades.filter(e=>e.trade.regime==='downtrend'),
-    'Ranging':  trades.filter(e=>e.trade.regime==='ranging'),
-    'Choppy':   trades.filter(e=>e.trade.regime==='choppy'),
-    'LP Upper half': trades.filter(e=>e.trade.lp_pct>50),
-    'LP Lower half': trades.filter(e=>e.trade.lp_pct<=50),
-    'RSI 55-70':trades.filter(e=>e.trade.rsi>=55&&e.trade.rsi<=70),
-    'RSI 40-55':trades.filter(e=>e.trade.rsi>=40&&e.trade.rsi<55),
-    'BTC neutral':trades.filter(e=>e.trade.btc_trend==='neutral'),
-    'BTC bearish':trades.filter(e=>e.trade.btc_trend==='bearish'),
-    'Strong ($1k)':trades.filter(e=>e.trade.entry_size==='strong'),
-    'Mixed ($500)':trades.filter(e=>e.trade.entry_size==='mixed'),
-    'Confidence 65+':trades.filter(e=>e.trade.confidence>=65),
-    'Confidence <65':trades.filter(e=>e.trade.confidence<65),
-  };
-
-  // Find best and worst conditions (min 3 trades)
-  const rows=Object.entries(groups)
-    .filter(([k,arr])=>arr.length>=3)
-    .map(([label,arr])=>{const w=wr(arr);return{label,wins:w.wins,total:w.total,pct:w.pct};})
-    .sort((a,b)=>b.pct-a.pct);
-
-  // Build win rate bar — uses string concat to avoid nested template literal issues
-  const bar=(pct)=>{
-    const col=pct>=65?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
-    return '<div style="display:flex;align-items:center;gap:6px">'
-      +'<div style="flex:1;height:5px;border-radius:3px;background:var(--off3);overflow:hidden">'
-      +'<div style="width:'+pct+'%;height:100%;border-radius:3px;background:'+col+'"></div>'
-      +'</div>'
-      +'<span style="font-family:DM Mono,monospace;font-size:10px;font-weight:600;color:'+col+';min-width:32px;text-align:right">'+pct+'%</span>'
-      +'</div>';
-  };
-
-  // Pre-build all HTML sections before assignment
-  const edgeConditions=rows.filter(r=>r.pct>=60);
-  const weakConditions=rows.filter(r=>r.pct<45);
-
-  let edgeHtml='';
-  if(edgeConditions.length){
-    edgeHtml='<div style="margin:0 14px 10px;background:var(--gl);border:1px solid var(--gb);border-radius:9px;padding:9px 11px">'
-      +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:6px">✅ Your Edge Conditions</div>'
-      +edgeConditions.map(r=>'<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">'+r.label+': <b>'+r.pct+'%</b> ('+r.wins+'/'+r.total+')</div>').join('')
-      +'</div>';
-  }
-
-  let weakHtml='';
-  if(weakConditions.length){
-    weakHtml='<div style="margin:0 14px 10px;background:var(--rl);border:1px solid var(--rb);border-radius:9px;padding:9px 11px">'
-      +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:6px">⚠️ Avoid These Conditions</div>'
-      +weakConditions.map(r=>'<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">'+r.label+': <b style="color:var(--red)">'+r.pct+'%</b> ('+r.wins+'/'+r.total+')</div>').join('')
-      +'</div>';
-  }
-
-  const rowsHtml='<div style="border-top:1px solid var(--off3)">'
-    +rows.map(r=>'<div style="padding:8px 14px;border-bottom:1px solid var(--off3)">'
-      +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
-      +'<span style="font-size:11px;color:var(--ink2)">'+r.label+'</span>'
-      +'<span style="font-size:10px;color:var(--ink4)">'+r.wins+'/'+r.total+' trades</span>'
-      +'</div>'
-      +bar(r.pct)
-      +'</div>').join('')
-    +'</div>';
-
-  card.innerHTML=
-    '<div style="padding:14px 14px 0"><div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:10px">Based on '+n+' trades with full context</div></div>'
-    +edgeHtml+weakHtml+rowsHtml
-    +'<div style="padding:10px 14px;font-size:10px;color:var(--ink4);line-height:1.5">Updates automatically as you log more trades. Meaningful patterns emerge after 10+ trades per condition.</div>';
+  const wr=arr=>{if(!arr.length)return null;const w=arr.filter(e=>e.tradePnl>0).length;return{wins:w,total:arr.length,pct:Math.round(w/arr.length*100)};};
+  const groups={'Uptrend':trades.filter(e=>e.trade.regime==='uptrend'),'Downtrend':trades.filter(e=>e.trade.regime==='downtrend'),'Ranging':trades.filter(e=>e.trade.regime==='ranging'),'Choppy':trades.filter(e=>e.trade.regime==='choppy'),'LP Upper':trades.filter(e=>e.trade.lp_pct>50),'LP Lower':trades.filter(e=>e.trade.lp_pct<=50),'RSI 55-70':trades.filter(e=>e.trade.rsi>=55&&e.trade.rsi<=70),'RSI 40-55':trades.filter(e=>e.trade.rsi>=40&&e.trade.rsi<55),'BTC neutral':trades.filter(e=>e.trade.btc_trend==='neutral'),'BTC bearish':trades.filter(e=>e.trade.btc_trend==='bearish'),'Strong $1k':trades.filter(e=>e.trade.entry_size==='strong'),'Mixed $500':trades.filter(e=>e.trade.entry_size==='mixed'),'Conf 65+':trades.filter(e=>e.trade.confidence>=65),'Conf <65':trades.filter(e=>e.trade.confidence<65)};
+  const rows=Object.entries(groups).filter(([k,a])=>a.length>=3).map(([label,a])=>{const w=wr(a);return{label,wins:w.wins,total:w.total,pct:w.pct};}).sort((a,b)=>b.pct-a.pct);
+  const edge=rows.filter(r=>r.pct>=60);
+  const weak=rows.filter(r=>r.pct<45);
+  const bar=pct=>{const col=pct>=65?'var(--green)':pct>=50?'var(--amber)':'var(--red)';return '<div style="display:flex;align-items:center;gap:6px"><div style="flex:1;height:5px;border-radius:3px;background:var(--off3);overflow:hidden"><div style="width:'+pct+'%;height:100%;border-radius:3px;background:'+col+'"></div></div><span style="font-family:DM Mono,monospace;font-size:10px;font-weight:600;color:'+col+';min-width:32px;text-align:right">'+pct+'%</span></div>';};
+  let edgeHtml='',weakHtml='';
+  if(edge.length){edgeHtml='<div style="margin:0 14px 10px;background:var(--gl);border:1px solid var(--gb);border-radius:9px;padding:9px 11px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--green);margin-bottom:6px">Your Edge Conditions</div>'+edge.map(r=>'<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">'+r.label+': <b>'+r.pct+'%</b> ('+r.wins+'/'+r.total+')</div>').join('')+'</div>';}
+  if(weak.length){weakHtml='<div style="margin:0 14px 10px;background:var(--rl);border:1px solid var(--rb);border-radius:9px;padding:9px 11px"><div style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--red);margin-bottom:6px">Avoid These Conditions</div>'+weak.map(r=>'<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">'+r.label+': <b style="color:var(--red)">'+r.pct+'%</b> ('+r.wins+'/'+r.total+')</div>').join('')+'</div>';}
+  const rowsHtml='<div style="border-top:1px solid var(--off3)">'+rows.map(r=>'<div style="padding:8px 14px;border-bottom:1px solid var(--off3)"><div style="display:flex;justify-content:space-between;margin-bottom:4px"><span style="font-size:11px;color:var(--ink2)">'+r.label+'</span><span style="font-size:10px;color:var(--ink4)">'+r.wins+'/'+r.total+'</span></div>'+bar(r.pct)+'</div>').join('')+'</div>';
+  card.innerHTML='<div style="padding:14px 14px 0"><div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:10px">Based on '+trades.length+' trades with full context</div></div>'+edgeHtml+weakHtml+rowsHtml+'<div style="padding:10px 14px;font-size:10px;color:var(--ink4);line-height:1.5">Patterns emerge after 10+ trades per condition.</div>';
 }
 function renderPerf(d){
   const wrap=$('j-perf-wrap'),card=$('j-perf');
