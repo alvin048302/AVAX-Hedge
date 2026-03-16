@@ -326,6 +326,16 @@ canvas{display:block;width:100%!important;height:100%!important}
       </div>
       <div class="g2">
         <div class="field">
+          <div class="flbl">LP Range Low $ <span class="fhint">your deployed range</span></div>
+          <input type="number" id="i_range_lo" inputmode="decimal" placeholder="9.30" step="0.01">
+        </div>
+        <div class="field">
+          <div class="flbl">LP Range High $ <span class="fhint">your deployed range</span></div>
+          <input type="number" id="i_range_hi" inputmode="decimal" placeholder="10.30" step="0.01">
+        </div>
+      </div>
+      <div class="g2">
+        <div class="field">
           <div class="flbl">Crash hedge</div>
           <select id="i_hedge">
             <option value="open">Short $500 open ✓</option>
@@ -855,9 +865,14 @@ async function runAnalysis(){
   const isHalf=dir.includes('half');
   const dirBase=dir.replace('_half','');
   const lpVal=avax>0&&usdc>0?(avax*(_hl?.px||10)+usdc):3749;
-  const _storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
-  const a_lo=_storedRange.lo||9.25;
-  const a_hi=_storedRange.hi||10.50;
+  const _storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||localStorage.getItem('avax_lp_range_saved')||'{"lo":9.25,"hi":10.50}');
+  const a_lo=pv($('i_range_lo')?.value)||_storedRange.lo||9.25;
+  const a_hi=pv($('i_range_hi')?.value)||_storedRange.hi||10.50;
+  // Save user-entered range so it persists this session and next
+  if(pv($('i_range_lo')?.value)&&pv($('i_range_hi')?.value)){
+    sessionStorage.setItem('avax_lp_range',JSON.stringify({lo:a_lo,hi:a_hi}));
+    localStorage.setItem('avax_lp_range_saved',JSON.stringify({lo:a_lo,hi:a_hi}));
+  }
   _hlPriceForCheck=_hl?.px||0;
   const hlPx=_hl?.px||0;_hlPx=hlPx;
   const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%/hr':'unknown';
@@ -1868,7 +1883,8 @@ async function runDataTest(){
   const hedgeEntry=pv($('i_hedge_entry')?.value)||9.71;
   const apy2=pv($('i_apy_display')?.value)||35;
   const storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
-  const tlo=storedRange.lo||9.25,thi=storedRange.hi||10.50;
+  const tlo=pv($('i_range_lo')?.value)||storedRange.lo||9.25;
+  const thi=pv($('i_range_hi')?.value)||storedRange.hi||10.50;
   const lpVal2=avax>0&&usdc>0&&hlPx>0?(avax*hlPx+usdc):0;
   const lp_pct2=hlPx>0&&lpVal2>0?((hlPx-tlo)/(thi-tlo)*100).toFixed(0):50;
   const expAvaxPct=lpVal2>0?Math.round(avax*hlPx/lpVal2*100):50;
@@ -2107,6 +2123,14 @@ function clearJ(){if(confirm('Delete all?')){localStorage.removeItem(SK);renderJ
 // ── INIT ──
 updateKeyStatus();
 const su=localStorage.getItem(GK);if(su&&$('gs-url'))$('gs-url').value=su;
+// Pre-fill LP range inputs from localStorage/sessionStorage if available
+(function(){
+  try{
+    const sr=JSON.parse(sessionStorage.getItem('avax_lp_range')||localStorage.getItem('avax_lp_range_saved')||'{}');
+    if(sr.lo&&$('i_range_lo')&&!$('i_range_lo').value)$('i_range_lo').value=sr.lo;
+    if(sr.hi&&$('i_range_hi')&&!$('i_range_hi').value)$('i_range_hi').value=sr.hi;
+  }catch(e){}
+})();
 loadStrip();
 </script>
 </body>
