@@ -613,6 +613,10 @@ function showPosFields(){}
 
 // ── HYPERLIQUID LIVE DATA ──
 let _hl=null;
+let _hlPriceForCheck=0;  // set in runAnalysis, read in render
+let _oiChange='unknown'; // set in runAnalysis, read in render
+let _session='';         // set in runAnalysis, read in render
+let _fi=null;            // set in runAnalysis, read in render
 async function fetchHL(){
   try{
     const r=await fetch('https://api.hyperliquid.xyz/info',{
@@ -825,7 +829,7 @@ async function runAnalysis(){
   const _storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
   const a_lo=_storedRange.lo||9.25;
   const a_hi=_storedRange.hi||10.50;
-  const _hlPriceForCheck=_hl?.px||0;
+  _hlPriceForCheck=_hl?.px||0;
   const hlPx=_hl?.px||0;
   const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%/hr':'unknown';
   const hlOI=_hl?_hl.oi.toFixed(0)+' AVAX':'unknown';
@@ -862,24 +866,24 @@ async function runAnalysis(){
   // Store previous OI in sessionStorage to detect direction
   const prevOI=parseFloat(sessionStorage.getItem('avax_prev_oi')||'0');
   const currOI=_hl?.oi||0;
-  let oiChange='unknown';
+  _oiChange='unknown';
   if(prevOI>0&&currOI>0){
     const oiDiff=((currOI-prevOI)/prevOI*100);
-    if(oiDiff>3)oiChange=`rising strongly (+${oiDiff.toFixed(1)}%) — trend strengthening`;
-    else if(oiDiff>0.5)oiChange=`rising slightly (+${oiDiff.toFixed(1)}%) — mild accumulation`;
-    else if(oiDiff<-3)oiChange=`falling strongly (${oiDiff.toFixed(1)}%) — positions closing, trend weakening`;
-    else if(oiDiff<-0.5)oiChange=`falling slightly (${oiDiff.toFixed(1)}%) — mild reduction`;
-    else oiChange=`flat (${oiDiff.toFixed(1)}%) — no conviction`;
+    if(oiDiff>3)  _oiChange=`rising strongly (+${oiDiff.toFixed(1)}%) — trend strengthening`;
+    else if(oiDiff>0.5)  _oiChange=`rising slightly (+${oiDiff.toFixed(1)}%) — mild accumulation`;
+    else if(oiDiff<-3)  _oiChange=`falling strongly (${oiDiff.toFixed(1)}%) — positions closing, trend weakening`;
+    else if(oiDiff<-0.5)  _oiChange=`falling slightly (${oiDiff.toFixed(1)}%) — mild reduction`;
+    else   _oiChange=`flat (${oiDiff.toFixed(1)}%) — no conviction`;
   }
   if(currOI>0)sessionStorage.setItem('avax_prev_oi',currOI.toString());
 
   // ── SGT SESSION TIME (Priority 7) ──
   const now=new Date();
   const sgtH=new Date(now.getTime()+8*3600*1000).getUTCHours();
-  let session='';
-  if(sgtH>=21||sgtH<2)session='US market hours (peak AVAX volume 9pm–2am SGT) — higher conviction signals';
-  else if(sgtH>=14&&sgtH<21)session='EU session (moderate volume) — decent signals';
-  else session='Asia/low volume session — reduce position size, widen SL slightly';
+  _session='';
+  if(sgtH>=21||sgtH<2)  _session='US market hours (peak AVAX volume 9pm–2am SGT) — higher conviction signals';
+  else if(sgtH>=14&&sgtH<21)  _session='EU session (moderate volume) — decent signals';
+  else   _session='Asia/low volume session — reduce position size, widen SL slightly';
 
   // ── LAST 3 TRADE OUTCOMES (Priority 5) ──
   const jd=loadJ();
@@ -938,8 +942,8 @@ LIVE DATA (do not search for these)
 - AVAX mark price: ${hlPx>0?'$'+hlPx.toFixed(2):'not available'}
 - Funding rate: ${hlFund} (positive=longs paying=bearish)
 - Open interest: ${hlOI}
-- OI change: ${oiChange}
-- SGT session: ${session}
+- OI change: ${_oiChange}
+- SGT session: ${_session}
 - Last 3 trades: ${recentTradeCtx}${personalStatsCtx}
 
 LIVE TECHNICAL INDICATORS (calculated from Binance live candles — 0h old, do NOT search for these)
