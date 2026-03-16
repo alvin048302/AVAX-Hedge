@@ -715,10 +715,6 @@ async function runAnalysis(){
   const a_lo=_storedRange.lo||9.25;
   const a_hi=_storedRange.hi||10.50;
   const _hlPriceForCheck=_hl?.px||0;
-  // LP range from last analysis or default
-  const _storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
-  const a_lo=_storedRange.lo||9.25;
-  const a_hi=_storedRange.hi||10.50;
   const hlPx=_hl?.px||0;
   const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%/hr':'unknown';
   const hlOI=_hl?_hl.oi.toFixed(0)+' AVAX':'unknown';
@@ -1811,6 +1807,7 @@ function renderPerf(d){
       </div>
     </div>`;
 }
+function drawC(cid,eid,labels,data,stroke,fill){
   const c=$(cid),e=$(eid);
   if(!data||data.filter(v=>v!==0).length<2){c.style.display='none';e.style.display='flex';return;}
   c.style.display='block';e.style.display='none';
