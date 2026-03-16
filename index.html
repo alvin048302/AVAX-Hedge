@@ -120,6 +120,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .as-title{font-size:12px;font-weight:700;margin-bottom:1px}
 .as-body{font-size:11px;color:var(--ink3);line-height:1.4}
 .as-body code{font-family:'DM Mono',monospace;font-size:10px;background:var(--off2);border:1px solid var(--bd);padding:1px 5px;border-radius:3px;color:var(--blue)}
+/* LP SHIFT ADVICE */
+.lp-shift-btn{width:100%;background:var(--blue);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;transition:all .2s;box-shadow:0 3px 10px rgba(37,99,235,.3)}
+.lp-shift-btn:active{transform:scale(.98)}.lp-shift-btn.loading{background:#3b82f6;pointer-events:none}
+.lp-advice-card{background:var(--w);border:1.5px solid var(--bb);border-radius:14px;margin-top:10px;overflow:hidden}
+.lp-advice-hdr{background:var(--bl);padding:10px 14px;font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue)}
+.lp-advice-body{padding:14px}
+.lp-advice-range{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
+.lp-ar-cell{background:var(--off);border-radius:10px;padding:10px;text-align:center}
+.lp-ar-lbl{font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:4px}
+.lp-ar-val{font-family:'DM Mono',monospace;font-size:20px;font-weight:600}
+.lp-ar-cell.lo .lp-ar-lbl{color:var(--red)}.lp-ar-cell.lo .lp-ar-val{color:var(--red)}
+.lp-ar-cell.hi .lp-ar-lbl{color:var(--green)}.lp-ar-cell.hi .lp-ar-val{color:var(--green)}
+.lp-advice-why{font-size:11px;color:var(--ink2);line-height:1.7;margin-bottom:10px}
+.lp-advice-steps{background:var(--bl);border-radius:9px;padding:10px 12px;font-size:11px;color:var(--ink2);line-height:2}
 /* METRICS */
 .mx{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px}
 .mc{background:var(--w);border:1px solid var(--bd);border-radius:12px;padding:11px;box-shadow:var(--sh)}
@@ -284,7 +298,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v12</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v13</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -622,13 +636,18 @@ function setTrade(val,btn){
   btn.classList.add('on');
   const wrap=$('trade-amt-wrap');
   const lbl=$('trade-amt-lbl');
-  if(val==='nothing'||val==='new'){
+  if(val==='nothing'){
     wrap.style.display='none';
     if($('i_tpnl'))$('i_tpnl').value='0';
+  } else if(val==='new'){
+    // New trade — show entry price field, no P&L yet
+    wrap.style.display='block';
+    lbl.textContent='Trade entry price $ (what you paid)';
+    if($('i_tpnl'))$('i_tpnl').value='';
   } else {
     wrap.style.display='block';
-    if(val==='tp1')lbl.textContent='TP1 profit $';
-    else if(val==='tp2')lbl.textContent='TP2 profit $';
+    if(val==='tp1')lbl.textContent='TP1 profit $ (positive number)';
+    else if(val==='tp2')lbl.textContent='TP2 profit $ (positive number)';
     else if(val==='sl')lbl.textContent='SL loss $ (enter as negative)';
   }
 }
@@ -1275,6 +1294,20 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const lo=a.range_low,hi=a.range_high,mid=((lo+hi)/2);
   const pct=a.lp_pct||50;
 
+  // ── CLIENT-SIDE LP RANGE OVERRIDE ──
+  // Use user's actual entered range (not Claude's S/R suggestion) for exit warnings
+  const userRangeLo=pv($('i_range_lo')?.value)||lo||9.25;
+  const userRangeHi=pv($('i_range_hi')?.value)||hi||10.50;
+  const userLpPct=px>0&&userRangeHi>userRangeLo
+    ?Math.round((px-userRangeLo)/(userRangeHi-userRangeLo)*100)
+    :pct;
+  const userNearTop=userLpPct>=85;
+  const userNearBottom=userLpPct<=15;
+  const userNearExit=userNearTop||userNearBottom;
+  const userExitDir=userNearTop?'top':'bottom';
+  // Override: if client calc shows near-exit but Claude missed it, force LP warning
+  const clientOverrideLPWarn=userNearExit&&!a.lp_shift_recommended&&!a.lp_near_exit&&a.decision!=='rebalance_up'&&a.decision!=='rebalance_down';
+
   // ── 1. DIRECT ACTION BOX (hero — replaces old decision card) ──
   const sig=a.signal||'wait';
   const conf=a.confidence||50;
@@ -1293,6 +1326,13 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     dabCmd=`REBALANCE LP ${dir} — DO THIS FIRST`;
     dabSub=a.rebal_reason||`LP exited range ${dir==='UP'?'top':'bottom'}. See calculator below.`;
     dabWhy=`LP rebalance takes priority over any trade tonight. Complete the steps in the Rebalance Calculator below, then re-analyse before trading.`;
+  } else if(clientOverrideLPWarn){
+    // Client-side catch: user's actual range shows near-exit even if AI missed it
+    dabClass='dab-lp';
+    const distPct=userNearTop?userLpPct:(100-userLpPct);
+    dabCmd=`⚠️ LP NEAR ${userExitDir.toUpperCase()} EXIT — REVIEW NOW`;
+    dabSub=`Price $${px.toFixed(2)} is ${distPct}% through your range ($${userRangeLo.toFixed(2)}–$${userRangeHi.toFixed(2)})`;
+    dabWhy=`Your LP is ${distPct>=95?'extremely close to exiting':'approaching the '+userExitDir+' of its range'}. At ${userLpPct}% through, ${userNearTop?'you hold mostly USDC and will exit if price continues up':'you hold mostly AVAX and will exit if price drops further'}. Consider shifting your range before it exits to avoid forced rebalance at a bad price. ${sig==='long'||sig==='short'?'Trade signal shown below — proceed with caution given LP position.':''}`;
   } else if(waitLP){
     dabClass='dab-wait';
     dabCmd='WAIT — DO NOT ACT TONIGHT';
@@ -1358,6 +1398,13 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       ${a.tp2?`<div style="font-size:11px;color:var(--ink3);margin-top:6px">TP2: $${a.tp2.toFixed(2)} · Close remaining 50% there</div>`:''}
       `:''}
       <div class="dab-why">${dabWhy}</div>
+      ${clientOverrideLPWarn?`
+      <button class="lp-shift-btn" id="lp-shift-btn" onclick="runLPShiftAnalysis()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+        Get New LP Range Recommendation
+      </button>
+      <div id="lp-shift-result"></div>
+      `:''}
     </div>`;
 
   // ── 2. PRICE ──
@@ -1399,15 +1446,22 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const widPct=a.current_width_pct?.toFixed(1)||((hi-lo)/px*100).toFixed(1);
   const modeL=a.range_mode==='volatile'?`±${widPct}% VOLATILE`:`±${widPct}% NORMAL`;
   const pin=cl(pct,2,98);
+  // Use user's actual range for the bar display
+  const displayPct=userLpPct;
+  const displayLo=userRangeLo;
+  const displayHi=userRangeHi;
+  const displayPin=Math.max(2,Math.min(98,displayPct));
+
   $('r-range').innerHTML=`<div class="range-box">
-    <div class="rh-top"><div class="rh-title">S/R ANCHORED RANGE</div><span class="rh-mode ${modeC}">${modeL}</span></div>
+    <div class="rh-top"><div class="rh-title">YOUR LP RANGE</div><span class="rh-mode ${modeC}">${modeL}</span></div>
     <div class="rh-nums">
-      <div class="rn"><div class="rn-lbl">Low</div><div class="rn-val">$${lo.toFixed(2)}</div><div class="rn-sub">Support</div></div>
-      <div class="rn mid"><div class="rn-lbl">Mid</div><div class="rn-val">$${mid.toFixed(2)}</div><div class="rn-sub">Width $${(hi-lo).toFixed(2)}</div></div>
-      <div class="rn"><div class="rn-lbl">High</div><div class="rn-val">$${hi.toFixed(2)}</div><div class="rn-sub">Resistance</div></div>
+      <div class="rn"><div class="rn-lbl">Low</div><div class="rn-val">$${displayLo.toFixed(2)}</div><div class="rn-sub">Your entry</div></div>
+      <div class="rn mid"><div class="rn-lbl">Mid</div><div class="rn-val">$${((displayLo+displayHi)/2).toFixed(2)}</div><div class="rn-sub">Width $${(displayHi-displayLo).toFixed(2)}</div></div>
+      <div class="rn"><div class="rn-lbl">High</div><div class="rn-val">$${displayHi.toFixed(2)}</div><div class="rn-sub">Your exit</div></div>
     </div>
-    <div class="rb-track"><div class="rb-pin" style="left:${pin}%"></div></div>
-    <div class="rb-lbls"><span>$${lo.toFixed(2)}</span><span>$${px.toFixed(2)} (${pct.toFixed(0)}%)</span><span>$${hi.toFixed(2)}</span></div>
+    <div class="rb-track"><div class="rb-pin" style="left:${displayPin}%"></div></div>
+    <div class="rb-lbls"><span>$${displayLo.toFixed(2)}</span><span style="font-weight:${userNearExit?'700':'400'};color:${userNearExit?'var(--red)':'inherit'}">$${px.toFixed(2)} (${displayPct}%${userNearExit?' ⚠️':''})</span><span>$${displayHi.toFixed(2)}</span></div>
+    ${userNearExit?`<div style="margin-top:8px;padding:8px 12px;background:var(--rl);border-radius:8px;font-size:11px;font-weight:700;color:var(--red)">⚠️ ${displayPct}% through range — near ${userExitDir} exit. LP will stop earning if price ${userNearTop?'rises above $'+displayHi.toFixed(2):'falls below $'+displayLo.toFixed(2)}.</div>`:''}
     ${daysOut>0?`<div style="margin-top:8px;padding:7px 10px;background:${a.decision.includes('rebalance')?'var(--rl)':'var(--al)'};border-radius:7px;font-size:11px;color:${a.decision.includes('rebalance')?'var(--red)':'var(--amber)'}">LP has been out of range for <b>${daysOut} day${daysOut!==1?'s':''}</b>. ${a.decision.includes('rebalance')?'Rebalance required — see actions above.':'Continue waiting for stabilisation.'}</div>`:''}
     <div class="rh-why">${(()=>{const reg=a.regime||'';if(reg==='uptrend')return'📈 <b>Uptrend</b> — LP selling AVAX into strength. Watch near-exit warning. Shift range or remove LP if breakout sustained above $12+.';if(reg==='downtrend')return'📉 <b>Downtrend</b> — LP accumulating AVAX as price falls. Aligns with long-term hold thesis.';if(reg==='ranging')return'↔️ <b>Ranging market</b> — optimal for LP. Price oscillation generates maximum BLACK emissions.';if(reg==='choppy')return'⚡ <b>Choppy</b> — LP earning but range exits likely. 72h rule active for rebalance decisions.';return'LP earning BLACK emissions. Monitor range nightly.';})()}</div>
   </div>`;
@@ -1434,12 +1488,12 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
         </div>
       </div>`;
   }
-  // Check for near-exit shift recommendation
-  else if(a.lp_near_exit){
+  // Check for near-exit shift recommendation (AI result OR client override)
+  else if(a.lp_near_exit||clientOverrideLPWarn){
     if(lpActionWrap)lpActionWrap.style.display='block';
     if(lpActionDiv){
-      const exitDir=a.lp_exit_direction==='top'?'TOP ↑':'BOTTOM ↓';
-      const exitPct=a.lp_exit_direction==='top'?pct:(100-pct);
+      const exitDir=(a.lp_exit_direction==='top'||userNearTop)?'TOP ↑':'BOTTOM ↓';
+      const exitPct=userNearTop?userLpPct:(100-userLpPct);
       const shiftCls=a.lp_shift_recommended?'act-now':'wait';
       const shiftIco=a.lp_shift_recommended?'⚡':'⏳';
 
@@ -1739,28 +1793,59 @@ function logEvent(){
   const px=_hl?.px||0;
   const lpVal=avax>0&&usdc>0&&px>0?(avax*px+usdc):0;
   const blackSold=pv($('i_black')?.value)||0;
-  const tradePnl=pv($('i_tpnl')?.value)||0;
+  const tpnlVal=pv($('i_tpnl')?.value)||0;
   const evtMap={nothing:'routine',tp1:'trade_tp1',tp2:'trade_tp2',sl:'trade_sl',new:'trade_new'};
   const evtType=evtMap[_tradeEvt]||'routine';
+
+  // For trade_new: tpnlVal is the entry price, tradePnl=0
+  // For closes: tpnlVal is the P&L amount
+  const tradePnl=evtType==='trade_new'?0:tpnlVal;
   const net=+(blackSold+tradePnl).toFixed(2);
   const j=loadJ();
   const prev=j.length?j[0].cum:0;
   const now=new Date(),sgt=new Date(now.getTime()+8*3600*1000);
   const p=v=>String(v).padStart(2,'0');
+
   // Enrich trade closes with conditions from pending context
   const isTradeClose=['trade_tp1','trade_tp2','trade_sl'].includes(evtType);
+  const isTradeNew=evtType==='trade_new';
   let tradeCtx=null;
-  if(isTradeClose){
+
+  if(isTradeNew){
+    // Save new trade entry to sessionStorage for later close enrichment
+    const entryPx=tpnlVal>0?tpnlVal:(px||0);
+    const newCtx={
+      signal_date:now.toISOString(),
+      direction:_dir!=='none'?_dir:'manual',
+      entry:entryPx, entry_size:'manual',
+      confidence:0, tp1:0, tp2:0, sl:0,
+      regime:'', vol_regime:'', rsi:0, macd:'',
+      btc_trend:'', eth_trend:'', oi_change:'',
+      atr_pct:0, lp_zone:'', lp_pct:0, days_out:0
+    };
+    sessionStorage.setItem('avax_pending_trade',JSON.stringify(newCtx));
+    tradeCtx=newCtx;
+    toast('Trade entry recorded — tap TP1/TP2/SL when it closes','ok');
+  } else if(isTradeClose){
     try{
       const raw=sessionStorage.getItem('avax_pending_trade');
       if(raw){
         const ctx=JSON.parse(raw);
         const hoursHeld=+((now-new Date(ctx.signal_date))/3600000).toFixed(1);
-        tradeCtx={...ctx,result:_tradeEvt,hours_held:hoursHeld};
+        tradeCtx={...ctx,result:_tradeEvt,hours_held:hoursHeld,pnl:tradePnl};
         sessionStorage.removeItem('avax_pending_trade');
+      } else {
+        // No pending context — create minimal one so it still shows in journal
+        tradeCtx={
+          signal_date:new Date(now-3600000).toISOString(),
+          direction:_dir!=='none'?_dir:'manual',
+          entry:px, entry_size:'manual',
+          result:_tradeEvt, hours_held:0, pnl:tradePnl
+        };
       }
     }catch(e){}
   }
+
   const entry={
     date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
     lpVal:+lpVal.toFixed(0), avaxPx:+px.toFixed(2),
@@ -1770,9 +1855,10 @@ function logEvent(){
   };
   j.unshift(entry);saveJ(j);
   const gu=localStorage.getItem(GK);if(gu)syncOne(entry,gu);
-  toast('✓ Saved to Journal','ok');
+  if(evtType!=='trade_new')toast('✓ Saved to Journal','ok');
   if($('i_tpnl'))$('i_tpnl').value='0';
   setTrade('nothing',document.querySelector('#trade-btns .tbtn'));
+  renderJ();
 }
 function confirmTrade(placed){
   if(!placed){
@@ -2108,6 +2194,163 @@ function drawC(cid,eid,labels,data,stroke,fill){
   data.forEach((v,i)=>{if(i%step===0)ctx.fillText(labels[i]||'',pd.l+i*xs,h-4);});
   ctx.textAlign='right';
   [0,.5,1].forEach(t=>{ctx.fillText('$'+((mn+t*rng)|0),pd.l-4,pd.t+ch-t*ch+3);});
+}
+
+// ── LP SHIFT ANALYSIS (focused mini-analysis for near-exit situations) ──
+async function runLPShiftAnalysis(){
+  const key=localStorage.getItem(KK)||'';
+  if(!key.startsWith('sk-')){toast('Add API key in Settings first','err');return;}
+  const btn=$('lp-shift-btn');
+  const result=$('lp-shift-result');
+  if(!btn||!result)return;
+  btn.classList.add('loading');
+  btn.innerHTML='<div class="spinner"></div><span>Analysing LP range…</span>';
+  result.innerHTML='';
+
+  // Gather all context
+  const px=_hl?.px||0;
+  const userRangeLo=pv($('i_range_lo')?.value)||9.25;
+  const userRangeHi=pv($('i_range_hi')?.value)||10.50;
+  const userLpPct=px>0?Math.round((px-userRangeLo)/(userRangeHi-userRangeLo)*100):50;
+  const avax=pv($('i_avax')?.value)||0;
+  const usdc=pv($('i_usdc')?.value)||0;
+  const apy=pv($('i_apy_display')?.value)||35;
+  const ta=window._liveTA;
+  const btc=window._liveBTC;
+  const eth=window._liveETH;
+  const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%/hr':'unknown';
+
+  const sys=`You are an AVAX concentrated liquidity LP specialist. Your only job is to recommend the best new LP range for a Blackhole CL position that is near its exit boundary.
+
+CURRENT POSITION
+- Current LP range: $${userRangeLo.toFixed(2)} to $${userRangeHi.toFixed(2)}
+- AVAX price now: $${px.toFixed(2)}
+- Position in range: ${userLpPct}% through (${userLpPct>=85?'near TOP exit — holding mostly USDC':'near BOTTOM exit — holding mostly AVAX'})
+- AVAX in LP: ${avax}
+- USDC in LP: $${usdc}
+- Pool APY: ${apy}%
+- Funding: ${hlFund}
+
+LIVE TECHNICAL DATA (from Binance — do not search for these)
+${ta?`- RSI(14): ${ta.rsi}
+- MACD: ${ta.macd} (hist: ${ta.macdHist})
+- EMA 20: $${ta.ema20} | EMA 200: $${ta.ema200}
+- ATR daily: $${ta.atr} (${((ta.atr/px)*100).toFixed(1)}% of price)
+- Regime: ${ta.regime}`:'- TA: not available'}
+${btc?`- BTC: ${btc.trend} (${btc.change}% 24h)`:''}
+${eth?`- ETH: ${eth.trend} (${eth.change}% 24h)`:''}
+
+TASK — Run exactly 1 web search:
+SEARCH: "AVAX support resistance levels today key price levels technical analysis"
+Extract: nearest support below current price, nearest resistance above, any key S/R clusters
+
+Then calculate the optimal new LP range using these rules:
+1. Anchor low to nearest strong support below current price
+2. Anchor high to nearest strong resistance above current price  
+3. Minimum width = 2.5 × ATR daily (or 8% of price, whichever is larger)
+4. In ranging regime: use tighter range (8-12% width)
+5. In trending/volatile regime: use wider range (12-20% width)
+6. Centre the range slightly above current price if uptrend, slightly below if downtrend
+7. Range must capture current price comfortably (price should be 30-60% through new range after shift)
+
+Return ONLY this JSON (no other text):
+{
+  "new_range_low": 9.20,
+  "new_range_high": 10.80,
+  "range_width_pct": 16.5,
+  "price_position_in_new_range": 45,
+  "support_level": 9.20,
+  "resistance_level": 10.80,
+  "support_reason": "Previous consolidation zone + EMA 200",
+  "resistance_reason": "Local high + round number",
+  "regime_context": "Ranging — tighter range optimal for BLACK emissions",
+  "shift_urgency": "tonight",
+  "shift_urgency_reason": "Price at 91% through current range, exit imminent",
+  "avax_composition_after": 50,
+  "estimated_weekly_black_usd": 45,
+  "steps": [
+    "Remove LP from Blackhole — receive AVAX + USDC",
+    "No swap needed — composition will be ~50/50 at new range centre",
+    "Deploy new range: $9.20 → $10.80",
+    "Stake new LP position to earn BLACK",
+    "Reset crash hedge SHORT at $10.20 · TP $5.52 · SL $11.88"
+  ]
+}`;
+
+  try{
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        system:sys,
+        messages:[{role:'user',content:'Analyse my LP range and recommend the best new range. Return only JSON.'}]
+      })
+    });
+    if(!res.ok)throw new Error('API error '+res.status);
+    const data=await res.json();
+    let raw='';
+    for(const b of(data.content||[])){if(b.type==='text')raw+=b.text;}
+    const s=raw.indexOf('{'),e2=raw.lastIndexOf('}');
+    if(s<0||e2<=s)throw new Error('No JSON returned');
+    const r=JSON.parse(raw.slice(s,e2+1));
+
+    const urgCol=r.shift_urgency==='tonight'?'var(--red)':r.shift_urgency==='soon'?'var(--amber)':'var(--green)';
+    const stepsHtml=(r.steps||[]).map((s,i)=>`<div>${i+1}. ${s}</div>`).join('');
+
+    result.innerHTML=`
+      <div class="lp-advice-card">
+        <div class="lp-advice-hdr">📐 AI LP Range Recommendation</div>
+        <div class="lp-advice-body">
+          <div class="lp-advice-range">
+            <div class="lp-ar-cell lo">
+              <div class="lp-ar-lbl">New Low</div>
+              <div class="lp-ar-val">$${(r.new_range_low||0).toFixed(2)}</div>
+              <div style="font-size:9px;color:var(--ink4);margin-top:2px">${r.support_reason||'Support'}</div>
+            </div>
+            <div class="lp-ar-cell hi">
+              <div class="lp-ar-lbl">New High</div>
+              <div class="lp-ar-val">$${(r.new_range_high||0).toFixed(2)}</div>
+              <div style="font-size:9px;color:var(--ink4);margin-top:2px">${r.resistance_reason||'Resistance'}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+            <div style="background:var(--off);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:var(--ink2)">Width: ${(r.range_width_pct||0).toFixed(1)}% of price</div>
+            <div style="background:var(--off);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:var(--ink2)">Price at ${r.price_position_in_new_range||50}% after shift</div>
+            <div style="background:var(--off);border-radius:8px;padding:6px 10px;font-size:10px;font-weight:700;color:${urgCol}">Shift: ${(r.shift_urgency||'').toUpperCase()}</div>
+          </div>
+          <div class="lp-advice-why">
+            <b>Why this range:</b> ${r.regime_context||''}<br>
+            <b>Urgency:</b> <span style="color:${urgCol}">${r.shift_urgency_reason||''}</span>
+          </div>
+          ${stepsHtml?`<div class="lp-advice-steps">
+            <div style="font-size:9px;font-weight:800;color:var(--blue);letter-spacing:1px;margin-bottom:6px">★ STEPS TONIGHT</div>
+            ${stepsHtml}
+          </div>`:''}
+          <div style="margin-top:10px;padding:8px 10px;background:var(--gl);border-radius:8px;font-size:10px;color:var(--green)">
+            ✅ Update LP Range Low/High inputs above to $${(r.new_range_low||0).toFixed(2)} / $${(r.new_range_high||0).toFixed(2)} after shifting
+          </div>
+        </div>
+      </div>`;
+
+    // Auto-update the range inputs with the recommendation
+    if(r.new_range_low&&$('i_range_lo'))$('i_range_lo').value=r.new_range_low.toFixed(2);
+    if(r.new_range_high&&$('i_range_hi'))$('i_range_hi').value=r.new_range_high.toFixed(2);
+    // Save to storage
+    if(r.new_range_low&&r.new_range_high){
+      const newRange={lo:r.new_range_low,hi:r.new_range_high};
+      sessionStorage.setItem('avax_lp_range',JSON.stringify(newRange));
+      localStorage.setItem('avax_lp_range_saved',JSON.stringify(newRange));
+    }
+    toast('LP range recommendation ready','ok');
+  }catch(err){
+    result.innerHTML=`<div style="padding:10px;font-size:11px;color:var(--red);background:var(--rl);border-radius:9px;margin-top:8px">LP analysis failed: ${err.message}</div>`;
+    toast('LP analysis failed','err');
+  }
+  btn.classList.remove('loading');
+  btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg> Get New LP Range Recommendation';
 }
 
 // ── KEY MANAGEMENT ──
