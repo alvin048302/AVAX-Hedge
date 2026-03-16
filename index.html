@@ -1661,12 +1661,14 @@ function renderJ(){
       <div class="jrow"><span>Trade P&L</span><span style="color:${(e.tradePnl||0)>=0?'var(--green)':'var(--red)'}">${fs(e.tradePnl||0)}</span></div>
       <div class="jrow"><span>Net tonight</span><span style="color:${e.net>=0?'var(--green)':'var(--red)'}"><b>${fs(e.net)}</b></span></div>
       <div class="jrow"><span>Cumulative</span><span style="color:${e.cum>=0?'var(--green)':'var(--red)'}"><b>${fs(e.cum)}</b></span></div>
-      ${e.trade?`<div style="margin-top:6px;padding:7px 10px;background:var(--off);border-radius:7px;font-size:10px;color:var(--ink3);line-height:1.8">
-        <span style="font-weight:700;color:var(--ink2)">${(e.trade.direction||'').toUpperCase()} · ${(e.trade.entry_size||'').toUpperCase()} · ${e.trade.confidence||0}% conf</span><br>
-        Entry $${e.trade.entry?.toFixed(2)||'—'} · TP1 $${e.trade.tp1?.toFixed(2)||'—'} · SL $${e.trade.sl?.toFixed(2)||'—'}<br>
-        ${e.trade.regime?`Regime: ${e.trade.regime} · `:''}RSI ${e.trade.rsi||'—'} · MACD ${e.trade.macd||'—'} · BTC ${e.trade.btc_trend||'—'}<br>
-        LP ${e.trade.lp_zone||'—'} half (${e.trade.lp_pct||0}%) · ${e.trade.hours_held||0}h held
-      </div>`:''}
+      ${e.trade?(
+        '<div style="margin-top:6px;padding:7px 10px;background:var(--off);border-radius:7px;font-size:10px;color:var(--ink3);line-height:1.8">'
+        +'<span style="font-weight:700;color:var(--ink2)">'+(e.trade.direction||'').toUpperCase()+' · '+(e.trade.entry_size||'').toUpperCase()+' · '+(e.trade.confidence||0)+'% conf</span><br>'
+        +'Entry $'+(e.trade.entry?.toFixed(2)||'—')+' · TP1 $'+(e.trade.tp1?.toFixed(2)||'—')+' · SL $'+(e.trade.sl?.toFixed(2)||'—')+'<br>'
+        +(e.trade.regime?'Regime: '+e.trade.regime+' · ':'')+' RSI '+(e.trade.rsi||'—')+' · MACD '+(e.trade.macd||'—')+' · BTC '+(e.trade.btc_trend||'—')+'<br>'
+        +'LP '+(e.trade.lp_zone||'—')+' half ('+(e.trade.lp_pct||0)+'%) · '+(e.trade.hours_held||0)+'h held'
+        +'</div>'
+      ):''}
     </div></div>`).join('');
 }
 // ── DATA ACCURACY TEST ──
@@ -1917,54 +1919,51 @@ function renderStats(d){
     .map(([label,arr])=>{const w=wr(arr);return{label,wins:w.wins,total:w.total,pct:w.pct};})
     .sort((a,b)=>b.pct-a.pct);
 
-  // Build win rate bar
+  // Build win rate bar — uses string concat to avoid nested template literal issues
   const bar=(pct)=>{
     const col=pct>=65?'var(--green)':pct>=50?'var(--amber)':'var(--red)';
-    return `<div style="display:flex;align-items:center;gap:6px">
-      <div style="flex:1;height:5px;border-radius:3px;background:var(--off3);overflow:hidden">
-        <div style="width:${pct}%;height:100%;border-radius:3px;background:${col}"></div>
-      </div>
-      <span style="font-family:'DM Mono',monospace;font-size:10px;font-weight:600;color:${col};min-width:32px;text-align:right">${pct}%</span>
-    </div>`;
+    return '<div style="display:flex;align-items:center;gap:6px">'
+      +'<div style="flex:1;height:5px;border-radius:3px;background:var(--off3);overflow:hidden">'
+      +'<div style="width:'+pct+'%;height:100%;border-radius:3px;background:'+col+'"></div>'
+      +'</div>'
+      +'<span style="font-family:DM Mono,monospace;font-size:10px;font-weight:600;color:'+col+';min-width:32px;text-align:right">'+pct+'%</span>'
+      +'</div>';
   };
 
-  // Identify your edge: conditions with WR >= 60% and 3+ trades
+  // Pre-build all HTML sections before assignment
   const edgeConditions=rows.filter(r=>r.pct>=60);
   const weakConditions=rows.filter(r=>r.pct<45);
 
-  card.innerHTML=`
-    <div style="padding:14px 14px 0">
-      <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:10px">Based on ${n} trades with full context</div>
-    </div>
+  let edgeHtml='';
+  if(edgeConditions.length){
+    edgeHtml='<div style="margin:0 14px 10px;background:var(--gl);border:1px solid var(--gb);border-radius:9px;padding:9px 11px">'
+      +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:6px">✅ Your Edge Conditions</div>'
+      +edgeConditions.map(r=>'<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">'+r.label+': <b>'+r.pct+'%</b> ('+r.wins+'/'+r.total+')</div>').join('')
+      +'</div>';
+  }
 
-    ${edgeConditions.length?`
-    <div style="margin:0 14px 10px;background:var(--gl);border:1px solid var(--gb);border-radius:9px;padding:9px 11px">
-      <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--green);margin-bottom:6px">✅ Your Edge Conditions</div>
-      ${edgeConditions.map(r=>`<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">${r.label}: <b>${r.pct}%</b> (${r.wins}/${r.total})</div>`).join('')}
-    </div>`:''}
+  let weakHtml='';
+  if(weakConditions.length){
+    weakHtml='<div style="margin:0 14px 10px;background:var(--rl);border:1px solid var(--rb);border-radius:9px;padding:9px 11px">'
+      +'<div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:6px">⚠️ Avoid These Conditions</div>'
+      +weakConditions.map(r=>'<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">'+r.label+': <b style="color:var(--red)">'+r.pct+'%</b> ('+r.wins+'/'+r.total+')</div>').join('')
+      +'</div>';
+  }
 
-    ${weakConditions.length?`
-    <div style="margin:0 14px 10px;background:var(--rl);border:1px solid var(--rb);border-radius:9px;padding:9px 11px">
-      <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--red);margin-bottom:6px">⚠️ Avoid These Conditions</div>
-      ${weakConditions.map(r=>`<div style="font-size:11px;color:var(--ink2);margin-bottom:3px">${r.label}: <b style="color:var(--red)">${r.pct}%</b> (${r.wins}/${r.total})</div>`).join('')}
-    </div>`:''}
+  const rowsHtml='<div style="border-top:1px solid var(--off3)">'
+    +rows.map(r=>'<div style="padding:8px 14px;border-bottom:1px solid var(--off3)">'
+      +'<div style="display:flex;justify-content:space-between;margin-bottom:4px">'
+      +'<span style="font-size:11px;color:var(--ink2)">'+r.label+'</span>'
+      +'<span style="font-size:10px;color:var(--ink4)">'+r.wins+'/'+r.total+' trades</span>'
+      +'</div>'
+      +bar(r.pct)
+      +'</div>').join('')
+    +'</div>';
 
-    <div style="border-top:1px solid var(--off3)">
-    ${rows.map(r=>`
-      <div style="padding:8px 14px;border-bottom:1px solid var(--off3)">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-          <span style="font-size:11px;color:var(--ink2)">${r.label}</span>
-          <span style="font-size:10px;color:var(--ink4)">${r.wins}/${r.total} trades</span>
-        </div>
-        ${bar(r.pct)}
-      </div>`).join('')}
-    </div>
-
-    <div style="padding:10px 14px;font-size:10px;color:var(--ink4);line-height:1.5">
-      Updates automatically as you log more trades.
-      Meaningful patterns emerge after 10+ trades per condition.
-    </div>
-  `;
+  card.innerHTML=
+    '<div style="padding:14px 14px 0"><div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:10px">Based on '+n+' trades with full context</div></div>'
+    +edgeHtml+weakHtml+rowsHtml
+    +'<div style="padding:10px 14px;font-size:10px;color:var(--ink4);line-height:1.5">Updates automatically as you log more trades. Meaningful patterns emerge after 10+ trades per condition.</div>';
 }
 function renderPerf(d){
   const wrap=$('j-perf-wrap'),card=$('j-perf');
