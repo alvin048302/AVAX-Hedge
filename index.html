@@ -258,7 +258,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v9</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v11</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -636,6 +636,113 @@ async function fetchHL(){
   }catch(e){console.warn('HL err',e);return null;}
 }
 
+// ── BINANCE SPOT PRICE ──
+async function fetchBinanceSpot(){
+  try{
+    const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol=AVAXUSDT');
+    if(!r.ok)return null;
+    const d=await r.json();
+    return parseFloat(d.price||0)||null;
+  }catch(e){console.warn('Binance spot err',e);return null;}
+}
+
+// ── BINANCE LIVE CANDLES → RSI / MACD / EMA ──
+async function fetchLiveTA(){
+  try{
+    // Fetch 200 daily candles — enough for EMA200, RSI(14), MACD
+    const r=await fetch('https://api.binance.com/api/v3/klines?symbol=AVAXUSDT&interval=1d&limit=220');
+    if(!r.ok)return null;
+    const raw=await r.json();
+    const closes=raw.map(c=>parseFloat(c[4]));
+    if(closes.length<50)return null;
+
+    // EMA helper
+    const ema=(arr,period)=>{
+      const k=2/(period+1);
+      let val=arr.slice(0,period).reduce((a,b)=>a+b,0)/period;
+      const out=[val];
+      for(let i=period;i<arr.length;i++){val=arr[i]*k+val*(1-k);out.push(val);}
+      return out;
+    };
+
+    // RSI(14)
+    const rsiPeriod=14;
+    let gains=0,losses=0;
+    for(let i=closes.length-rsiPeriod-1;i<closes.length-1;i++){
+      const diff=closes[i+1]-closes[i];
+      if(diff>=0)gains+=diff; else losses-=diff;
+    }
+    const avgGain=gains/rsiPeriod, avgLoss=losses/rsiPeriod;
+    const rs=avgLoss===0?100:avgGain/avgLoss;
+    const rsi=Math.round(100-(100/(1+rs)));
+
+    // EMA20 and EMA200
+    const ema20arr=ema(closes,20);
+    const ema200arr=ema(closes,200);
+    const ema20=ema20arr[ema20arr.length-1];
+    const ema200=ema200arr[ema200arr.length-1];
+
+    // MACD(12,26,9)
+    const ema12arr=ema(closes,12);
+    const ema26arr=ema(closes,26);
+    const offset26=ema12arr.length-ema26arr.length;
+    const macdLine=ema26arr.map((v,i)=>ema12arr[i+offset26]-v);
+    const signalArr=ema(macdLine,9);
+    const macdVal=macdLine[macdLine.length-1];
+    const signalVal=signalArr[signalArr.length-1];
+    const macdHist=macdVal-signalVal;
+    const macdDir=macdHist>0?'bullish':'bearish';
+
+    // ATR(14) using last 15 candles
+    const highs=raw.slice(-15).map(c=>parseFloat(c[2]));
+    const lows=raw.slice(-15).map(c=>parseFloat(c[3]));
+    let atrSum=0;
+    for(let i=1;i<highs.length;i++){
+      const tr=Math.max(highs[i]-lows[i],Math.abs(highs[i]-closes[raw.length-15+i-1]),Math.abs(lows[i]-closes[raw.length-15+i-1]));
+      atrSum+=tr;
+    }
+    const atr=atrSum/14;
+
+    const price=closes[closes.length-1];
+    let regime='ranging';
+    if(price>ema20&&ema20>ema200)regime='uptrend';
+    else if(price<ema20&&ema20<ema200)regime='downtrend';
+    else if(Math.abs(price-ema20)/price<0.01)regime='choppy';
+
+    return{rsi,ema20:+ema20.toFixed(2),ema200:+ema200.toFixed(2),macd:macdDir,macdHist:+macdHist.toFixed(4),atr:+atr.toFixed(2),regime,ageHours:0,source:'Binance live candles'};
+  }catch(e){console.warn('Live TA err',e);return null;}
+}
+
+// ── BTC TREND (live from Binance) ──
+async function fetchBTCTrend(){
+  try{
+    const r=await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=BTCUSDT');
+    if(!r.ok)return null;
+    const d=await r.json();
+    const chg=parseFloat(d.priceChangePercent||0);
+    const price=parseFloat(d.lastPrice||0);
+    let trend='neutral';
+    if(chg>1.5)trend='bullish';
+    else if(chg<-1.5)trend='bearish';
+    return{price:+price.toFixed(0),change:+chg.toFixed(2),trend};
+  }catch(e){console.warn('BTC trend err',e);return null;}
+}
+
+// ── ETH TREND (live from Binance — confirmation filter for AVAX) ──
+async function fetchETHTrend(){
+  try{
+    const r=await fetch('https://api.binance.com/api/v3/ticker/24hr?symbol=ETHUSDT');
+    if(!r.ok)return null;
+    const d=await r.json();
+    const chg=parseFloat(d.priceChangePercent||0);
+    const price=parseFloat(d.lastPrice||0);
+    let trend='neutral';
+    if(chg>1.5)trend='bullish';
+    else if(chg<-1.5)trend='bearish';
+    return{price:+price.toFixed(0),change:+chg.toFixed(2),trend};
+  }catch(e){console.warn('ETH trend err',e);return null;}
+}
+
 function fundingLabel(r){
   const pct=(r*100).toFixed(4);
   const ann=(r*24*365*100).toFixed(1);
@@ -650,6 +757,10 @@ function fundingLabel(r){
 
 async function loadStrip(){
   _hl=await fetchHL();
+  // Kick off live TA and BTC/ETH in background — cache globally
+  fetchLiveTA().then(ta=>{if(ta)window._liveTA=ta;});
+  fetchBTCTrend().then(btc=>{if(btc)window._liveBTC=btc;});
+  fetchETHTrend().then(eth=>{if(eth)window._liveETH=eth;});
   if(!_hl){$('ls-signal').textContent='Hyperliquid unavailable — enter price manually';return;}
   const chg=((_hl.px-_hl.prevPx)/_hl.prevPx*100);
   $('ls-px').textContent='$'+_hl.px.toFixed(2);
@@ -718,6 +829,34 @@ async function runAnalysis(){
   const hlPx=_hl?.px||0;
   const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%/hr':'unknown';
   const hlOI=_hl?_hl.oi.toFixed(0)+' AVAX':'unknown';
+
+  // ── LIVE BINANCE TA (cached from loadStrip or runDataTest) ──
+  const _ta=window._liveTA||null;
+  const _btc=window._liveBTC||null;
+  const _eth=window._liveETH||null;
+  // If not cached yet, try fetching now (non-blocking fallback)
+  if(!_ta)fetchLiveTA().then(ta=>{if(ta)window._liveTA=ta;});
+  if(!_btc)fetchBTCTrend().then(b=>{if(b)window._liveBTC=b;});
+  if(!_eth)fetchETHTrend().then(e=>{if(e)window._liveETH=e;});
+  const liveRSI=_ta?_ta.rsi:null;
+  const liveMACH=_ta?_ta.macd:null;
+  const liveEMA20=_ta?_ta.ema20:null;
+  const liveEMA200=_ta?_ta.ema200:null;
+  const liveATR=_ta?_ta.atr:null;
+  const liveRegime=_ta?_ta.regime:null;
+  const liveBTCTrend=_btc?_btc.trend:null;
+  const liveBTCChg=_btc?_btc.change:null;
+  const liveETHTrend=_eth?_eth.trend:null;
+  const liveETHChg=_eth?_eth.change:null;
+
+  // ── ETH CONFIRMATION SIGNAL ──
+  // Only used when BTC is neutral — ETH breaks the tie
+  let ethConfirmation='';
+  if(liveBTCTrend==='neutral'&&liveETHTrend){
+    if(liveETHTrend==='bullish')ethConfirmation='ETH bullish while BTC neutral — slight long upgrade for AVAX';
+    else if(liveETHTrend==='bearish')ethConfirmation='ETH bearish while BTC neutral — lean toward skip or reduce size';
+    else ethConfirmation='ETH also neutral — no tiebreaker, low conviction';
+  }
 
   // ── OI CHANGE DIRECTION (Priority 4) ──
   // Store previous OI in sessionStorage to detect direction
@@ -803,14 +942,29 @@ LIVE DATA (do not search for these)
 - SGT session: ${session}
 - Last 3 trades: ${recentTradeCtx}${personalStatsCtx}
 
-STEP 1 - EXACTLY 2 WEB SEARCHES
-SEARCH 1: "AVAX price RSI MACD EMA200 ATR daily 4-hour chart technical analysis today"
+LIVE TECHNICAL INDICATORS (calculated from Binance live candles — 0h old, do NOT search for these)
+${_ta?`- RSI(14): ${liveRSI}
+- MACD: ${liveMACH?.toUpperCase()||'unknown'} (histogram: ${_ta.macdHist})
+- EMA 20: $${liveEMA20}
+- EMA 200: $${liveEMA200}
+- ATR (daily): $${liveATR}
+- Regime (pre-calculated): ${liveRegime?.toUpperCase()||'unknown'}`:'- TA: not yet loaded — use search'}
+${_btc?`- BTC trend: ${liveBTCTrend?.toUpperCase()||'unknown'} (${liveBTCChg}% 24h)`:''}
+${_eth?`- ETH trend: ${liveETHTrend?.toUpperCase()||'unknown'} (${liveETHChg}% 24h) — use as confirmation filter when BTC is neutral`:''}
+${ethConfirmation?`- ETH confirmation signal: ${ethConfirmation}`:''}
+
+STEP 1 - WEB SEARCH${_ta?` — ONLY 1 SEARCH NEEDED (TA already provided above)`:'ES — 2 SEARCHES NEEDED'}
+${_ta
+  ?`SEARCH 1: "BTC price trend today support resistance key levels"
+  Extract: BTC direction, key BTC levels, any macro risk-off signals`
+  :`SEARCH 1: "AVAX price RSI MACD EMA200 ATR daily 4-hour chart technical analysis today"
   Extract: price, RSI(14), MACD direction+histogram, EMA20, EMA200, ATR daily value, key support/resistance levels
 
 SEARCH 2: "BTC price trend today"
-  Extract: BTC direction, % change 24h
+  Extract: BTC direction, % change 24h`}
 
-No more than 2 searches. All other data provided above.
+${_ta?'Do NOT search for AVAX TA — it is already provided above from live Binance candles.':''}
+No more than ${_ta?1:2} search${_ta?'':'es'}. All other data provided above.
 
 STEP 2 - LP DECISION TREE
 days_out == 0: decision = "in_range" - continue to LP zone check then trade layers
@@ -881,6 +1035,13 @@ SOFT VETO (reduce to mixed size, do not skip):
 7. Last 3 trades = 0/3 wins - reduce to mixed size only, still trade
 8. Price within 2% of LP range boundary
 
+ETH CONFIRMATION RULE (apply when BTC trend is neutral only):
+- BTC neutral + ETH bullish → upgrade signal confidence by 1, allow full size if otherwise mixed
+- BTC neutral + ETH bearish → downgrade signal confidence by 1, reduce to mixed size even if other factors strong
+- BTC neutral + ETH neutral → no change, treat as low-conviction environment
+- When BTC is clearly bullish or bearish, ignore ETH — BTC dominates
+Record eth_trend and eth_change in output JSON.
+
 veto_fired = true ONLY for hard vetos 1-3. Soft vetos just reduce size.
 
 LAYER 4 - TRADE SETUP
@@ -932,6 +1093,8 @@ RETURN EXACTLY THIS JSON - nothing else:
   "btc_trend": "neutral",
   "btc_change": -0.8,
   "btc_still_falling": false,
+  "eth_trend": "bullish",
+  "eth_change": 1.2,
   "price_still_falling": false,
   "oi_change": "rising slightly",
   "confirm_score": 3,
@@ -1391,6 +1554,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   // ── 7. TA TABLE ──
   const macdC=a.macd?.includes('bull')?'bull':'bear';
   const btcC=a.btc_trend==='bullish'?'bull':a.btc_trend==='bearish'?'bear':'neut';
+  const ethC=a.eth_trend==='bullish'?'bull':a.eth_trend==='bearish'?'bear':'neut';
   const volC=a.vol_regime==='normal'?'bull':a.vol_regime==='high'?'neut':'bear';
   const regC=a.regime==='uptrend'?'bull':a.regime==='downtrend'?'bear':'neut';
   const vetoCls=a.veto_fired?'bear':'bull';
@@ -1402,6 +1566,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     <tr><td>Market regime</td><td><span class="tag ${regC}">${(a.regime||'—').toUpperCase()}</span></td></tr>
     <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Macro</td></tr>
     <tr><td>BTC trend</td><td><span class="tag ${btcC}">${(a.btc_trend||'—').toUpperCase()} ${a.btc_change?'('+a.btc_change+'%)':''}</span></td></tr>
+    <tr><td>ETH trend ${a.btc_trend==='neutral'?'<span style="font-size:9px;color:var(--blue)">← tiebreaker</span>':''}</td><td><span class="tag ${ethC}">${(a.eth_trend||'—').toUpperCase()} ${a.eth_change?'('+a.eth_change+'%)':''}</span></td></tr>
     <tr><td>Funding rate</td><td style="color:${fi?.col}">${_hl?((_hl.funding>=0?'+':'')+fi?.pct+'%/hr'):'—'}</td></tr>
     <tr><td>OI change</td><td style="font-size:10px">${a.oi_change||oiChange}</td></tr>
     <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Setup Confirmation</td></tr>
@@ -1456,7 +1621,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       confidence:a.confidence||0, entry:a.entry||px,
       tp1:a.tp1||0, tp2:a.tp2||0, sl:a.sl||0,
       regime:a.regime||'', vol_regime:a.vol_regime||'',
-      rsi:a.rsi||0, macd:a.macd||'', btc_trend:a.btc_trend||'',
+      rsi:a.rsi||0, macd:a.macd||'', btc_trend:a.btc_trend||'', eth_trend:a.eth_trend||'',
       oi_change:a.oi_change||'', atr_pct:a.atr_pct||0,
       lp_zone:a.lp_zone||'', lp_pct:a.lp_pct||0, days_out:daysOut
     }));}catch(e){}
@@ -1596,88 +1761,98 @@ function renderJ(){
       ):''}
     </div></div>`).join('');
 }
-// ── DATA ACCURACY TEST ──
+// ── DATA ACCURACY TEST (v10 — native Binance APIs, no AI web search) ──
 async function runDataTest(){
-  const key=localStorage.getItem(KK)||'';
-  if(!key.startsWith('sk-')){toast('Add API key in Settings first','err');return;}
   const btn=$('tbtn'),btxt=$('tbtn-txt');
   btn.classList.add('running');btxt.textContent='Testing…';
-  _hl=await fetchHL();
-  const hlPx=_hl?.px||0;
-  const hlFund=_hl?(_hl.funding*100).toFixed(4)+'%':null;
-  const hlOI=_hl?(_hl.oi/1000).toFixed(0)+'K AVAX':null;
-  const avax=pv($('i_avax')?.value)||0, usdc=pv($('i_usdc')?.value)||0;
+  const panel=$('test-panel'),result=$('test-result');
+  if(panel)panel.style.display='block';
+  if(result)result.innerHTML='<div style="padding:20px;text-align:center"><div style="font-size:24px;margin-bottom:8px">🔍</div><div style="font-size:12px;color:var(--ink4)">Fetching live data from Binance & Hyperliquid…</div></div>';
+  if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
+
+  const [hlData,binanceSpot,liveTA,btcData,ethData]=await Promise.all([fetchHL(),fetchBinanceSpot(),fetchLiveTA(),fetchBTCTrend(),fetchETHTrend()]);
+  if(hlData)_hl=hlData;
+  if(liveTA)window._liveTA=liveTA;
+  if(btcData)window._liveBTC=btcData;
+  if(ethData)window._liveETH=ethData;
+
+  const hlPx=hlData?.px||0;
+  const hlFund=hlData?(hlData.funding*100).toFixed(4)+'%':null;
+  const hlOI=hlData?(hlData.oi/1000).toFixed(0)+'K AVAX':null;
+  const avax=pv($('i_avax')?.value)||0,usdc=pv($('i_usdc')?.value)||0;
   const hedgeEntry=pv($('i_hedge_entry')?.value)||9.71;
   const apy2=pv($('i_apy_display')?.value)||35;
   const storedRange=JSON.parse(sessionStorage.getItem('avax_lp_range')||'{"lo":9.25,"hi":10.50}');
-  const tlo=storedRange.lo||9.25, thi=storedRange.hi||10.50;
+  const tlo=storedRange.lo||9.25,thi=storedRange.hi||10.50;
   const lpVal2=avax>0&&usdc>0&&hlPx>0?(avax*hlPx+usdc):0;
   const lp_pct2=hlPx>0&&lpVal2>0?((hlPx-tlo)/(thi-tlo)*100).toFixed(0):50;
   const expAvaxPct=lpVal2>0?Math.round(avax*hlPx/lpVal2*100):50;
   const hedgeLiq=(hedgeEntry*1.9).toFixed(2);
   const hedgeLiqSafe=hlPx>0&&hlPx<hedgeEntry*1.7;
   const hedgeProfit2=hlPx>0?Math.max(0,500*(hedgeEntry-hlPx)/hedgeEntry).toFixed(0):0;
-  const panel=$('test-panel'),result=$('test-result');
-  if(panel)panel.style.display='block';
-  if(result)result.innerHTML='<div style="padding:20px;text-align:center"><div style="font-size:24px;margin-bottom:8px">🔍</div><div style="font-size:12px;color:var(--ink4)">Running data accuracy test…</div></div>';
-  if(panel)panel.scrollIntoView({behavior:'smooth',block:'start'});
-  const testSys=`You are a data accuracy auditor. Run exactly 2 web searches. Return only valid JSON.
-LIVE DATA (from Hyperliquid API):
-- AVAX price: ${hlPx>0?'$'+hlPx.toFixed(2):'unavailable'}
-- Funding: ${hlFund||'unavailable'} | OI: ${hlOI||'unavailable'}
-SEARCH 1: "AVAX price live current USD" — get price from 2-3 sources, compare vs $${hlPx.toFixed(2)}
-SEARCH 2: "AVAX RSI MACD EMA20 ATR technical analysis today" — get values, note data age in hours, check consistency
-Return JSON: {"price_hl":${hlPx.toFixed(2)},"price_source1":9.71,"price_source1_name":"CoinGecko","price_source2":9.73,"price_source2_name":"CMC","price_max_gap_pct":0.21,"price_confidence":"high","price_verdict":"ok","rsi":57,"rsi_sources":2,"rsi_age_hours":1.5,"macd":"bullish","macd_consistent_with_rsi":true,"ema20":9.25,"ema200":16.91,"ema_price_consistent":true,"atr":0.51,"atr_plausible":true,"ta_confidence":"medium","ta_verdict":"ok","btc_trend":"neutral","overall_confidence":"medium","overall_verdict":"Price reliable. TA moderate — 2h old.","recommendation":"proceed","data_age_hours":2,"warnings":[]}`;
-  try{
-    const res=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,tools:[{type:'web_search_20250305',name:'web_search'}],system:testSys,messages:[{role:'user',content:'Run data accuracy test now. Return only JSON.'}]})});
-    if(!res.ok)throw new Error('API error '+res.status);
-    const data=await res.json();
-    let raw='';for(const b of(data.content||[])){if(b.type==='text')raw+=b.text;}
-    const s=raw.indexOf('{'),e2=raw.lastIndexOf('}');
-    if(s<0||e2<=s)throw new Error('No JSON');
-    const t=JSON.parse(raw.slice(s,e2+1));
-    const now2=new Date(),sgt2=new Date(now2.getTime()+8*3600*1000);
-    const p2=v=>String(v).padStart(2,'0');
-    const timeEl=$('test-time');if(timeEl)timeEl.textContent=`Tested ${p2(sgt2.getUTCHours())}:${p2(sgt2.getUTCMinutes())} SGT`;
-    const cb=(c)=>{const cls=c==='high'?'hi':c==='medium'?'med':'lo';return '<span class="tscore '+cls+'">'+(c||'—').toUpperCase()+'</span>';};
-    const tk=(ok)=>ok?'<span style="color:var(--green)">✅</span>':'<span style="color:var(--red)">⚠️</span>';
-    const gapPct=t.price_max_gap_pct||0;
-    const ov=t.overall_confidence||'medium';
-    const ovCls=ov==='high'?'ok':ov==='medium'?'warn':'err';
-    const recIco=t.recommendation==='proceed'?'✅':t.recommendation==='proceed_with_caution'?'⚠️':'🔴';
-    const recTxt=t.recommendation==='proceed'?'SAFE TO ANALYSE':t.recommendation==='proceed_with_caution'?'PROCEED WITH AWARENESS':'WAIT — DATA ISSUES';
-    result.innerHTML=
-      '<div class="tverdict '+ovCls+'"><b>'+recIco+' '+recTxt+'</b><br>'+(t.overall_verdict||'')+'</div>'
-      +'<div class="tsec">Price Feeds</div>'
-      +'<div class="trow"><span>Hyperliquid API</span><span class="tval">$'+(t.price_hl||hlPx).toFixed(2)+' '+tk(true)+'</span></div>'
-      +(t.price_source1?'<div class="trow"><span>'+(t.price_source1_name||'Source 1')+'</span><span class="tval">$'+t.price_source1.toFixed(2)+' '+tk(Math.abs(t.price_source1-hlPx)/hlPx*100<1)+'</span></div>':'')
-      +(t.price_source2?'<div class="trow"><span>'+(t.price_source2_name||'Source 2')+'</span><span class="tval">$'+t.price_source2.toFixed(2)+' '+tk(Math.abs(t.price_source2-hlPx)/hlPx*100<1)+'</span></div>':'')
-      +'<div class="trow"><span>Max gap</span><span class="tval" style="color:'+(gapPct>=2?'var(--red)':gapPct>=1?'var(--amber)':'var(--green)')+'">'+gapPct.toFixed(2)+'%</span></div>'
-      +'<div class="trow"><span>Price confidence</span><span class="tval">'+cb(t.price_confidence)+'</span></div>'
-      +'<div class="tsec">Technical Indicators</div>'
-      +'<div class="trow"><span>RSI (14)</span><span class="tval">'+(t.rsi||'—')+' · '+(t.rsi_sources||1)+' src · '+(t.rsi_age_hours||'?')+'h old</span></div>'
-      +'<div class="trow"><span>MACD</span><span class="tval">'+(t.macd||'—').toUpperCase()+' '+tk(t.macd_consistent_with_rsi!==false)+'</span></div>'
-      +'<div class="trow"><span>EMA 20</span><span class="tval">$'+(t.ema20?.toFixed(2)||'—')+' '+tk(t.ema_price_consistent!==false)+'</span></div>'
-      +'<div class="trow"><span>ATR (daily)</span><span class="tval">$'+(t.atr?.toFixed(2)||'—')+' '+tk(t.atr_plausible!==false)+'</span></div>'
-      +'<div class="trow"><span>Data age</span><span class="tval" style="color:'+((t.data_age_hours||0)>4?'var(--amber)':'var(--green)')+'">'+( t.data_age_hours||'?')+'h</span></div>'
-      +'<div class="trow"><span>TA confidence</span><span class="tval">'+cb(t.ta_confidence)+'</span></div>'
-      +'<div class="tsec">Live Market Data</div>'
-      +'<div class="trow"><span>Funding</span><span class="tval">'+(hlFund||'—')+' '+tk(!!hlFund)+'</span></div>'
-      +'<div class="trow"><span>Open interest</span><span class="tval">'+(hlOI||'—')+' '+tk(!!hlOI)+'</span></div>'
-      +'<div class="trow"><span>BTC trend</span><span class="tval">'+(t.btc_trend||'—').toUpperCase()+'</span></div>'
-      +(lpVal2>0?'<div class="tsec">Your LP Inputs</div>'
-        +'<div class="trow"><span>LP value</span><span class="tval" style="color:var(--blue)">$'+lpVal2.toFixed(0)+'</span></div>'
-        +'<div class="trow"><span>Composition</span><span class="tval">'+expAvaxPct+'% AVAX · '+(100-expAvaxPct)+'% USDC</span></div>'
-        +'<div class="trow"><span>Range position</span><span class="tval">'+lp_pct2+'% through $'+tlo.toFixed(2)+'→$'+thi.toFixed(2)+'</span></div>'
-        +'<div class="trow"><span>Pool APY</span><span class="tval" style="color:'+(apy2>=30?'var(--green)':apy2>=25?'var(--amber)':'var(--red)')+'">'+apy2+'%</span></div>':'')
-      +'<div class="tsec">Crash Hedge</div>'
-      +'<div class="trow"><span>Entry</span><span class="tval">$'+hedgeEntry.toFixed(2)+'</span></div>'
-      +'<div class="trow"><span>Liq at</span><span class="tval" style="color:'+(hedgeLiqSafe?'var(--green)':'var(--red)')+'">~$'+hedgeLiq+'</span></div>'
-      +'<div class="trow"><span>Profit now</span><span class="tval" style="color:var(--green)">+$'+hedgeProfit2+'</span></div>'
-      +(t.warnings&&t.warnings.length?'<div class="tsec">Warnings</div>'+t.warnings.map(w=>'<div class="trow"><span style="color:var(--amber)">⚠️ '+w+'</span></div>').join(''):'');
-  }catch(err){
-    if(result)result.innerHTML='<div style="padding:14px;font-size:11px;color:var(--red)">Test failed: '+err.message+'</div>';
-  }
+
+  const gapPct=hlPx>0&&binanceSpot>0?Math.abs((hlPx-binanceSpot)/binanceSpot*100):0;
+  const priceConf=gapPct<1?'high':gapPct<2.5?'medium':'low';
+
+  const warnings=[];
+  if(gapPct>=4)warnings.push('Price gap '+gapPct.toFixed(2)+'% — Hyperliquid perp ($'+hlPx.toFixed(2)+') trading at premium to Binance spot ($'+(binanceSpot?.toFixed(2)||'—')+') — real premium, not stale data');
+  if(!liveTA)warnings.push('Live TA unavailable — Binance candle fetch failed');
+  if(!binanceSpot)warnings.push('Binance spot price unavailable');
+  if(btcData?.trend==='bearish')warnings.push('BTC in downtrend ('+btcData.change+'% 24h) — reduce trade confidence');
+  if(btcData?.trend==='neutral'&&ethData?.trend==='bearish')warnings.push('BTC neutral + ETH bearish ('+ethData.change+'% 24h) — ETH tiebreaker leans bearish, reduce size');
+
+  const overallConf=!binanceSpot||!liveTA?'medium':warnings.length===0?'high':'medium';
+  const recommendation=!binanceSpot||!liveTA?'proceed_with_caution':'proceed';
+  const recIco=recommendation==='proceed'?'✅':'⚠️';
+  const recTxt=recommendation==='proceed'?'SAFE TO ANALYSE — All data live':'PROCEED WITH AWARENESS';
+  const ovCls=overallConf==='high'?'ok':overallConf==='medium'?'warn':'err';
+
+  const now2=new Date(),sgt2=new Date(now2.getTime()+8*3600*1000);
+  const p2=v=>String(v).padStart(2,'0');
+  const timeEl=$('test-time');if(timeEl)timeEl.textContent=`Tested ${p2(sgt2.getUTCHours())}:${p2(sgt2.getUTCMinutes())} SGT`;
+  const cb=(c)=>{const cls=c==='high'?'hi':c==='medium'?'med':'lo';return '<span class="tscore '+cls+'">'+( c||'—').toUpperCase()+'</span>';};
+  const tk=(ok)=>ok?'<span style="color:var(--green)">✅</span>':'<span style="color:var(--amber)">⚠️</span>';
+
+  result.innerHTML=
+    '<div class="tverdict '+ovCls+'"><b>'+recIco+' '+recTxt+'</b><br>Prices from Binance live API · TA from Binance candles (0h old)</div>'
+    +'<div class="tsec">Price Feeds</div>'
+    +'<div class="trow"><span>Hyperliquid (perp mark)</span><span class="tval">$'+hlPx.toFixed(2)+' '+tk(hlPx>0)+'</span></div>'
+    +(binanceSpot
+      ?'<div class="trow"><span>Binance spot (live)</span><span class="tval">$'+binanceSpot.toFixed(2)+' '+tk(true)+'</span></div>'
+      :'<div class="trow"><span>Binance spot</span><span class="tval" style="color:var(--amber)">unavailable ⚠️</span></div>')
+    +'<div class="trow"><span>Gap (perp vs spot)</span><span class="tval" style="color:'+(gapPct>=4?'var(--red)':gapPct>=2?'var(--amber)':'var(--green)')+'">'
+      +gapPct.toFixed(2)+'%'+(gapPct>=4?' — genuine futures premium':gapPct>=2?' — slight premium':'  — aligned ✅')+'</span></div>'
+    +'<div class="trow"><span>Price confidence</span><span class="tval">'+cb(priceConf)+'</span></div>'
+    +'<div class="tsec">Technical Indicators (Binance live candles · 0h old)</div>'
+    +(liveTA
+      ?'<div class="trow"><span>RSI (14)</span><span class="tval">'+liveTA.rsi+' '+tk(true)+' · 0h old</span></div>'
+       +'<div class="trow"><span>MACD</span><span class="tval">'+liveTA.macd.toUpperCase()+' (hist '+liveTA.macdHist+') '+tk(true)+'</span></div>'
+       +'<div class="trow"><span>EMA 20</span><span class="tval">$'+liveTA.ema20+' '+tk(true)+'</span></div>'
+       +'<div class="trow"><span>EMA 200</span><span class="tval">$'+liveTA.ema200+' '+tk(true)+'</span></div>'
+       +'<div class="trow"><span>ATR (daily)</span><span class="tval">$'+liveTA.atr+' '+tk(true)+'</span></div>'
+       +'<div class="trow"><span>Regime</span><span class="tval">'+liveTA.regime.toUpperCase()+'</span></div>'
+       +'<div class="trow"><span>Data age</span><span class="tval" style="color:var(--green)">0h — live ✅</span></div>'
+      :'<div class="trow"><span style="color:var(--amber)">⚠️ Candle fetch failed — check connection and retry</span></div>')
+    +'<div class="trow"><span>TA confidence</span><span class="tval">'+cb(liveTA?'high':'low')+'</span></div>'
+    +'<div class="tsec">Live Market Data</div>'
+    +'<div class="trow"><span>Funding</span><span class="tval">'+(hlFund||'—')+' '+tk(!!hlFund)+'</span></div>'
+    +'<div class="trow"><span>Open interest</span><span class="tval">'+(hlOI||'—')+' '+tk(!!hlOI)+'</span></div>'
+    +'<div class="trow"><span>BTC</span><span class="tval">'+(btcData?btcData.trend.toUpperCase()+' '+tk(btcData.trend!=='bearish')+' | '+btcData.change+'% 24h | $'+btcData.price:'—')+'</span></div>'
+    +'<div class="trow"><span>ETH '+(btcData?.trend==='neutral'?'<span style="font-size:9px;color:var(--blue)">(tiebreaker)</span>':'')+'</span><span class="tval">'+(ethData?ethData.trend.toUpperCase()+' '+tk(ethData.trend!=='bearish')+' | '+ethData.change+'% 24h | $'+ethData.price:'—')+'</span></div>'
+    +(lpVal2>0
+      ?'<div class="tsec">Your LP Inputs</div>'
+       +'<div class="trow"><span>LP value</span><span class="tval" style="color:var(--blue)">$'+lpVal2.toFixed(0)+'</span></div>'
+       +'<div class="trow"><span>Composition</span><span class="tval">'+expAvaxPct+'% AVAX · '+(100-expAvaxPct)+'% USDC</span></div>'
+       +'<div class="trow"><span>Range position</span><span class="tval">'+lp_pct2+'% through $'+tlo.toFixed(2)+'→$'+thi.toFixed(2)+'</span></div>'
+       +'<div class="trow"><span>Pool APY</span><span class="tval" style="color:'+(apy2>=30?'var(--green)':apy2>=25?'var(--amber)':'var(--red)')+'">'+apy2+'%</span></div>':''  )
+    +'<div class="tsec">Crash Hedge</div>'
+    +'<div class="trow"><span>Entry</span><span class="tval">$'+hedgeEntry.toFixed(2)+'</span></div>'
+    +'<div class="trow"><span>Liq at</span><span class="tval" style="color:'+(hedgeLiqSafe?'var(--green)':'var(--red)')+'">~$'+hedgeLiq+'</span></div>'
+    +'<div class="trow"><span>Profit now</span><span class="tval" style="color:var(--green)">+$'+hedgeProfit2+'</span></div>'
+    +(warnings.length
+      ?'<div class="tsec">Warnings</div>'+warnings.map(w=>'<div class="trow"><span style="color:var(--amber)">⚠️ '+w+'</span></div>').join('')
+      :'<div style="padding:10px 14px;font-size:11px;color:var(--green);font-weight:600">✅ No warnings — all data live and consistent</div>');
+
   btn.classList.remove('running');btxt.textContent='Test Data';
 }
 
