@@ -346,7 +346,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v22</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v27</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -743,6 +743,124 @@ function goPage(id,btn){
 function toast(msg,t='ok'){const el=$('toast');el.textContent=msg;el.className='toast show '+t;setTimeout(()=>el.className='toast',2600);}
 
 // ── TRADE EVENT BUTTONS ──
+// ── CL LP MATH UTILITIES (v23) ──
+// Correct Uniswap V3 / Algebra CL composition formula using square root prices
+// Linear approximation (old) was wrong — caused 2× AVAX overestimate near range top
+
+function clComposition(price, rangeLo, rangeHi){
+  // Returns {usdcPct, avaxPct} — fraction of LP value in each token at current price
+  // Based on Uniswap V3 virtual reserves formula
+  if(price<=rangeLo) return {usdcPct:0, avaxPct:1};   // all AVAX (below range)
+  if(price>=rangeHi) return {usdcPct:1, avaxPct:0};   // all USDC (above range)
+  const sqrtP  = Math.sqrt(price);
+  const sqrtLo = Math.sqrt(rangeLo);
+  const sqrtHi = Math.sqrt(rangeHi);
+  // Liquidity L (normalised to 1)
+  // x (AVAX) proportional to: 1/sqrtP - 1/sqrtHi
+  // y (USDC) proportional to: sqrtP - sqrtLo
+  const xPart = (1/sqrtP - 1/sqrtHi);   // AVAX component
+  const yPart = (sqrtP - sqrtLo);        // USDC component
+  // Convert to $ value terms
+  const xVal = xPart * price;  // AVAX in USD
+  const yVal = yPart;          // USDC already in USD
+  const total = xVal + yVal;
+  if(total<=0) return {usdcPct:0.5, avaxPct:0.5};
+  return {usdcPct: yVal/total, avaxPct: xVal/total};
+}
+
+function calcCLSwap(price, rangeLo, rangeHi, curAvax, curUsdc){
+  // Given current AVAX and USDC holdings, calculate exact swap needed for new CL range
+  // Returns {needAvax, needUsdc, swapText, lpValue}
+  const lpValue = curAvax*price + curUsdc;
+  const {usdcPct, avaxPct} = clComposition(price, rangeLo, rangeHi);
+  const needUsdc = +(lpValue * usdcPct).toFixed(2);
+  const needAvax = +(lpValue * avaxPct / price).toFixed(2);
+  const avaxDelta = +(needAvax - curAvax).toFixed(2);
+  const usdcDelta = +(needUsdc - curUsdc).toFixed(2);
+  const tolerance = lpValue * 0.02; // 2% tolerance
+  let swapText='';
+  if(Math.abs(avaxDelta*price)<tolerance){
+    swapText='✅ No swap needed — token ratio is correct for new range';
+  } else if(avaxDelta>0){
+    swapText=`Sell $${Math.abs(usdcDelta).toFixed(0)} USDC → buy ${avaxDelta.toFixed(2)} AVAX at ~$${price.toFixed(2)}`;
+  } else {
+    swapText=`Sell ${Math.abs(avaxDelta).toFixed(2)} AVAX → get $${Math.abs(usdcDelta).toFixed(0)} USDC at ~$${price.toFixed(2)}`;
+  }
+  return {needAvax, needUsdc, avaxDelta, usdcDelta, swapText, lpValue};
+}
+
+// Blackhole tick snapping (Algebra protocol, 0.2% tick spacing = tickSpacing 60)
+// Valid ticks are multiples of 60, price = 1.0001^tick
+// Snap a price to the nearest valid Blackhole boundary
+const TICK_SPACING = 60;
+const TICK_BASE = 1.0001;
+
+function priceToTick(price){
+  return Math.round(Math.log(price) / Math.log(TICK_BASE));
+}
+function tickToPrice(tick){
+  return Math.pow(TICK_BASE, tick);
+}
+function snapToBlackholeTick(price, direction='nearest'){
+  const tick = priceToTick(price);
+  const snappedTick = direction==='down'
+    ? Math.floor(tick/TICK_SPACING)*TICK_SPACING
+    : direction==='up'
+    ? Math.ceil(tick/TICK_SPACING)*TICK_SPACING
+    : Math.round(tick/TICK_SPACING)*TICK_SPACING;
+  return +tickToPrice(snappedTick).toFixed(4);
+}
+function snapRangeToBH(lo, hi){
+  // Snap lo DOWN (ensures price stays above floor) and hi UP (ensures ceiling is above price)
+  return {
+    lo: snapToBlackholeTick(lo, 'down'),
+    hi: snapToBlackholeTick(hi, 'up')
+  };
+}
+
+// Find a range that matches current token composition (minimises swap needed)
+// Given current AVAX/USDC holdings, find range where required composition ≈ current composition
+function findCompositionMatchedRange(price, curAvax, curUsdc, targetWidthPct, regime){
+  const lpValue = curAvax*price + curUsdc;
+  const currentUsdcPct = curUsdc / lpValue;  // e.g. 0.74 for 74% USDC
+
+  // Binary search for range_lo that makes usdcPct ≈ currentUsdcPct
+  // Given width, find lo such that clComposition(price, lo, lo+width).usdcPct ≈ currentUsdcPct
+  const width = price * targetWidthPct / 100;
+
+  // Try different centres — shift range down to make price sit higher through range
+  let bestLo = price - width * 0.5;  // start centred
+  let bestSwapCost = Infinity;
+
+  for(let shift = -0.45; shift <= 0.05; shift += 0.01){
+    const lo = price - width * (0.5 - shift);  // shift range down = price higher in range
+    const hi = lo + width;
+    if(lo < price*0.85 || hi > price*1.15) continue;  // stay within ±15%
+    const {usdcPct} = clComposition(price, lo, hi);
+    const needUsdc = lpValue * usdcPct;
+    const needAvax = lpValue * (1-usdcPct) / price;
+    const swapCost = Math.abs(needAvax - curAvax) * price;
+    if(swapCost < bestSwapCost){
+      bestSwapCost = swapCost;
+      bestLo = lo;
+    }
+  }
+
+  const bestHi = bestLo + width;
+  const snapped = snapRangeToBH(bestLo, bestHi);
+  const swap = calcCLSwap(price, snapped.lo, snapped.hi, curAvax, curUsdc);
+  const lp_pct = Math.round((price - snapped.lo)/(snapped.hi - snapped.lo)*100);
+
+  return {
+    lo: snapped.lo,
+    hi: snapped.hi,
+    swapCost: bestSwapCost,
+    swap,
+    lp_pct,
+    widthPct: +((snapped.hi-snapped.lo)/price*100).toFixed(1)
+  };
+}
+
 // ── TRADE STATE v15 ──
 let _tradeEvt='nothing';
 let _closeAction='still'; // still | tp1 | tp2 | sl
@@ -1007,14 +1125,15 @@ async function fetchBinanceSpot(){
 // ── BINANCE LIVE CANDLES → RSI / MACD / EMA ──
 async function fetchLiveTA(){
   try{
-    // Fetch 200 daily candles — enough for EMA200, RSI(14), MACD
     const r=await fetch('https://api.binance.com/api/v3/klines?symbol=AVAXUSDT&interval=1d&limit=220');
     if(!r.ok)return null;
     const raw=await r.json();
     const closes=raw.map(c=>parseFloat(c[4]));
+    const highs=raw.map(c=>parseFloat(c[2]));
+    const lows=raw.map(c=>parseFloat(c[3]));
+    const volumes=raw.map(c=>parseFloat(c[5]));
     if(closes.length<50)return null;
 
-    // EMA helper
     const ema=(arr,period)=>{
       const k=2/(period+1);
       let val=arr.slice(0,period).reduce((a,b)=>a+b,0)/period;
@@ -1024,13 +1143,12 @@ async function fetchLiveTA(){
     };
 
     // RSI(14)
-    const rsiPeriod=14;
     let gains=0,losses=0;
-    for(let i=closes.length-rsiPeriod-1;i<closes.length-1;i++){
+    for(let i=closes.length-15;i<closes.length-1;i++){
       const diff=closes[i+1]-closes[i];
       if(diff>=0)gains+=diff; else losses-=diff;
     }
-    const avgGain=gains/rsiPeriod, avgLoss=losses/rsiPeriod;
+    const avgGain=gains/14,avgLoss=losses/14;
     const rs=avgLoss===0?100:avgGain/avgLoss;
     const rsi=Math.round(100-(100/(1+rs)));
 
@@ -1046,29 +1164,169 @@ async function fetchLiveTA(){
     const offset26=ema12arr.length-ema26arr.length;
     const macdLine=ema26arr.map((v,i)=>ema12arr[i+offset26]-v);
     const signalArr=ema(macdLine,9);
-    const macdVal=macdLine[macdLine.length-1];
-    const signalVal=signalArr[signalArr.length-1];
-    const macdHist=macdVal-signalVal;
+    const macdHist=macdLine[macdLine.length-1]-signalArr[signalArr.length-1];
     const macdDir=macdHist>0?'bullish':'bearish';
+    // MACD momentum: is histogram growing or shrinking?
+    const macdHistPrev=macdLine[macdLine.length-2]-signalArr[signalArr.length-2];
+    const macdMomentum=macdHist>macdHistPrev?'increasing':'decreasing';
 
-    // ATR(14) using last 15 candles
-    const highs=raw.slice(-15).map(c=>parseFloat(c[2]));
-    const lows=raw.slice(-15).map(c=>parseFloat(c[3]));
+    // ATR(14)
     let atrSum=0;
-    for(let i=1;i<highs.length;i++){
-      const tr=Math.max(highs[i]-lows[i],Math.abs(highs[i]-closes[raw.length-15+i-1]),Math.abs(lows[i]-closes[raw.length-15+i-1]));
+    for(let i=closes.length-15;i<closes.length-1;i++){
+      const tr=Math.max(highs[i+1]-lows[i+1],Math.abs(highs[i+1]-closes[i]),Math.abs(lows[i+1]-closes[i]));
       atrSum+=tr;
     }
     const atr=atrSum/14;
 
     const price=closes[closes.length-1];
-    let regime='ranging';
-    if(price>ema20&&ema20>ema200)regime='uptrend';
-    else if(price<ema20&&ema20<ema200)regime='downtrend';
-    else if(Math.abs(price-ema20)/price<0.01)regime='choppy';
+    const atr_pct=(atr/price)*100;
 
-    return{rsi,ema20:+ema20.toFixed(2),ema200:+ema200.toFixed(2),macd:macdDir,macdHist:+macdHist.toFixed(4),atr:+atr.toFixed(2),regime,ageHours:0,source:'Binance live candles'};
+    // ── P2: IMPROVED REGIME DETECTION (5-factor) ──
+    // Factor 1: EMA20 slope over last 5 days
+    const ema20slope5=ema20arr[ema20arr.length-1]-ema20arr[ema20arr.length-6];
+    const ema20slopePct=(ema20slope5/price)*100;
+    // Factor 2: Price vs EMA20 distance
+    const priceVsEma20=(price-ema20)/price*100;
+    // Factor 3: EMA20 vs EMA200 (long-term bias only — not the primary regime signal)
+    const longTermBull=ema20>ema200*0.95; // generous — allows recovery from deep downtrend
+    const longTermBear=ema20<ema200*0.90; // clearly below 200
+    // Factor 4: ATR% for volatility regime
+    const volRegime=atr_pct<3?'low':atr_pct<7?'normal':atr_pct<12?'high':'extreme';
+    // Factor 5: Recent price range (last 5 days high-low vs ATR)
+    const recentRange=Math.max(...highs.slice(-5))-Math.min(...lows.slice(-5));
+    const rangeVsAtr=recentRange/(atr*5);
+
+    // Regime classification — slope-first, EMA200 as context only
+    let regime='ranging';
+    if(ema20slopePct>0.3&&priceVsEma20>0&&!longTermBear){
+      regime='uptrend';
+    } else if(ema20slopePct<-0.3&&priceVsEma20<0){
+      regime='downtrend';
+    } else if(atr_pct>7||rangeVsAtr>1.4){
+      regime='volatile'; // new regime — high volatility, no clean direction
+    } else if(Math.abs(ema20slopePct)<0.15&&Math.abs(priceVsEma20)<1.5){
+      regime='ranging_tight'; // price hugging EMA20, low slope — ideal for LP
+    } else {
+      regime='ranging'; // default — oscillating without clear direction
+    }
+
+    // ── P3: VOLUME ANALYSIS ──
+    const vol20avg=volumes.slice(-21,-1).reduce((a,b)=>a+b,0)/20;
+    const volRatio=+(volumes[volumes.length-1]/vol20avg).toFixed(2);
+    const volLabel=volRatio>1.5?'high':volRatio<0.7?'low':'normal';
+    // Volume trend: is volume expanding or contracting vs last week?
+    const vol5avg=volumes.slice(-6,-1).reduce((a,b)=>a+b,0)/5;
+    const volTrend=vol5avg>vol20avg*1.1?'expanding':vol5avg<vol20avg*0.8?'contracting':'stable';
+
+    // ── P6: S/R LEVELS FROM CANDLES ──
+    // Swing highs: local maxima over last 60 days
+    const lookback=Math.min(60,highs.length-5);
+    const swingHighs=[],swingLows=[];
+    for(let i=2;i<lookback;i++){
+      const idx=highs.length-1-i;
+      if(highs[idx]>highs[idx-1]&&highs[idx]>highs[idx-2]&&
+         highs[idx]>highs[idx+1]&&highs[idx]>highs[idx+2]){
+        swingHighs.push(+highs[idx].toFixed(2));
+      }
+      if(lows[idx]<lows[idx-1]&&lows[idx]<lows[idx-2]&&
+         lows[idx]<lows[idx+1]&&lows[idx]<lows[idx+2]){
+        swingLows.push(+lows[idx].toFixed(2));
+      }
+    }
+    // Round numbers near current price (±15%)
+    const roundNumbers=[];
+    for(let rn=Math.floor(price*0.85);rn<=Math.ceil(price*1.15);rn+=0.5){
+      if(Math.abs(rn-price)/price<0.15)roundNumbers.push(+rn.toFixed(1));
+    }
+    // Nearest support: highest swing low below price, or EMA200, or round number
+    const supportsBelow=[...swingLows.filter(v=>v<price),...roundNumbers.filter(v=>v<price),+ema200.toFixed(2)].sort((a,b)=>b-a);
+    const resistancesAbove=[...swingHighs.filter(v=>v>price),...roundNumbers.filter(v=>v>price)].sort((a,b)=>a-b);
+    const nearestSupport=supportsBelow[0]||+(price*0.93).toFixed(2);
+    const nearestResistance=resistancesAbove[0]||+(price*1.07).toFixed(2);
+    // Top 3 supports and resistances
+    const keySupports=supportsBelow.slice(0,3);
+    const keyResistances=resistancesAbove.slice(0,3);
+
+    return{
+      rsi,
+      ema20:+ema20.toFixed(2),
+      ema200:+ema200.toFixed(2),
+      macd:macdDir,
+      macdHist:+macdHist.toFixed(4),
+      macdMomentum,
+      atr:+atr.toFixed(2),
+      atr_pct:+atr_pct.toFixed(2),
+      regime,
+      volRegime,
+      volRatio,
+      volLabel,
+      volTrend,
+      ema20slope:+ema20slopePct.toFixed(3),
+      priceVsEma20:+priceVsEma20.toFixed(2),
+      nearestSupport,
+      nearestResistance,
+      keySupports,
+      keyResistances,
+      ageHours:0,
+      source:'Binance live candles'
+    };
   }catch(e){console.warn('Live TA err',e);return null;}
+}
+
+
+// ── 4H TA (for trade entry/exit decisions) ──
+async function fetchLiveTA4h(){
+  try{
+    const r=await fetch('https://api.binance.com/api/v3/klines?symbol=AVAXUSDT&interval=4h&limit=220');
+    if(!r.ok)return null;
+    const raw=await r.json();
+    const closes=raw.map(c=>parseFloat(c[4]));
+    const highs=raw.map(c=>parseFloat(c[2]));
+    const lows=raw.map(c=>parseFloat(c[3]));
+    const volumes=raw.map(c=>parseFloat(c[5]));
+    if(closes.length<50)return null;
+    const ema=(arr,period)=>{
+      const k=2/(period+1);
+      let val=arr.slice(0,period).reduce((a,b)=>a+b,0)/period;
+      const out=[val];
+      for(let i=period;i<arr.length;i++){val=arr[i]*k+val*(1-k);out.push(val);}
+      return out;
+    };
+    let gains=0,losses=0;
+    for(let i=closes.length-15;i<closes.length-1;i++){
+      const diff=closes[i+1]-closes[i];
+      if(diff>=0)gains+=diff; else losses-=diff;
+    }
+    const avgGain=gains/14,avgLoss=losses/14;
+    const rs=avgLoss===0?100:avgGain/avgLoss;
+    const rsi4h=Math.round(100-(100/(1+rs)));
+    const ema20arr=ema(closes,20);
+    const ema20_4h=+ema20arr[ema20arr.length-1].toFixed(4);
+    const ema12arr=ema(closes,12);
+    const ema26arr=ema(closes,26);
+    const offset26=ema12arr.length-ema26arr.length;
+    const macdLine=ema26arr.map((v,i)=>ema12arr[i+offset26]-v);
+    const signalArr=ema(macdLine,9);
+    const macdHist4h=+(macdLine[macdLine.length-1]-signalArr[signalArr.length-1]).toFixed(4);
+    const macd4h=macdHist4h>0?'bullish':'bearish';
+    let atrSum=0;
+    for(let i=closes.length-15;i<closes.length-1;i++){
+      const tr=Math.max(highs[i+1]-lows[i+1],Math.abs(highs[i+1]-closes[i]),Math.abs(lows[i+1]-closes[i]));
+      atrSum+=tr;
+    }
+    const atr4h=+(atrSum/14).toFixed(4);
+    const vol20avg=volumes.slice(-21,-1).reduce((a,b)=>a+b,0)/20;
+    const volRatio=+(volumes[volumes.length-1]/vol20avg).toFixed(2);
+    const volLabel=volRatio>1.5?'high':volRatio<0.7?'low':'normal';
+    const ema20prev=ema20arr[ema20arr.length-6];
+    const ema20slope=ema20arr[ema20arr.length-1]-ema20prev;
+    const price4h=closes[closes.length-1];
+    let regime4h='ranging';
+    if(ema20slope>atr4h*0.1&&price4h>ema20_4h)regime4h='trending_up';
+    else if(ema20slope<-atr4h*0.1&&price4h<ema20_4h)regime4h='trending_down';
+    else if(Math.abs(price4h-ema20_4h)/price4h<0.005)regime4h='choppy';
+    return{rsi:rsi4h,ema20:ema20_4h,macd:macd4h,macdHist:macdHist4h,atr:atr4h,regime:regime4h,volRatio,volLabel,source:'Binance 4h candles'};
+  }catch(e){console.warn('4h TA err',e);return null;}
 }
 
 // ── BTC TREND (live from Binance) ──
@@ -1117,6 +1375,7 @@ async function loadStrip(){
   _hl=await fetchHL();
   // Kick off live TA and BTC/ETH in background — cache globally
   fetchLiveTA().then(ta=>{if(ta)window._liveTA=ta;});
+  fetchLiveTA4h().then(ta4h=>{if(ta4h)window._liveTA4h=ta4h;});
   fetchBTCTrend().then(btc=>{if(btc)window._liveBTC=btc;});
   fetchETHTrend().then(eth=>{if(eth)window._liveETH=eth;});
   if(!_hl){$('ls-signal').textContent='Hyperliquid unavailable — enter price manually';return;}
@@ -1195,18 +1454,31 @@ async function runAnalysis(){
 
   // ── LIVE BINANCE TA (cached from loadStrip or runDataTest) ──
   const _ta=window._liveTA||null;
+  const _ta4h=window._liveTA4h||null;
   const _btc=window._liveBTC||null;
   const _eth=window._liveETH||null;
   // If not cached yet, try fetching now (non-blocking fallback)
   if(!_ta)fetchLiveTA().then(ta=>{if(ta)window._liveTA=ta;});
+  if(!_ta4h)fetchLiveTA4h().then(ta4h=>{if(ta4h)window._liveTA4h=ta4h;});
   if(!_btc)fetchBTCTrend().then(b=>{if(b)window._liveBTC=b;});
   if(!_eth)fetchETHTrend().then(e=>{if(e)window._liveETH=e;});
+
+  // Daily TA — used for LP decisions
   const liveRSI=_ta?_ta.rsi:null;
   const liveMACH=_ta?_ta.macd:null;
   const liveEMA20=_ta?_ta.ema20:null;
   const liveEMA200=_ta?_ta.ema200:null;
   const liveATR=_ta?_ta.atr:null;
   const liveRegime=_ta?_ta.regime:null;
+
+  // 4h TA — used for trade entry/exit decisions
+  const liveRSI4h=_ta4h?_ta4h.rsi:null;
+  const liveMACD4h=_ta4h?_ta4h.macd:null;
+  const liveATR4h=_ta4h?_ta4h.atr:null;
+  const liveRegime4h=_ta4h?_ta4h.regime:null;
+  const liveVol4h=_ta4h?_ta4h.volLabel:null;
+  const liveVolRatio4h=_ta4h?_ta4h.volRatio:null;
+
   const liveBTCTrend=_btc?_btc.trend:null;
   const liveBTCChg=_btc?_btc.change:null;
   const liveETHTrend=_eth?_eth.trend:null;
@@ -1311,28 +1583,60 @@ LIVE DATA (do not search for these)
 - Last 3 trades: ${recentTradeCtx}${personalStatsCtx}
 ${learningCtx?`\n${learningCtx}`:''}
 
-LIVE TECHNICAL INDICATORS (calculated from Binance live candles — 0h old, do NOT search for these)
-${_ta?`- RSI(14): ${liveRSI}
-- MACD: ${liveMACH?.toUpperCase()||'unknown'} (histogram: ${_ta.macdHist})
-- EMA 20: $${liveEMA20}
-- EMA 200: $${liveEMA200}
-- ATR (daily): $${liveATR}
-- Regime (pre-calculated): ${liveRegime?.toUpperCase()||'unknown'}
+LIVE TECHNICAL INDICATORS — DAILY (for LP decisions — do NOT search for these)
+${_ta?`- RSI(14) daily: ${liveRSI}
+- MACD daily: ${liveMACH?.toUpperCase()||'unknown'} (histogram: ${_ta.macdHist}, momentum: ${_ta.macdMomentum||'—'})
+- EMA 20 daily: $${liveEMA20} (slope 5d: ${_ta.ema20slope>0?'+':''}${_ta.ema20slope}% — ${Math.abs(_ta.ema20slope||0)>0.3?'trending':'flat'})
+- EMA 200 daily: $${liveEMA200}
+- Price vs EMA20: ${_ta.priceVsEma20>0?'+':''}${_ta.priceVsEma20}%
+- ATR daily: $${liveATR} (${_ta.atr_pct}% of price) — USE FOR LP DURABILITY ONLY
+- Regime (5-factor): ${liveRegime?.toUpperCase()||'unknown'}
+  Regimes: UPTREND=slope↑+price>EMA20 | DOWNTREND=slope↓+price<EMA20 | RANGING_TIGHT=LP optimal | RANGING=normal | VOLATILE=wide ATR
+- Volume daily: ${_ta.volLabel?.toUpperCase()||'—'} (ratio: ${_ta.volRatio}× vs 20d avg, trend: ${_ta.volTrend||'—'})
 
-⚠️ THESE ARE YOUR AUTHORITATIVE TA VALUES. Do NOT search for AVAX RSI, MACD, EMA or ATR. Do NOT override these with web search findings. Use them exactly as provided. If a web search returns different TA values, ignore them and use the Binance values above.`:'- TA: not yet loaded — use search for AVAX TA only if this happens'}
+⚠️ CANDLE-BASED S/R LEVELS (calculated from 60d swing highs/lows — do NOT search for these):
+- Nearest support below: $${_ta.nearestSupport} | Key supports: ${_ta.keySupports?.join(', ')||'—'}
+- Nearest resistance above: $${_ta.nearestResistance} | Key resistances: ${_ta.keyResistances?.join(', ')||'—'}
+- EMA 200 level: $${liveEMA200} (major long-term support/resistance)
+USE THESE S/R LEVELS for trade entry, TP, SL placement and LP range boundaries. Do NOT search for S/R.`:'- Daily TA: not yet loaded'}
+
+LIVE TECHNICAL INDICATORS — 4-HOUR (for TRADE entry/exit decisions — do NOT search for these)
+${_ta4h?`- RSI(14) 4h: ${liveRSI4h}
+- MACD 4h: ${liveMACD4h?.toUpperCase()||'unknown'} (histogram: ${_ta4h.macdHist})
+- EMA 20 4h: $${liveATR4h?liveRegime4h:'—'}
+- ATR 4h: $${liveATR4h} — USE THIS FOR TRADE SL/TP CALCULATIONS
+- Regime 4h: ${liveRegime4h?.toUpperCase()||'unknown'}
+- Volume: ${liveVol4h?.toUpperCase()||'unknown'} (ratio vs 20-period avg: ${liveVolRatio4h}×)
+
+⚠️ CRITICAL RULE — USE 4H ATR FOR TRADE SL/TP, DAILY ATR FOR LP:
+  Trade SL = entry ± (1.2 × ATR_4h)
+  Trade TP1 = entry ± (2.0 × ATR_4h)
+  Trade TP2 = entry ± (3.5 × ATR_4h)
+  LP range width and durability → use daily ATR only
+
+⚠️ USE 4H INDICATORS FOR TRADE SIGNAL CONFIDENCE:
+  - If 4h RSI and daily RSI both support direction → stronger signal, +10 confidence
+  - If 4h RSI contradicts daily RSI → mixed signal, -10 confidence, reduce to mixed size
+  - If 4h MACD contradicts daily MACD → add caution note, reduce size
+  - Volume high + signal direction = confirmed move, +5 confidence
+  - Volume low + signal direction = weak move, -5 confidence`:'- 4h TA: not yet loaded — use daily TA only for trade signals'}
+
+⚠️ DO NOT search for AVAX RSI, MACD, EMA or ATR — all provided above from Binance directly.
 ${_btc?`- BTC trend: ${liveBTCTrend?.toUpperCase()||'unknown'} (${liveBTCChg}% 24h)`:''}
 ${_eth?`- ETH trend: ${liveETHTrend?.toUpperCase()||'unknown'} (${liveETHChg}% 24h) — use as confirmation filter when BTC is neutral`:''}
 ${ethConfirmation?`- ETH confirmation signal: ${ethConfirmation}`:''}
 
-STEP 1 - WEB SEARCH — EXACTLY 1 SEARCH ONLY
+STEP 1 - WEB SEARCH — ONLY IF NEEDED
 ${_ta
-  ?`SEARCH 1: "AVAX key support resistance levels today $${hlPx.toFixed(0)} technical chart"
-  Extract ONLY: key S/R price levels near current price, any major S/R cluster. Do NOT extract RSI/MACD/EMA — you already have those from Binance above.`
-  :`SEARCH 1: "AVAX price RSI MACD EMA200 ATR daily 4-hour chart technical analysis today"
-  Extract: price, RSI(14), MACD direction+histogram, EMA20, EMA200, ATR daily value, key support/resistance levels
+  ?`S/R levels are already provided above from candle analysis. Do NOT search for S/R.
+SEARCH ONLY IF: you need to verify a specific major S/R level (e.g. all-time high, key yearly level, news-driven level) that would not appear in 60d candle data.
+If no such level is needed → SKIP the web search entirely and proceed to analysis.
+If you do search, use: "AVAX major price levels support resistance 2024 2025"`
+  :`SEARCH 1: "AVAX price RSI MACD EMA200 ATR daily technical analysis today"
+  Extract: price, RSI(14), MACD direction+histogram, EMA20, EMA200, ATR daily value
   Then SEARCH 2: "BTC price trend today" — Extract: BTC direction, % change 24h`}
 
-${_ta?'ONE search only. TA is already provided. Only need S/R levels from search.':''}
+${_ta?'S/R from candles already provided. Search is optional and only for major multi-year levels.':''}
 No more than ${_ta?1:2} search${_ta?'':'es'}. All other data provided above.
 
 OPEN POSITION RULES (apply first if HL trade position is not "none")
@@ -1476,16 +1780,18 @@ atr_pct 3-7%: vol_regime = "normal" - continue
 atr_pct 7-12%: vol_regime = "high" - continue, entry_size = "mixed"
 atr_pct > 12%: vol_regime = "extreme" - signal = "wait". Hard gate. Too volatile for any trade.
 
-LAYER 2 - MARKET REGIME
-Price above EMA20 AND EMA20 above EMA200: regime = "uptrend" - long preferred
-Price below EMA20 AND EMA20 below EMA200: regime = "downtrend" - short preferred
-Price oscillating around EMA20: regime = "ranging" - reversals, entry_size = "mixed"
-Price spiking without EMA structure: regime = "choppy" - entry_size = "mixed" (still trade, not skip)
+LAYER 2 - MARKET REGIME (5-factor from Binance candles — use exactly as provided)
+UPTREND: EMA20 slope positive + price above EMA20 — long preferred, range shift up
+DOWNTREND: EMA20 slope negative + price below EMA20 — short preferred, range shift down
+RANGING_TIGHT: EMA20 slope flat + price hugging EMA20 — OPTIMAL FOR LP, reversals, mixed size
+RANGING: normal oscillation, no clear direction — mixed signals, mixed size
+VOLATILE: ATR% > 7% or price range exceeds 1.4× ATR — reduce size, widen LP range
 
 LP zone sizing:
-  regime aligns with LP zone direction: full size allowed
-  LP zone mismatches regime: entry_size = "mixed"
-  Note: LP position does NOT determine trade direction. TA determines direction. LP zone only affects size.
+  UPTREND or DOWNTREND + regime aligns LP zone direction: full size allowed
+  RANGING_TIGHT or RANGING: entry_size = "mixed"
+  VOLATILE: entry_size = "mixed", note increased risk
+  Note: LP position does NOT determine trade direction. TA determines direction.
 
 LAYER 3 - MACRO FILTER
 HARD VETO (skip trade):
@@ -1509,37 +1815,75 @@ Record eth_trend and eth_change in output JSON.
 
 veto_fired = true ONLY for hard vetos 1-3. Soft vetos just reduce size.
 
-LAYER 4 - TRADE SETUP
-Score 1 each (need 3-4 = strong, 2 = mixed, <2 = wait):
-[ ] RSI supports: above 50 for long, below 50 for short
-[ ] MACD histogram supports: positive for long, negative for short
-[ ] OI change supports: rising for trend, falling for reversal
-[ ] Price at clean S/R level
+LAYER 4 - ENTRY OPTIMISER (v27 — find best entry, not just evaluate current price)
+Goal: identify the OPTIMAL entry price that produces the highest confidence trade.
+Do NOT just evaluate whether to trade at current price.
+Instead: scan key S/R levels within ±2×ATR_4h of current price → find the entry with highest confidence.
 
-confirm_score 3-4: strong signal
-confirm_score 2: mixed signal
-confirm_score < 2: signal = "wait"
+ENTRY SCAN PROCESS:
+1. List candidate entries from candle S/R levels already provided:
+   - For LONG: support levels below current price (nearest 2-3 supports)
+   - For SHORT: resistance levels above current price (nearest 2-3 resistances)
+   - Also consider: EMA20 daily level, round numbers near price
+
+2. For each candidate entry, score confidence:
+   support_proximity = 20 if entry is within 0.3×ATR_4h of a key support/resistance level, else 10
+   rr_score = 15 if R:R ≥ 2.5 at that entry, 10 if R:R 2.0-2.5, 0 if R:R < 2.0
+   trend_score = 20 if 4h regime + daily regime both align with direction
+              = 10 if only one aligns
+              = 0 if neither aligns
+   volume_score = 10 if volume expanding/high, 5 if stable, 0 if contracting
+   macro_score = 15 if BTC confirms, 5 if neutral, 0 if contradicts
+   entry_confidence = support_proximity + rr_score + trend_score + volume_score + macro_score
+
+3. Pick the entry with the highest entry_confidence above 60.
+   Set optimal_entry = that price level.
+   Set optimal_entry_confidence = that confidence score.
+
+4. Compare to current price:
+   chase_risk = true if current_price > optimal_entry + ATR_4h (for longs)
+             OR current_price < optimal_entry - ATR_4h (for shorts)
+   confidence_now = entry_confidence recalculated at current price instead of optimal_entry
+
+CONFIDENCE THRESHOLDS:
+  optimal_entry_confidence ≥ 70 → signal = "long"/"short" (place limit at optimal_entry)
+  optimal_entry_confidence 60-69 → signal = "long"/"short", entry_type = "limit_only" (limit order only, no market)
+  optimal_entry_confidence < 60 → signal = "wait" (no trade — insufficient setup quality)
+
+PATIENCE MODE — when optimal entry ≠ current price:
+  If optimal_entry < current_price - 0.3×ATR_4h (for long) → trade_mode = "wait_for_entry"
+  If already near optimal entry (within 0.3×ATR_4h) → trade_mode = "enter_now"
+  If chase_risk = true → trade_mode = "no_chase"
 
 LAYER 5 - RISK CONTROL
-ATR from search (default $0.51).
-ATR minimum width check: any suggested range must be >= max(2.5xATR, 8% of price).
+Use ATR_4h for trade SL/TP. Fall back to daily ATR × 0.4 if 4h not available.
+ATR minimum width check: any suggested range must be >= max(2.5×ATR_daily, 8% of price).
 
-LONG: SL = entry - (1.2xATR) | TP1 = entry + (2.0xATR) | TP2 = entry + (3.5xATR)
-SHORT: SL = entry + (1.2xATR) | TP1 = entry - (2.0xATR) | TP2 = entry - (3.5xATR)
+LONG: SL = optimal_entry - (1.2 × ATR_4h) | TP1 = optimal_entry + (2.0 × ATR_4h) | TP2 = optimal_entry + (3.5 × ATR_4h)
+SHORT: SL = optimal_entry + (1.2 × ATR_4h) | TP1 = optimal_entry - (2.0 × ATR_4h) | TP2 = optimal_entry - (3.5 × ATR_4h)
 
-R:R = (TP1-entry)/(entry-SL) must be >= 2.0 or hard veto.
+R:R = (TP1 - optimal_entry) / (optimal_entry - SL) must be ≥ 2.0 or hard veto.
 
-POSITION SIZING - Stage 1:
-  strong signal (3-4/4) + normal vol + no soft veto: entry_size = "strong" ($1,000 notional, $500 margin x 2x)
-  mixed signal (2/4) OR high vol OR soft veto OR regime mismatch: entry_size = "mixed" ($500 notional, $250 margin x 2x)
-  hard veto or confirm<2: signal = "wait"
+POSITION SIZING:
+  optimal_entry_confidence ≥ 70 + normal vol + no soft veto: entry_size = "strong"
+  optimal_entry_confidence 60-69 OR high vol OR soft veto OR timeframe conflict: entry_size = "mixed"
+  optimal_entry_confidence < 60 OR hard veto: signal = "wait"
 
-ENTRY TYPE: price at S/R = "limit" | breakout = "market"
+ENTRY TYPE:
+  trade_mode = "enter_now": entry_type = "market" (if strong) or "limit" (if mixed)
+  trade_mode = "wait_for_entry": entry_type = "limit" — place limit order at optimal_entry tonight
+  trade_mode = "no_chase": entry_type = "wait" — price has moved too far from optimal entry
+
+HYPERLIQUID LIMIT ORDER INSTRUCTIONS (always output when signal is long/short):
+  For Hyperliquid: set limit entry + SL stop-loss + TP1 limit simultaneously
+  Output as three specific order lines the user can copy directly.
 
 CONFIDENCE
-Start 40. Add: regime aligns LP zone +20, 4/4 confirmed +15 (3/4 +8), BTC strongly supporting +15 (neutral +5),
-OI rising trend +8, normal vol +5, 3/3 recent wins +8 (2/3 +3, 1/3 -5), US session +5.
->=70=HIGH, 50-69=MED, <50=WAIT
+Start 40. Add: regime aligns LP zone +15, 4h+daily aligned +15, BTC strongly supporting +15 (neutral +5),
+OI rising +8, normal vol +5, 3/3 recent wins +8 (2/3 +3, 1/3 -5), US session +5, entry at key S/R +10.
+confidence = confidence at optimal_entry (not current price)
+confidence_now = confidence at current price (for comparison display)
+≥70=HIGH, 60-69=MED/LIMIT_ONLY, <60=WAIT
 
 RETURN EXACTLY THIS JSON - nothing else:
 {
@@ -1598,16 +1942,24 @@ RETURN EXACTLY THIS JSON - nothing else:
     {"n":3,"c":"g","t":"Trade signal below","b":"Review entry, size and risk levels."}
   ],
   "signal": "long",
-  "confidence": 63,
+  "confidence": 76,
+  "confidence_now": 54,
+  "optimal_entry": 9.63,
+  "optimal_entry_confidence": 76,
+  "trade_mode": "wait_for_entry",
+  "chase_risk": false,
   "open_position_action": "LET IT RUN — thesis intact",
-  "entry": 9.71,
+  "entry": 9.63,
   "entry_type": "limit",
   "entry_size": "strong",
-  "tp1": 10.73,
-  "tp2": 11.50,
-  "sl": 9.10,
-  "rr": "2.0",
-  "signal_why": "Regime downtrend but LP upper half. Strong signal 3/4. RSI neutral-bullish. MACD positive. OI rising. ATR SL 1.2x. Stage 1: $1,000 notional.",
+  "tp1": 10.25,
+  "tp2": 10.88,
+  "sl": 9.41,
+  "rr": "2.2",
+  "order_entry": "Limit BUY 97.2 AVAX @ $9.63",
+  "order_sl": "Stop SELL 97.2 AVAX @ $9.41",
+  "order_tp1": "Limit SELL 48.6 AVAX @ $10.25",
+  "signal_why": "Entry at $9.63 support gives confidence 76% vs 54% at current $9.90. Set limit order — do not chase.",
   "rebal_direction": "none",
   "rebal_avax_to_buy": 0,
   "rebal_avax_to_sell": 0,
@@ -1728,6 +2080,10 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   // ── 1. DIRECT ACTION BOX (hero — replaces old decision card) ──
   const sig=a.signal||'wait';
   const conf=a.confidence||50;
+  const confNow=a.confidence_now||conf;
+  const optimalEntry=a.optimal_entry||a.entry||0;
+  const tradeMode=a.trade_mode||'enter_now'; // wait_for_entry | enter_now | no_chase
+  const chaseRisk=a.chase_risk===true;
   const hasOpenPosition=dir!=='none';
   const openAction=a.open_position_action||'';
   const openActionUpper=openAction.toUpperCase();
@@ -1849,24 +2205,44 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     dabSub=a.veto_reason||'Hard gate condition triggered.';
     dabWhy=a.signal_why||'LP is running fine. No trade tonight.';
   } else if(sig==='long'||sig==='short'){
-    // ── TRADE SIGNAL — this is the primary output ──
-    // LP near-exit NEVER blocks a trade signal — it becomes an amber note below
+    // ── ENTRY OPTIMISER — v27 ──
     const isHalfSize=a.entry_size==='mixed';
-    if(conf>=65&&!isHalfSize){
-      dabClass='dab-go';
-      dabCmd=`PLACE ${sig.toUpperCase()} — FULL SIZE`;
-      dabSub=`${conf}% confidence · Strong conditions · Entry $${(a.entry||px).toFixed(2)}`;
-    } else if(conf>=55||isHalfSize){
+    const dirLabel=sig.toUpperCase();
+
+    if(chaseRisk||tradeMode==='no_chase'){
+      // Price has moved too far from optimal entry
+      dabClass='dab-wait';
+      dabCmd=`NO CHASE — WAIT FOR PULLBACK`;
+      dabSub=`Optimal ${dirLabel} entry: $${optimalEntry.toFixed(2)} · Current: $${px.toFixed(2)} · Price moved too far`;
+      dabWhy=`The best entry for this ${dirLabel} is $${optimalEntry.toFixed(2)} but price has already moved ${Math.abs(px-optimalEntry).toFixed(2)} away. Chasing here reduces R:R below 2:1. Wait for a pullback to $${optimalEntry.toFixed(2)} or skip this trade.`;
+    } else if(tradeMode==='wait_for_entry'){
+      // Best entry is below/above current price — set limit order
       dabClass='dab-go-half';
-      dabCmd=`PLACE ${sig.toUpperCase()} — HALF SIZE`;
-      dabSub=`${conf}% confidence · Mixed conditions · Entry $${(a.entry||px).toFixed(2)}`;
+      dabCmd=`SET LIMIT ${dirLabel} @ $${optimalEntry.toFixed(2)}`;
+      dabSub=`${conf}% confidence at entry · ${confNow}% at current price · Do not enter at market`;
+      dabShowLevels=true;
+      dabWhy=a.signal_why||`Current price $${px.toFixed(2)} is away from optimal entry. Place limit order at $${optimalEntry.toFixed(2)} for higher confidence setup.`;
+    } else if(conf>=70&&!isHalfSize){
+      // At or near optimal entry — enter now
+      dabClass='dab-go';
+      dabCmd=`PLACE ${dirLabel} NOW — HIGH CONFIDENCE`;
+      dabSub=`${conf}% confidence · Strong setup · Entry $${(a.entry||px).toFixed(2)}`;
+      dabShowLevels=true;
+      dabWhy=a.signal_why||'';
+    } else if(conf>=60||isHalfSize){
+      // Medium confidence — limit order only
+      dabClass='dab-go-half';
+      dabCmd=`SET LIMIT ${dirLabel} — MEDIUM CONFIDENCE`;
+      dabSub=`${conf}% confidence · Limit order only · Entry $${optimalEntry.toFixed(2)}`;
+      dabShowLevels=true;
+      dabWhy=a.signal_why||'';
     } else {
+      // Below threshold — no trade
       dabClass='dab-wait';
       dabCmd=`WAIT — CONFIDENCE TOO LOW (${conf}%)`;
-      dabSub=`Signal: ${sig.toUpperCase()} · Need ≥55% to act. ${conf}% is not enough.`;
+      dabSub=`Need ≥60% to place even a limit order. Signal: ${dirLabel} but setup quality insufficient.`;
+      dabWhy=a.signal_why||'';
     }
-    dabShowLevels=conf>=55;
-    dabWhy=a.signal_why||'';
   } else if(sig==='remove_lp'){
     dabClass='dab-wait';
     dabCmd='REMOVE LP — AVAX DOWN 40%+';
@@ -1911,24 +2287,53 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const openTrade=JSON.parse(localStorage.getItem('avax_open_trade')||'{}');
   const userNotional=openTrade.notional||((a.entry_size==='strong')?1000:500);
   const userMargin=+(userNotional/2).toFixed(0);
-  const sz=px>0?(userNotional/px).toFixed(1):'—';
+  const sz=optimalEntry>0?(userNotional/optimalEntry).toFixed(1):(userNotional/px).toFixed(1);
+
+  // Confidence comparison strip (shown when wait_for_entry)
+  const confCompare=(tradeMode==='wait_for_entry'&&sig!=='wait'&&confNow!==conf)
+    ?`<div style="margin-top:10px;display:flex;gap:8px">
+        <div style="flex:1;background:rgba(0,0,0,.05);border-radius:8px;padding:8px;text-align:center">
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.7">Now @ $${px.toFixed(2)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:800;color:${confNow>=70?'var(--green)':confNow>=60?'var(--amber)':'var(--red)'}">${confNow}%</div>
+        </div>
+        <div style="display:flex;align-items:center;font-size:18px">→</div>
+        <div style="flex:1;background:rgba(255,255,255,.7);border-radius:8px;padding:8px;text-align:center;border:2px solid currentColor">
+          <div style="font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.7">At $${optimalEntry.toFixed(2)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:20px;font-weight:800;color:${conf>=70?'var(--green)':conf>=60?'var(--amber)':'var(--red)'}">${conf}%</div>
+        </div>
+      </div>`
+    :'';
+
+  // Hyperliquid order instructions
+  const orderInstructions=(dabShowLevels&&(sig==='long'||sig==='short')&&a.order_entry)
+    ?`<div style="margin-top:10px;background:rgba(0,0,0,.06);border-radius:10px;padding:10px 12px">
+        <div style="font-size:9px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:7px;opacity:.7">Place on Hyperliquid (3 orders simultaneously)</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;line-height:2;color:var(--ink)">
+          <div style="color:var(--blue)">① ${a.order_entry||`Limit ${sig.toUpperCase()} ${sz} AVAX @ $${optimalEntry.toFixed(2)}`}</div>
+          <div style="color:var(--red)">② ${a.order_sl||`Stop SELL ${sz} AVAX @ $${a.sl?.toFixed(2)||'—'}`}</div>
+          <div style="color:var(--green)">③ ${a.order_tp1||`Limit SELL ${(+sz/2).toFixed(1)} AVAX @ $${a.tp1?.toFixed(2)||'—'}`}</div>
+        </div>
+      </div>`
+    :'';
 
   $('r-decision').innerHTML=`
     <div class="dab ${dabClass}">
       <div class="dab-label">Tonight's Instruction</div>
       <div class="dab-cmd">${dabCmd}</div>
       <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:4px">${dabSub}</div>
+      ${confCompare}
       ${dabShowLevels&&(sig==='long'||sig==='short')?`
-      <div class="dab-levels">
-        <div class="dab-lv"><div class="dab-lv-lbl">Entry</div><div class="dab-lv-val entry">$${(a.entry||px).toFixed(2)}</div></div>
+      <div class="dab-levels" style="margin-top:10px">
+        <div class="dab-lv"><div class="dab-lv-lbl">Entry</div><div class="dab-lv-val entry">$${optimalEntry>0?optimalEntry.toFixed(2):(a.entry||px).toFixed(2)}</div></div>
         <div class="dab-lv"><div class="dab-lv-lbl">TP1</div><div class="dab-lv-val tp">$${a.tp1?.toFixed(2)||'—'}</div></div>
         <div class="dab-lv"><div class="dab-lv-lbl">SL</div><div class="dab-lv-val sl">$${a.sl?.toFixed(2)||'—'}</div></div>
         <div class="dab-lv"><div class="dab-lv-lbl">R:R</div><div class="dab-lv-val rr">${a.rr||'—'}:1</div></div>
       </div>
-      <div class="dab-size">$${userNotional} notional · $${userMargin} margin · ${sz} AVAX · ${conf>=65?'✅ FULL SIZE':'⚠️ AI suggests half — enter your amount in Trade Record'}</div>
-      ${a.tp2?`<div style="font-size:11px;color:var(--ink3);margin-top:6px">TP2: $${a.tp2.toFixed(2)} · Close remaining 50% there</div>`:''}
+      <div class="dab-size">$${userNotional} notional · $${userMargin} margin · ${sz} AVAX · ${conf>=70?'✅ HIGH CONFIDENCE':'⚠️ LIMIT ORDER ONLY'}</div>
+      ${a.tp2?`<div style="font-size:11px;color:var(--ink3);margin-top:6px">TP2: $${a.tp2.toFixed(2)} · Close remaining 50% at TP2</div>`:''}
+      ${orderInstructions}
       `:''}
-      <div class="dab-why">${dabWhy}</div>
+      <div class="dab-why" style="margin-top:8px">${dabWhy}</div>
       ${lpNearExitNote}
       ${rangeTooWideNote}
     </div>`;
@@ -2086,35 +2491,24 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
                 <div class="jrow" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:4px"><span>Reason</span><span style="font-size:10px;color:var(--ink3)">${a.lp_new_range_reason||'Nearest S/R levels'}</span></div>
               </div>
               ${(()=>{
-                // CLIENT-SIDE EXACT SWAP CALCULATION
-                // Uses user's actual AVAX/USDC amounts — more accurate than Claude's estimate
+                // CORRECT CL SWAP CALCULATION (v23)
+                // Uses Uniswap V3 sqrt price formula — fixes 2× AVAX overestimate
                 const curAvax=avax||0, curUsdc=usdc||0;
                 const lpValueNow=curAvax>0&&curUsdc>0?(curAvax*px+curUsdc):realLp;
                 if(newLo>0&&newHi>0&&px>0&&lpValueNow>0){
-                  // CL ratio at new range: how far price is through new range
-                  const priceRatio=Math.max(0,Math.min(1,(px-newLo)/(newHi-newLo)));
-                  const targetUsdcPct=priceRatio;
-                  const targetAvaxPct=1-priceRatio;
-                  const needUsdc=+(lpValueNow*targetUsdcPct).toFixed(2);
-                  const needAvax=+(lpValueNow*targetAvaxPct/px).toFixed(2);
-                  const avaxDelta=+(needAvax-curAvax).toFixed(2);
-                  const usdcDelta=+(needUsdc-curUsdc).toFixed(2);
-                  let swapText='';
-                  const tolerance=lpValueNow*0.03; // 3% tolerance
-                  if(Math.abs(avaxDelta*px)<tolerance){
-                    swapText='✅ No swap needed — token ratio is close enough for new range';
-                  } else if(avaxDelta>0){
-                    swapText=`Sell $${Math.abs(usdcDelta).toFixed(0)} USDC → buy ${avaxDelta.toFixed(2)} AVAX at ~$${px.toFixed(2)}`;
-                  } else {
-                    swapText=`Sell ${Math.abs(avaxDelta).toFixed(2)} AVAX → get $${Math.abs(usdcDelta).toFixed(0)} USDC at ~$${px.toFixed(2)}`;
-                  }
+                  // Snap to Blackhole ticks
+                  const bh=snapRangeToBH(newLo,newHi);
+                  const bhChanged=Math.abs(bh.lo-newLo)>0.001||Math.abs(bh.hi-newHi)>0.001;
+                  // Use snapped range for swap calculation
+                  const swap=calcCLSwap(px,bh.lo,bh.hi,curAvax,curUsdc);
                   return `
                 <div style="background:var(--w);border-radius:9px;border:1.5px solid var(--bb);padding:12px;margin-bottom:10px">
-                  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:8px">★ Token Amounts (calculated from your position)</div>
+                  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:8px">★ Token Amounts (CL formula — exact)</div>
+                  ${bhChanged?`<div style="font-size:10px;color:var(--amber);font-weight:600;margin-bottom:6px">⚠️ Range snapped to Blackhole ticks: $${bh.lo.toFixed(4)} → $${bh.hi.toFixed(4)}</div>`:''}
                   <div class="jrow"><span>Remove LP → you receive</span><span style="font-family:'DM Mono',monospace">${curAvax.toFixed(2)} AVAX + $${curUsdc.toFixed(0)} USDC</span></div>
-                  <div class="jrow"><span>New range needs</span><span style="font-family:'DM Mono',monospace">${needAvax.toFixed(2)} AVAX + $${needUsdc.toFixed(0)} USDC</span></div>
-                  <div class="jrow" style="border-top:1px solid var(--bd);margin-top:6px;padding-top:6px"><span style="font-weight:700">Swap required</span><span style="font-size:11px;color:${swapText.startsWith('✅')?'var(--green)':'var(--blue)'};font-weight:600">${swapText}</span></div>
-                  <div class="jrow"><span>LP value preserved</span><span style="color:var(--green)">~$${lpValueNow.toFixed(0)} ✅</span></div>
+                  <div class="jrow"><span>New range needs</span><span style="font-family:'DM Mono',monospace">${swap.needAvax.toFixed(2)} AVAX + $${swap.needUsdc.toFixed(0)} USDC</span></div>
+                  <div class="jrow" style="border-top:1px solid var(--bd);margin-top:6px;padding-top:6px"><span style="font-weight:700">Swap</span><span style="font-size:11px;color:${swap.swapText.startsWith('✅')?'var(--green)':'var(--blue)'};font-weight:600">${swap.swapText}</span></div>
+                  <div class="jrow"><span>LP value preserved</span><span style="color:var(--green)">~$${swap.lpValue.toFixed(0)} ✅</span></div>
                 </div>`;
                 }
                 return '';
@@ -2123,7 +2517,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
                 <div style="font-size:9px;font-weight:700;color:var(--blue);margin-bottom:4px">★ STEPS TONIGHT</div>
                 <div>1. Remove LP from Blackhole (receive ${avax?.toFixed(2)||'your'} AVAX + $${usdc?.toFixed(0)||'your'} USDC)</div>
                 <div>2. Do the swap shown above to get the right ratio</div>
-                <div>3. Redeploy: range <b>$${newLo.toFixed(2)} → $${newHi.toFixed(2)}</b></div>
+                <div>3. Redeploy: range <b>$${newLo.toFixed(2)} → $${newHi.toFixed(2)}</b> (use Blackhole-snapped values if shown)</div>
                 <div>4. Stake new LP to earn BLACK</div>
                 <div>5. Reset crash hedge: SHORT $500 · TP $${(newLo*0.60).toFixed(2)} · SL $${(newHi*1.10).toFixed(2)}</div>
               </div>
@@ -2297,21 +2691,57 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const regC=a.regime==='uptrend'?'bull':a.regime==='downtrend'?'bear':'neut';
   const vetoCls=a.veto_fired?'bear':'bull';
   const confirmCls=a.confirm_score>=3?'bull':a.confirm_score>=2?'neut':'bear';
+  const ta4hData=window._liveTA4h||null;
+  const taDaily=window._liveTA||null;
+  const rsi4hVal=ta4hData?.rsi||null;
+  const macd4hVal=ta4hData?.macd||null;
+  const atr4hVal=ta4hData?.atr||null;
+  const regime4hVal=ta4hData?.regime||null;
+  const vol4hVal=ta4hData?.volLabel||null;
+  const volRatio4hVal=ta4hData?.volRatio||null;
+  const rsi4hC=rsi4hVal?rsi4hVal>60?'bull':rsi4hVal<40?'bear':'neut':'neut';
+  const macd4hC=macd4hVal==='bullish'?'bull':'bear';
+  const regime4hC=regime4hVal?.includes('up')?'bull':regime4hVal?.includes('down')?'bear':'neut';
+  const tfAligned=macd4hVal&&a.macd&&macd4hVal===a.macd;
+  const tfConflict=macd4hVal&&a.macd&&macd4hVal!==a.macd;
+
+  // Candle S/R levels
+  const nearSup=taDaily?.nearestSupport||null;
+  const nearRes=taDaily?.nearestResistance||null;
+  const keySups=taDaily?.keySupports||[];
+  const keyRes=taDaily?.keyResistances||[];
+
   $('r-ta').innerHTML=`<table class="ta-tbl">
-    <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Volatility & Regime</td></tr>
-    <tr><td>ATR (daily)</td><td>$${a.atr?.toFixed(2)||'0.51'} (${a.atr_pct?.toFixed(1)||'—'}% of price)</td></tr>
+    <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Daily TA — LP Decisions</td></tr>
+    <tr><td>ATR (daily)</td><td>$${a.atr?.toFixed(2)||'—'} (${a.atr_pct?.toFixed(1)||'—'}% of price)</td></tr>
     <tr><td>Vol regime</td><td><span class="tag ${volC}">${(a.vol_regime||'—').toUpperCase()}</span></td></tr>
-    <tr><td>Market regime</td><td><span class="tag ${regC}">${(a.regime||'—').toUpperCase()}</span></td></tr>
+    <tr><td>Regime (5-factor)</td><td><span class="tag ${regC}">${(a.regime||'—').toUpperCase().replace('_',' ')}</span></td></tr>
+    <tr><td>EMA20 slope</td><td style="font-size:10px;color:${(taDaily?.ema20slope||0)>0.3?'var(--green)':(taDaily?.ema20slope||0)<-0.3?'var(--red)':'var(--ink3)'}">${(taDaily?.ema20slope||0)>0?'+':''}${taDaily?.ema20slope||'—'}% · ${Math.abs(taDaily?.ema20slope||0)>0.3?'trending':'flat'}</td></tr>
+    <tr><td>Volume daily</td><td><span class="tag ${taDaily?.volLabel==='high'?'bull':taDaily?.volLabel==='low'?'bear':'neut'}">${(taDaily?.volLabel||'—').toUpperCase()} ${taDaily?.volRatio||''}× · ${taDaily?.volTrend||'—'}</span></td></tr>
+    <tr><td>RSI (14) daily</td><td><span class="tag ${rsiC==='up'?'bull':rsiC==='dn'?'bear':'neut'}">${a.rsi||'—'} ${(a.rsi||50)>60?'HIGH':(a.rsi||50)<40?'LOW':'NEUTRAL'}</span></td></tr>
+    <tr><td>MACD daily</td><td><span class="tag ${macdC}">${(a.macd||'—').toUpperCase()} · ${taDaily?.macdMomentum||'—'}</span></td></tr>
+    <tr><td>EMA 20 / 200</td><td>$${a.ema20?.toFixed(2)||'—'} / $${a.ema200?.toFixed(2)||'—'}</td></tr>
+    <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Candle S/R (60d swing analysis)</td></tr>
+    <tr><td>Nearest support</td><td style="color:var(--red);font-family:'DM Mono',monospace;font-weight:600">${nearSup?'$'+nearSup:'—'}</td></tr>
+    <tr><td>Nearest resistance</td><td style="color:var(--green);font-family:'DM Mono',monospace;font-weight:600">${nearRes?'$'+nearRes:'—'}</td></tr>
+    ${keySups.length>1?`<tr><td>Key supports</td><td style="font-size:10px;font-family:'DM Mono',monospace">$${keySups.join(' · $')}</td></tr>`:''}
+    ${keyRes.length>1?`<tr><td>Key resistances</td><td style="font-size:10px;font-family:'DM Mono',monospace">$${keyRes.join(' · $')}</td></tr>`:''}
+    ${ta4hData?`
+    <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">4H TA — Trade Entry/Exit ${tfAligned?'<span style="color:var(--green)">✅ Aligned</span>':tfConflict?'<span style="color:var(--red)">⚠️ Conflict</span>':''}</td></tr>
+    <tr><td>ATR (4h) — trade SL/TP</td><td style="color:var(--blue);font-weight:600">$${atr4hVal?.toFixed(4)||'—'}</td></tr>
+    <tr><td>RSI (14) 4h</td><td><span class="tag ${rsi4hC}">${rsi4hVal||'—'} ${rsi4hVal>60?'HIGH':rsi4hVal<40?'LOW':'NEUTRAL'}</span></td></tr>
+    <tr><td>MACD 4h</td><td><span class="tag ${macd4hC}">${(macd4hVal||'—').toUpperCase()}</span></td></tr>
+    <tr><td>Regime 4h</td><td><span class="tag ${regime4hC}">${(regime4hVal||'—').toUpperCase().replace('_',' ')}</span></td></tr>
+    <tr><td>Volume 4h</td><td><span class="tag ${vol4hVal==='high'?'bull':vol4hVal==='low'?'bear':'neut'}">${(vol4hVal||'—').toUpperCase()} (${volRatio4hVal}×)</span></td></tr>
+    ${tfConflict?`<tr><td colspan="2" style="padding:6px 14px;font-size:10px;color:var(--red);background:var(--rl)">⚠️ Daily and 4h MACD conflict — reduce to mixed size</td></tr>`:''}
+    ${tfAligned?`<tr><td colspan="2" style="padding:6px 14px;font-size:10px;color:var(--green);background:var(--gl)">✅ Daily and 4h aligned — stronger signal</td></tr>`:''}
+    `:''}
     <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Macro</td></tr>
     <tr><td>BTC trend</td><td><span class="tag ${btcC}">${(a.btc_trend||'—').toUpperCase()} ${a.btc_change?'('+a.btc_change+'%)':''}</span></td></tr>
     <tr><td>ETH trend ${a.btc_trend==='neutral'?'<span style="font-size:9px;color:var(--blue)">← tiebreaker</span>':''}</td><td><span class="tag ${ethC}">${(a.eth_trend||'—').toUpperCase()} ${a.eth_change?'('+a.eth_change+'%)':''}</span></td></tr>
     <tr><td>Funding rate</td><td style="color:${fi?.col}">${_hl?((_hl.funding>=0?'+':'')+fi?.pct+'%/hr'):'—'}</td></tr>
     <tr><td>OI change</td><td style="font-size:10px">${a.oi_change||_oiChange}</td></tr>
     <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Setup Confirmation</td></tr>
-    <tr><td>RSI (14)</td><td><span class="tag ${rsiC==='up'?'bull':rsiC==='dn'?'bear':'neut'}">${a.rsi} ${a.rsi>60?'HIGH':a.rsi<40?'LOW':'NEUTRAL'}</span></td></tr>
-    <tr><td>MACD</td><td><span class="tag ${macdC}">${(a.macd||'—').toUpperCase()}</span></td></tr>
-    <tr><td>EMA 20</td><td>$${a.ema20?.toFixed(2)||'—'}</td></tr>
-    <tr><td>EMA 200</td><td>$${a.ema200?.toFixed(2)||'—'}</td></tr>
     <tr><td>Confirm score</td><td><span class="tag ${confirmCls}">${a.confirm_score||0}/4 factors</span></td></tr>
     <tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Decision</td></tr>
     <tr><td>Veto fired?</td><td><span class="tag ${vetoCls}">${a.veto_fired?'YES — '+a.veto_reason:'NO — clear'}</span></td></tr>
@@ -3169,6 +3599,18 @@ Return ONLY this JSON (no other text):
     const urgCol=r.shift_urgency==='tonight'?'var(--red)':r.shift_urgency==='soon'?'var(--amber)':'var(--green)';
     const stepsHtml=(r.steps||[]).map((s,i)=>`<div>${i+1}. ${s}</div>`).join('');
 
+    // ── Composition-matched range (v24) ──
+    // Find range that minimises swap based on current AVAX/USDC holdings
+    const curAvaxForComp=pv($('i_avax')?.value)||0;
+    const curUsdcForComp=pv($('i_usdc')?.value)||0;
+    const curPxForComp=px>0?px:0;
+    let compMatch=null;
+    if(curAvaxForComp>0&&curUsdcForComp>0&&curPxForComp>0&&r.range_width_pct>0){
+      compMatch=findCompositionMatchedRange(curPxForComp,curAvaxForComp,curUsdcForComp,r.range_width_pct,'ranging');
+    }
+    const aiSwap=curAvaxForComp>0&&r.new_range_low?calcCLSwap(curPxForComp,snapRangeToBH(r.new_range_low,r.new_range_high).lo,snapRangeToBH(r.new_range_low,r.new_range_high).hi,curAvaxForComp,curUsdcForComp):null;
+    const showCompAlt=compMatch&&aiSwap&&compMatch.swapCost<aiSwap.swapCost*0.6; // only show if saves 40%+
+
     result.innerHTML=`
       <div class="lp-advice-card">
         <div class="lp-advice-hdr">📐 AI LP Range Recommendation</div>
@@ -3194,46 +3636,51 @@ Return ONLY this JSON (no other text):
             <b>Why this range:</b> ${r.regime_context||''}<br>
             <b>Urgency:</b> <span style="color:${urgCol}">${r.shift_urgency_reason||''}</span>
           </div>
-          ${(()=>{
-            const curAvax=pv($('i_avax')?.value)||0;
-            const curUsdc=pv($('i_usdc')?.value)||0;
-            const curPx=px>0?px:0;
-            const lpVal=curAvax>0&&curUsdc>0?(curAvax*curPx+curUsdc):0;
-            const newLo=r.new_range_low||0,newHi=r.new_range_high||0;
-            if(newLo>0&&newHi>0&&curPx>0&&lpVal>0){
-              const priceRatio=Math.max(0,Math.min(1,(curPx-newLo)/(newHi-newLo)));
-              const needUsdc=+(lpVal*priceRatio).toFixed(2);
-              const needAvax=+(lpVal*(1-priceRatio)/curPx).toFixed(2);
-              const avaxDelta=+(needAvax-curAvax).toFixed(2);
-              const usdcDelta=+(needUsdc-curUsdc).toFixed(2);
-              const tolerance=lpVal*0.03;
-              let swapText='';
-              if(Math.abs(avaxDelta*curPx)<tolerance){swapText='✅ No swap needed';}
-              else if(avaxDelta>0){swapText=`Sell $${Math.abs(usdcDelta).toFixed(0)} USDC → buy ${avaxDelta.toFixed(2)} AVAX at ~$${curPx.toFixed(2)}`;}
-              else{swapText=`Sell ${Math.abs(avaxDelta).toFixed(2)} AVAX → get $${Math.abs(usdcDelta).toFixed(0)} USDC at ~$${curPx.toFixed(2)}`;}
-              return `<div style="background:var(--bl);border-radius:9px;border:1px solid var(--bb);padding:12px;margin-bottom:10px">
-                <div style="font-size:9px;font-weight:700;color:var(--blue);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">★ Exact Swap for Your Position</div>
-                <div class="jrow"><span>Remove LP → receive</span><span style="font-family:'DM Mono',monospace">${curAvax.toFixed(2)} AVAX + $${curUsdc.toFixed(0)} USDC</span></div>
-                <div class="jrow"><span>New range needs</span><span style="font-family:'DM Mono',monospace">${needAvax.toFixed(2)} AVAX + $${needUsdc.toFixed(0)} USDC</span></div>
-                <div class="jrow" style="border-top:1px solid var(--bd);margin-top:6px;padding-top:6px"><span style="font-weight:700">Swap</span><span style="color:${swapText.startsWith('✅')?'var(--green)':'var(--blue)'};font-weight:600;font-size:11px">${swapText}</span></div>
-                <div class="jrow"><span>LP value preserved</span><span style="color:var(--green)">~$${lpVal.toFixed(0)} ✅</span></div>
-              </div>`;
-            }
-            return '';
-          })()}
+
+          ${aiSwap?`
+          <div style="background:var(--w);border-radius:9px;border:1.5px solid var(--bb);padding:12px;margin-bottom:10px">
+            <div style="font-size:9px;font-weight:700;color:var(--blue);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">★ Option A — AI Recommended (centred range)</div>
+            ${(()=>{const bh=snapRangeToBH(r.new_range_low||0,r.new_range_high||0);const bhChanged=Math.abs(bh.lo-(r.new_range_low||0))>0.001||Math.abs(bh.hi-(r.new_range_high||0))>0.001;return bhChanged?`<div style="font-size:10px;color:var(--amber);font-weight:600;margin-bottom:6px">⚠️ Deploy at Blackhole ticks: $${bh.lo.toFixed(4)} → $${bh.hi.toFixed(4)}</div>`:''})()}
+            <div class="jrow"><span>Remove LP → receive</span><span style="font-family:'DM Mono',monospace">${curAvaxForComp.toFixed(2)} AVAX + $${curUsdcForComp.toFixed(0)} USDC</span></div>
+            <div class="jrow"><span>New range needs</span><span style="font-family:'DM Mono',monospace">${aiSwap.needAvax.toFixed(2)} AVAX + $${aiSwap.needUsdc.toFixed(0)} USDC</span></div>
+            <div class="jrow" style="border-top:1px solid var(--bd);margin-top:6px;padding-top:6px"><span style="font-weight:700">Swap</span><span style="color:${aiSwap.swapText.startsWith('✅')?'var(--green)':'var(--amber)'};font-weight:600;font-size:11px">${aiSwap.swapText}</span></div>
+            <div class="jrow"><span>LP value preserved</span><span style="color:var(--green)">~$${aiSwap.lpValue.toFixed(0)} ✅</span></div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:6px">Best long-term position — price centred for maximum range life</div>
+          </div>`:''}
+
+          ${showCompAlt&&compMatch?`
+          <div style="background:var(--gl);border-radius:9px;border:1.5px solid var(--gb);padding:12px;margin-bottom:10px">
+            <div style="font-size:9px;font-weight:700;color:var(--green);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">✅ Option B — Composition Matched (minimal swap)</div>
+            <div style="font-size:10px;color:var(--green);font-weight:600;margin-bottom:6px">Range: $${compMatch.lo.toFixed(4)} → $${compMatch.hi.toFixed(4)} · Price at ${compMatch.lp_pct}% · Width ${compMatch.widthPct}%</div>
+            <div class="jrow"><span>Remove LP → receive</span><span style="font-family:'DM Mono',monospace">${curAvaxForComp.toFixed(2)} AVAX + $${curUsdcForComp.toFixed(0)} USDC</span></div>
+            <div class="jrow"><span>New range needs</span><span style="font-family:'DM Mono',monospace">${compMatch.swap.needAvax.toFixed(2)} AVAX + $${compMatch.swap.needUsdc.toFixed(0)} USDC</span></div>
+            <div class="jrow" style="border-top:1px solid var(--gb);margin-top:6px;padding-top:6px"><span style="font-weight:700">Swap</span><span style="color:${compMatch.swap.swapText.startsWith('✅')?'var(--green)':'var(--green)'};font-weight:600;font-size:11px">${compMatch.swap.swapText}</span></div>
+            <div class="jrow"><span>LP value preserved</span><span style="color:var(--green)">~$${compMatch.swap.lpValue.toFixed(0)} ✅</span></div>
+            <div style="font-size:10px;color:var(--ink3);margin-top:6px">⚠️ Price at ${compMatch.lp_pct}% through range — shorter range life but saves $${(aiSwap?aiSwap.swapCost-compMatch.swapCost:0).toFixed(0)} in swap costs</div>
+          </div>`:''}
+
           ${stepsHtml?`<div class="lp-advice-steps">
             <div style="font-size:9px;font-weight:800;color:var(--blue);letter-spacing:1px;margin-bottom:6px">★ STEPS TONIGHT</div>
             ${stepsHtml}
           </div>`:''}
           <div style="margin-top:10px;padding:8px 10px;background:var(--gl);border-radius:8px;font-size:10px;color:var(--green)">
-            ✅ Update LP Range Low/High inputs above to $${(r.new_range_low||0).toFixed(2)} / $${(r.new_range_high||0).toFixed(2)} after shifting
+            ✅ Tap an option above then update LP Range Low/High inputs
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px">
+            ${r.new_range_low?`<button class="bsm" onclick="useRange(${(snapRangeToBH(r.new_range_low,r.new_range_high)).lo.toFixed(4)},${(snapRangeToBH(r.new_range_low,r.new_range_high)).hi.toFixed(4)})">Use Option A</button>`:''}
+            ${showCompAlt&&compMatch?`<button class="bsm green" onclick="useRange(${compMatch.lo.toFixed(4)},${compMatch.hi.toFixed(4)})">Use Option B (less swap)</button>`:''}
           </div>
         </div>
       </div>`;
 
-    // Auto-update the range inputs with the recommendation
-    if(r.new_range_low&&$('i_range_lo'))$('i_range_lo').value=r.new_range_low.toFixed(2);
-    if(r.new_range_high&&$('i_range_hi'))$('i_range_hi').value=r.new_range_high.toFixed(2);
+    // Auto-update range inputs — user taps "Use Option A/B" to choose
+    // Default auto-fill: Option B if swap savings >40%, else Option A
+    if(r.new_range_low&&r.new_range_high){
+      const defaultRange=showCompAlt&&compMatch?compMatch:
+        {lo:snapRangeToBH(r.new_range_low,r.new_range_high).lo,hi:snapRangeToBH(r.new_range_low,r.new_range_high).hi};
+      if($('i_range_lo'))$('i_range_lo').value=defaultRange.lo.toFixed(4);
+      if($('i_range_hi'))$('i_range_hi').value=defaultRange.hi.toFixed(4);
+    }
     // Log LP shift for self-learning
     if(r.new_range_low&&r.new_range_high){
       logLPShift(
@@ -3261,6 +3708,13 @@ Return ONLY this JSON (no other text):
 }
 
 // ── KEY MANAGEMENT ──
+function useRange(lo,hi){
+  if($('i_range_lo'))$('i_range_lo').value=parseFloat(lo).toFixed(4);
+  if($('i_range_hi'))$('i_range_hi').value=parseFloat(hi).toFixed(4);
+  localStorage.setItem('avax_save_range_lo',lo);
+  localStorage.setItem('avax_save_range_hi',hi);
+  toast('Range updated — re-analyse to see durability score','ok');
+}
 function saveKey(){const k=$('key-input').value.trim();if(!k.startsWith('sk-')){toast('Invalid key','err');return;}localStorage.setItem(KK,k);$('key-input').value='';updateKeyStatus();toast('API key saved','ok');}
 function clearKey(){if(!confirm('Remove API key?'))return;localStorage.removeItem(KK);updateKeyStatus();toast('Removed','ok');}
 function updateKeyStatus(){const k=localStorage.getItem(KK);const el=$('key-status');if(!el)return;el.innerHTML=k&&k.startsWith('sk-')?`<div class="key-ok">✓ Key saved · ends …${k.slice(-6)}</div>`:`<div class="key-none">✗ No key — add above</div>`;}
