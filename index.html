@@ -346,7 +346,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v21</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v22</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -1393,11 +1393,21 @@ Condition A — PRICE-BASED: lp_pct > 85 OR lp_pct < 15 (near exit)
 Condition B — TA-BASED: regime has CHANGED since range was set
   e.g. was trending, now ranging → range centre needs to move
   e.g. was ranging, now strong uptrend → shift range up
-  e.g. RSI > 70 in downtrend → likely reversal, shift range down
 
 lp_near_exit = true if Condition A is met
-lp_regime_change = true if Condition B is met (set this field in JSON)
-Evaluate shift if EITHER condition is true (not just both)
+lp_regime_change = true if Condition B is met
+Evaluate shift if EITHER condition is true
+
+RANGE DURABILITY (client-side calculation — set lp_confidence to reflect this):
+  vol_mult = atr_pct<3 ? 1.3 : atr_pct<6 ? 1.5 : atr_pct<9 ? 1.7 : 2.0
+  expected_2wk_move = ATR × √10 × vol_mult + trend_drift
+  trend_drift = (uptrend or downtrend) ? |EMA20 - price| × 1.5 : 0
+  raw_dur = min(95, 100 × (1 - exp(-range_width / expected_2wk_move)) × 1.4)
+  edge_risk = min(price-range_low, range_high-price) / expected_2wk_move
+  edge_penalty = edge_risk≥0.6?0 : edge_risk≥0.4?5 : edge_risk≥0.2?10 : 20
+  durability = raw_dur - edge_penalty - (BTC bearish?10:0) + (BTC bullish?5:0) - (RSI>72 or RSI<28?10:0)
+  lp_confidence = durability score (0-100)
+  lp_confidence_reason = explain the key factors driving the score
 
 LP SHIFT EVALUATION (2 of 3 checks must pass — not all 3):
   Check 1 - Direction clear: regime + RSI + MACD all point same way? YES/NO
@@ -1729,7 +1739,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const waitLP=a.decision==='wait_falling'||a.decision==='wait_stabilise'||a.decision==='wait_btc'||a.decision==='wait_chop_72h'||a.decision==='wait_second_level';
   const veto=a.veto_fired===true;
   // Range too wide — from AI or client-side calc
-  const rangeTooWide=a.range_too_wide===true||parseFloat(curWidthPct)>16;
+  const rangeTooWide=a.range_too_wide===true||parseFloat(curWidthPct)>12||durabilityShiftNeeded;
 
   // Determine the single master instruction
   let dabClass,dabCmd,dabSub,dabShowLevels=false,dabWhy='';
@@ -1823,11 +1833,11 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       </div>`
     :'';
 
-  // ── RANGE TOO WIDE NOTE ──
-  const rangeTooWideNote=rangeTooWide&&!lpExited
+  // ── RANGE DURABILITY NOTE ──
+  const rangeTooWideNote=(rangeTooWide||durabilityShiftNeeded)&&!lpExited
     ?`<div style="margin-top:10px;padding:9px 12px;background:var(--al);border-radius:9px;border:1px solid var(--ab);font-size:11px;color:var(--amber)">
-        <b>⚠️ LP range too wide (${curWidthPct}% / ±${(parseFloat(curWidthPct)/2).toFixed(1)}%).</b> Optimal for ranging market is ±4.5-6% (9-12% total). Your APY is lower than it should be.
-        Tap <b>Get New LP Range Recommendation</b> in the LP Range section below to tighten it.
+        <b>⚠️ LP range needs attention.</b> Durability: <b>${durability} ${lpConfLabel}</b> · ${durabilityReason.split(' · ')[0]}.
+        Tap <b>Get New LP Range Recommendation</b> in the LP Range section below.
       </div>`
     :'';
 
@@ -1892,9 +1902,9 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     <div class="mc"><div class="ml">Veto</div><div class="mv ${a.veto_fired?'dn':'up'}">${a.veto_fired?'FIRED':'CLEAR'}</div><div class="ms">${a.veto_fired?a.veto_reason?.split(' ').slice(0,3).join(' '):'Trade allowed'}</div></div>`;
 
   // ── 4. LP RANGE ──
-  const modeC=a.range_mode==='volatile'?'volatile':'normal';
-  const widPct=a.current_width_pct?.toFixed(1)||((hi-lo)/px*100).toFixed(1);
-  const modeL=a.range_mode==='volatile'?`±${widPct}% VOLATILE`:`±${widPct}% NORMAL`;
+  const modeC=parseFloat(curWidthPct)>16?'volatile':a.range_mode==='volatile'?'volatile':'normal';
+  const widPct=a.current_width_pct?.toFixed(1)||curWidthPct;
+  const modeL=parseFloat(curWidthPct)>20?`±${(parseFloat(curWidthPct)/2).toFixed(1)}% TOO WIDE`:parseFloat(curWidthPct)>16?`±${(parseFloat(curWidthPct)/2).toFixed(1)}% WIDE`:a.range_mode==='volatile'?`±${widPct}% VOLATILE`:`±${(parseFloat(curWidthPct)/2).toFixed(1)}% NORMAL`;
   const pin=cl(pct,2,98);
   // Use user's actual range for the bar display
   const displayPct=userLpPct;
@@ -1902,20 +1912,84 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const displayHi=userRangeHi;
   const displayPin=Math.max(2,Math.min(98,displayPct));
 
-  // ── LP CONFIDENCE ──
-  const lpConf=a.lp_confidence||0;
-  const lpConfLabel=lpConf>=70?'HIGH':lpConf>=55?'MEDIUM':'LOW';
-  const lpConfCol=lpConf>=70?'var(--green)':lpConf>=55?'var(--amber)':'var(--red)';
-  const lpConfBg=lpConf>=70?'var(--gl)':lpConf>=55?'var(--al)':'var(--rl)';
-  const lpConfBorder=lpConf>=70?'var(--gb)':lpConf>=55?'var(--ab)':'var(--rb)';
+  // ── RANGE DURABILITY SCORE (v22 — replaces LP Confidence) ──
+  const daily_atr=window._liveTA?.atr||a.atr||0.47;
+  const ema20=window._liveTA?.ema20||a.ema20||0;
+  const liveRegimeForCalc=window._liveTA?.regime||a.regime||'ranging';
+  const rsiForCalc=window._liveTA?.rsi||a.rsi||50;
+  const btcTrendForCalc=window._liveBTC?.trend||a.btc_trend||'neutral';
+
+  // Step 1: Dynamic volatility multiplier
+  const atr_pct_raw=(daily_atr/px)*100;
+  const vol_mult=atr_pct_raw<3?1.3:atr_pct_raw<6?1.5:atr_pct_raw<9?1.7:2.0;
+
+  // Step 2: Expected 2-week move with trend drift
+  const atr_component=daily_atr*Math.sqrt(10)*vol_mult;
+  const trend_drift=(liveRegimeForCalc==='uptrend'||liveRegimeForCalc==='downtrend')
+    ?Math.abs(ema20-px)*1.5:0;
+  const expected_move=atr_component+trend_drift;
+
+  // Step 3: Nonlinear raw durability (exponential — more realistic than linear)
+  const range_width_val=userRangeHi-userRangeLo;
+  const raw_dur=expected_move>0
+    ?Math.min(95,100*(1-Math.exp(-range_width_val/expected_move))*1.4)
+    :60;
+
+  // Step 4: Edge risk (replaces centre penalty — asymmetric, more accurate)
+  const dist_to_edge=Math.min(px-userRangeLo,userRangeHi-px);
+  const edge_risk=expected_move>0?dist_to_edge/expected_move:0.5;
+  const edge_penalty=edge_risk>=0.6?0:edge_risk>=0.4?5:edge_risk>=0.2?10:20;
+
+  // Step 5: BTC macro adjustment
+  const macro_adj=btcTrendForCalc==='bearish'?-10:btcTrendForCalc==='bullish'?5:0;
+
+  // Step 6: RSI extreme penalty
+  const rsi_penalty=(rsiForCalc>72||rsiForCalc<28)?10:0;
+
+  // Step 7: Range age penalty (from LP shift log)
+  const lpShifts=loadLPShifts();
+  const lastShiftDate=lpShifts.length>0?new Date(lpShifts[0].date):null;
+  const days_since_shift=lastShiftDate?Math.round((Date.now()-lastShiftDate.getTime())/86400000):0;
+  const age_penalty=Math.min(15,days_since_shift*0.5);
+
+  // Final durability score
+  const durability=Math.max(5,Math.round(raw_dur+macro_adj-edge_penalty-rsi_penalty-age_penalty));
+
+  // Shift trigger: durability low AND edge risk confirms (prevents false alarms)
+  const durabilityShiftNeeded=durability<60&&edge_risk<0.35;
+
+  // Labels
+  const lpConf=durability; // keep lpConf name for backward compat with display code
+  const lpConfLabel=durability>=75?'HIGH':durability>=60?'MEDIUM':durability>=45?'LOW':'CRITICAL';
+  const lpConfCol=durability>=75?'var(--green)':durability>=60?'var(--amber)':durability>=45?'var(--red)':'#7c3aed';
+  const lpConfBg=durability>=75?'var(--gl)':durability>=60?'var(--al)':durability>=45?'var(--rl)':'#f5f3ff';
+  const lpConfBorder=durability>=75?'var(--gb)':durability>=60?'var(--ab)':durability>=45?'var(--rb)':'#c4b5fd';
+
+  // Durability explanation
+  const durabilityReason=(()=>{
+    const parts=[];
+    parts.push(`Expected 2-wk move: $${expected_move.toFixed(2)} · Range width: $${range_width_val.toFixed(2)}`);
+    if(edge_risk<0.2)parts.push(`⚠️ Very close to ${px>=(userRangeLo+userRangeHi)/2?'top':'bottom'} exit ($${dist_to_edge.toFixed(2)} away)`);
+    else if(edge_risk<0.35)parts.push(`Near ${px>=(userRangeLo+userRangeHi)/2?'top':'bottom'} boundary ($${dist_to_edge.toFixed(2)} to exit)`);
+    if(trend_drift>0.1)parts.push(`Trend drift adds $${trend_drift.toFixed(2)} to expected move`);
+    if(age_penalty>2)parts.push(`Range ${days_since_shift}d old (+${age_penalty.toFixed(0)}pt age penalty)`);
+    if(rsi_penalty>0)parts.push(`RSI ${rsiForCalc} extreme`);
+    if(macro_adj<0)parts.push('BTC bearish macro risk');
+    return parts.join(' · ')||'Based on ATR, position and trend';
+  })();
+
   const lpRegimeChange=a.lp_regime_change===true;
-  const showShiftBtn=userNearExit||lpRegimeChange||a.lp_shift_recommended||rangeTooWide;
+  // showShiftBtn: durability-driven + existing triggers
+  const showShiftBtn=durabilityShiftNeeded||userNearExit||lpRegimeChange||a.lp_shift_recommended||(parseFloat(curWidthPct)>12);
+
   const widthWarning=parseFloat(curWidthPct)>20
-    ?'🔴 Range critically wide ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — exceeds ±10% hard cap. Tighten to ±7-8% immediately.'
+    ?'🔴 Range critically wide ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — exceeds ±10% hard cap. Tighten immediately.'
     :parseFloat(curWidthPct)>16
-    ?'⚠️ Range too wide ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — APY reduced. Optimal is ±4.5-6% for this regime. Use the button below to get a tighter range.'
+    ?'⚠️ Range wide ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — APY reduced. Optimal is ±4.5-6% for ranging.'
+    :parseFloat(curWidthPct)>12
+    ?'💡 Range slightly wide ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — consider tightening for better APY.'
     :parseFloat(curWidthPct)<7
-    ?'⚠️ Range too narrow ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — likely to exit frequently. Widen slightly.'
+    ?'⚠️ Range narrow ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — may exit frequently.'
     :'';
 
   $('r-range').innerHTML=`<div class="range-box">
@@ -1929,13 +2003,18 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     <div class="rb-lbls"><span>$${displayLo.toFixed(2)}</span><span style="font-weight:${userNearExit?'700':'400'};color:${userNearExit?'var(--red)':'inherit'}">$${px.toFixed(2)} (${displayPct}%${userNearExit?' ⚠️':''})</span><span>$${displayHi.toFixed(2)}</span></div>
     <div style="margin-top:10px;background:${lpConfBg};border:1px solid ${lpConfBorder};border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
       <div style="flex:1">
-        <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:3px">LP Range Confidence</div>
-        <div style="font-size:11px;color:var(--ink2);line-height:1.5">${a.lp_confidence_reason||'Based on current TA and range position.'}</div>
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:3px">Range Durability Score</div>
+        <div style="font-size:11px;color:var(--ink2);line-height:1.5">${durabilityReason}</div>
       </div>
       <div style="text-align:center;flex-shrink:0">
-        <div style="font-family:'DM Mono',monospace;font-size:24px;font-weight:800;color:${lpConfCol};line-height:1">${lpConf}%</div>
+        <div style="font-family:'DM Mono',monospace;font-size:24px;font-weight:800;color:${lpConfCol};line-height:1">${durability}</div>
         <div style="font-size:9px;font-weight:800;color:${lpConfCol};letter-spacing:.5px">${lpConfLabel}</div>
       </div>
+    </div>
+    <div style="margin-top:6px;padding:6px 10px;background:rgba(0,0,0,.03);border-radius:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;text-align:center">
+      <div><div style="font-size:8px;color:var(--ink4);margin-bottom:1px">2-WK EXPECTED</div><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600">$${expected_move.toFixed(2)}</div></div>
+      <div><div style="font-size:8px;color:var(--ink4);margin-bottom:1px">RANGE WIDTH</div><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600">$${range_width_val.toFixed(2)}</div></div>
+      <div><div style="font-size:8px;color:var(--ink4);margin-bottom:1px">EDGE DIST</div><div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:${edge_risk<0.2?'var(--red)':edge_risk<0.4?'var(--amber)':'var(--green)'}">$${dist_to_edge.toFixed(2)}</div></div>
     </div>
     ${widthWarning?`<div style="margin-top:8px;padding:7px 12px;background:var(--al);border-radius:8px;font-size:11px;font-weight:700;color:var(--amber)">${widthWarning}</div>`:''}
     ${userNearExit?`<div style="margin-top:8px;padding:8px 12px;background:var(--rl);border-radius:8px;font-size:11px;font-weight:700;color:var(--red)">⚠️ ${displayPct}% through range — near ${userExitDir} exit. LP will stop earning if price ${userNearTop?'rises above $'+displayHi.toFixed(2):'falls below $'+displayLo.toFixed(2)}.</div>`:''}
@@ -3020,29 +3099,26 @@ Then calculate the optimal new LP range using these rules:
 HARD CAP: Total range width must NEVER exceed 20% of price (±10%). This is absolute.
 MINIMUM: Total width must be at least max(2.5×ATR_daily, 7%) to avoid frequent exits.
 
+TARGET 80% DURABILITY:
+  vol_mult = atr_pct<3?1.3 : atr_pct<6?1.5 : atr_pct<9?1.7 : 2.0
+  trend_drift = (uptrend or downtrend) ? |EMA20-price|×1.5 : 0
+  expected_move = ATR×√10×vol_mult + trend_drift
+  target_width = expected_move × 0.85   (targets ~80% durability from exponential formula)
+  target_width = min(target_width, price×0.20)  (±10% hard cap)
+  target_width = max(target_width, price×0.07)  (7% minimum)
+
 1. Determine direction bias from regime:
-   uptrend → centre = price × 1.02 (shift slightly up)
-   downtrend → centre = price × 0.98 (shift slightly down)
-   ranging/choppy → centre = price (balanced)
+   uptrend → centre = price × 1.02
+   downtrend → centre = price × 0.98
+   ranging/choppy → centre = price
 
-2. Set width from regime (within ±10% hard cap):
-   ranging: 7-9% total width
-   trending: 9-12% total width
-   choppy/high_vol: 12-16% total width (cap at 20% absolute max)
+2. Calculate boundaries:
+   range_lo = max(centre - target_width/2, price×0.90)
+   range_hi = min(centre + target_width/2, price×1.10)
 
-3. Calculate boundaries:
-   half_width = min(chosen_width/2, 10%) × price
-   new_low = centre - half_width (floor: never below price × 0.90)
-   new_high = centre + half_width (ceiling: never above price × 1.10)
+3. S/R snap: if a key S/R level is within 1% of a boundary, snap to it
 
-4. S/R snap: if a key S/R level is within 1% of a boundary, snap to it (still respect ±10% cap)
-
-5. Validate: price should land at 30-60% through new range. If not, re-centre.
-
-6. Calculate LP confidence score (0-100):
-   Start 40. Add: clear regime +20, RSI confirms direction +10, BTC confirms +15,
-   MACD confirms +10, new range within ±8% (tighter) +10, 3/3 checks pass +10.
-   Output as lp_confidence. Reason in lp_confidence_reason.
+4. Validate: price should land at 30-60% through new range
 
 Return ONLY this JSON (no other text):
 {
