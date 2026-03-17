@@ -1712,6 +1712,9 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   // Override: if client calc shows near-exit but Claude missed it, force LP warning
   const clientOverrideLPWarn=userNearExit&&!a.lp_shift_recommended&&!a.lp_near_exit&&a.decision!=='rebalance_up'&&a.decision!=='rebalance_down';
 
+  // Current range width — needed for rangeTooWide check before DAB
+  const curWidthPct=userRangeHi>userRangeLo&&px>0?((userRangeHi-userRangeLo)/px*100).toFixed(1):'—';
+
   // ── 1. DIRECT ACTION BOX (hero — replaces old decision card) ──
   const sig=a.signal||'wait';
   const conf=a.confidence||50;
@@ -1907,7 +1910,6 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const lpConfBorder=lpConf>=70?'var(--gb)':lpConf>=55?'var(--ab)':'var(--rb)';
   const lpRegimeChange=a.lp_regime_change===true;
   const showShiftBtn=userNearExit||lpRegimeChange||a.lp_shift_recommended||rangeTooWide;
-  const curWidthPct=displayHi>displayLo&&px>0?((displayHi-displayLo)/px*100).toFixed(1):'—';
   const widthWarning=parseFloat(curWidthPct)>20
     ?'🔴 Range critically wide ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — exceeds ±10% hard cap. Tighten to ±7-8% immediately.'
     :parseFloat(curWidthPct)>16
