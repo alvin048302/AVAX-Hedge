@@ -346,7 +346,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v20</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v21</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -1383,8 +1383,10 @@ TARGET WIDTH by regime:
 
 RANGE WIDTH CHECK:
   range_too_narrow = true if current_width_pct < 6% (likely to exit frequently)
-  range_too_wide = true if current_width_pct > 20% (APY too low — always flag this)
-  optimal_width_pct = 7 for ranging, 10 for trending, 14 for choppy (all within cap)
+  range_too_wide = true if current_width_pct > 16% (exceeds ±8% soft cap — APY too low)
+  range_critically_wide = true if current_width_pct > 20% (exceeds ±10% hard cap)
+  optimal_width_pct = 8 for ranging, 10 for trending, 14 for choppy (all within cap)
+  If range_too_wide = true: recommend tightening in lp_shift_reason even if not near exit
 
 LP SHIFT TRIGGER — check BOTH conditions:
 Condition A — PRICE-BASED: lp_pct > 85 OR lp_pct < 15 (near exit)
@@ -1723,6 +1725,8 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const lpExited=a.decision==='rebalance_up'||a.decision==='rebalance_down';
   const waitLP=a.decision==='wait_falling'||a.decision==='wait_stabilise'||a.decision==='wait_btc'||a.decision==='wait_chop_72h'||a.decision==='wait_second_level';
   const veto=a.veto_fired===true;
+  // Range too wide — from AI or client-side calc
+  const rangeTooWide=a.range_too_wide===true||parseFloat(curWidthPct)>16;
 
   // Determine the single master instruction
   let dabClass,dabCmd,dabSub,dabShowLevels=false,dabWhy='';
@@ -1816,6 +1820,14 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       </div>`
     :'';
 
+  // ── RANGE TOO WIDE NOTE ──
+  const rangeTooWideNote=rangeTooWide&&!lpExited
+    ?`<div style="margin-top:10px;padding:9px 12px;background:var(--al);border-radius:9px;border:1px solid var(--ab);font-size:11px;color:var(--amber)">
+        <b>⚠️ LP range too wide (${curWidthPct}% total / ±${(parseFloat(curWidthPct)/2).toFixed(1)}%).</b> Your APY is reduced. Target is ±7-8% for ranging market.
+        Tap <b>Get New LP Range Recommendation</b> in the LP Range section below to get the optimal tighter range.
+      </div>`
+    :'';
+
   // Use user's actual notional if they have an open trade, otherwise use AI recommendation
   const openTrade=JSON.parse(localStorage.getItem('avax_open_trade')||'{}');
   const userNotional=openTrade.notional||((a.entry_size==='strong')?1000:500);
@@ -1839,6 +1851,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       `:''}
       <div class="dab-why">${dabWhy}</div>
       ${lpNearExitNote}
+      ${rangeTooWideNote}
     </div>`;
 
   // ── 2. PRICE ──
@@ -1893,9 +1906,15 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const lpConfBg=lpConf>=70?'var(--gl)':lpConf>=55?'var(--al)':'var(--rl)';
   const lpConfBorder=lpConf>=70?'var(--gb)':lpConf>=55?'var(--ab)':'var(--rb)';
   const lpRegimeChange=a.lp_regime_change===true;
-  const showShiftBtn=userNearExit||lpRegimeChange||a.lp_shift_recommended;
+  const showShiftBtn=userNearExit||lpRegimeChange||a.lp_shift_recommended||rangeTooWide;
   const curWidthPct=displayHi>displayLo&&px>0?((displayHi-displayLo)/px*100).toFixed(1):'—';
-  const widthWarning=parseFloat(curWidthPct)>20?'⚠️ Range too wide (>±10%) — APY will be very low. Tighten range.':parseFloat(curWidthPct)<6?'⚠️ Range too narrow — likely to exit frequently':'';
+  const widthWarning=parseFloat(curWidthPct)>20
+    ?'🔴 Range too wide ('+curWidthPct+'% total, ±'+( parseFloat(curWidthPct)/2).toFixed(1)+'%) — APY extremely low. Tighten to ±7-8% immediately.'
+    :parseFloat(curWidthPct)>16
+    ?'⚠️ Range too wide ('+curWidthPct+'% total, ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — exceeds ±8% recommended max. APY is reduced. Consider tightening.'
+    :parseFloat(curWidthPct)<6
+    ?'⚠️ Range too narrow — likely to exit frequently'
+    :'';
 
   $('r-range').innerHTML=`<div class="range-box">
     <div class="rh-top"><div class="rh-title">YOUR LP RANGE</div><span class="rh-mode ${modeC}">${modeL}</span></div>
