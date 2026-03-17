@@ -61,6 +61,35 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .ls-val{font-family:'DM Mono',monospace;font-size:17px;font-weight:500;color:var(--ink)}
 .ls-sub{font-size:9px;color:var(--ink4);margin-top:2px}
 .ls-signal{margin-top:10px;padding-top:10px;border-top:1px solid var(--bd);font-size:11px;font-weight:500}
+/* TRADE RECORD v15 */
+.trade-rec-card{background:var(--w);border:1.5px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--sh)}
+.trade-rec-hdr{padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd)}
+.trade-rec-title{font-size:9px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase}
+.trade-rec-status{font-size:10px;font-weight:700;padding:3px 9px;border-radius:6px}
+.trs-open{background:var(--gl);color:var(--green);border:1px solid var(--gb)}
+.trs-none{background:var(--off2);color:var(--ink4);border:1px solid var(--bd)}
+.trade-rec-body{padding:12px 14px}
+.trade-open-info{background:var(--off);border-radius:10px;padding:10px 12px;margin-bottom:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.toi-cell{text-align:center}
+.toi-lbl{font-size:8px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--ink4);margin-bottom:3px}
+.toi-val{font-family:'DM Mono',monospace;font-size:14px;font-weight:600;color:var(--ink)}
+.close-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px}
+.close-btn{padding:12px 8px;border-radius:11px;border:2px solid;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center;transition:all .15s;background:var(--w)}
+.close-btn.tp1{border-color:var(--gb);color:var(--green)}
+.close-btn.tp1.on{background:var(--gl);border-color:var(--green)}
+.close-btn.tp2{border-color:var(--gb);color:var(--green)}
+.close-btn.tp2.on{background:var(--gl);border-color:var(--green)}
+.close-btn.sl{border-color:var(--rb);color:var(--red)}
+.close-btn.sl.on{background:var(--rl);border-color:var(--red)}
+.close-btn.open{border-color:var(--bb);color:var(--blue)}
+.close-btn.open.on{background:var(--bl);border-color:var(--blue)}
+.close-btn-lbl{font-size:11px;font-weight:700}
+.close-btn-sub{font-size:9px;font-weight:400;margin-top:2px;opacity:.75}
+.pnl-input-wrap{background:var(--off);border-radius:10px;padding:10px 12px;margin-bottom:10px}
+.pnl-input-lbl{font-size:10px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+.new-trade-wrap{border:2px dashed var(--bd2);border-radius:11px;padding:12px;text-align:center;cursor:pointer;transition:all .15s}
+.new-trade-wrap:hover{border-color:var(--blue);background:var(--bl)}
+.new-trade-wrap.active{border-color:var(--amber);background:var(--al);cursor:default}
 /* ANALYSE BTN */
 .abtn{width:100%;background:var(--blue);border:none;border-radius:14px;padding:17px;font-size:16px;font-weight:700;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 4px 14px rgba(37,99,235,.35)}
 .abtn:active{transform:scale(.98)}.abtn.loading{background:#3b82f6;pointer-events:none}
@@ -298,7 +327,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v13</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v16</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -363,71 +392,142 @@ canvas{display:block;width:100%!important;height:100%!important}
       </div>
     </div>
 
-    <!-- ═══ SECTION 2: TONIGHT'S INCOME ═══ -->
-    <div class="slbl">Tonight's Income</div>
+    <!-- ═══ SECTION 2: NIGHTLY LP RECORD ═══ -->
+    <div class="slbl">Tonight's LP Record</div>
     <div class="card cp">
       <div class="field">
         <div class="flbl">BLACK sold → USDC $ <span class="fhint">what you received after swap</span></div>
         <input type="number" id="i_black" inputmode="decimal" placeholder="0.00" step="0.01" value="0">
       </div>
-      <div class="field" style="margin-bottom:4px">
-        <div class="flbl">Trade closed tonight?</div>
-        <div class="trade-btns" id="trade-btns">
-          <button class="tbtn on" onclick="setTrade('nothing',this)">Nothing</button>
-          <button class="tbtn tp" onclick="setTrade('tp1',this)">TP1 ✓</button>
-          <button class="tbtn tp" onclick="setTrade('tp2',this)">TP2 ✓</button>
-          <button class="tbtn sl" onclick="setTrade('sl',this)">SL ✗</button>
-          <button class="tbtn new" onclick="setTrade('new',this)">New trade</button>
+      <button class="save-btn" id="save-lp-btn" onclick="saveLPRecord()" style="width:100%;margin-top:4px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save LP Record
+      </button>
+    </div>
+
+    <!-- ═══ SECTION 3: TRADE RECORD ═══ -->
+    <div class="slbl">Trade Record</div>
+    <div class="trade-rec-card">
+      <div class="trade-rec-hdr">
+        <div class="trade-rec-title">Hyperliquid Trade</div>
+        <div class="trade-rec-status" id="trade-status-badge">
+          <span id="trade-status-txt">No open trade</span>
         </div>
       </div>
-      <div id="trade-amt-wrap" style="display:none">
-        <div class="field">
-          <div class="flbl" id="trade-amt-lbl">Trade P&L $</div>
-          <input type="number" id="i_tpnl" inputmode="decimal" placeholder="0" value="0" step="1">
+      <div class="trade-rec-body">
+
+        <!-- Open trade info strip (shown when trade is active) -->
+        <div id="open-trade-info" style="display:none">
+          <div class="trade-open-info">
+            <div class="toi-cell">
+              <div class="toi-lbl">Direction</div>
+              <div class="toi-val" id="toi-dir">—</div>
+            </div>
+            <div class="toi-cell">
+              <div class="toi-lbl">Entry</div>
+              <div class="toi-val" id="toi-entry">—</div>
+            </div>
+            <div class="toi-cell">
+              <div class="toi-lbl">Size</div>
+              <div class="toi-val" id="toi-size">—</div>
+            </div>
+          </div>
+          <!-- Close buttons -->
+          <div style="font-size:10px;font-weight:700;color:var(--ink3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.8px">What happened tonight?</div>
+          <div class="close-btns">
+            <button class="close-btn tp1" id="cbtn-still" onclick="setClose('still',this)">
+              <div class="close-btn-lbl">📊 Still Open</div>
+              <div class="close-btn-sub">Trade running, no close</div>
+            </button>
+            <button class="close-btn tp1" id="cbtn-tp1" onclick="setClose('tp1',this)">
+              <div class="close-btn-lbl">✅ TP1 Hit</div>
+              <div class="close-btn-sub">Closed 50% at target</div>
+            </button>
+            <button class="close-btn tp2" id="cbtn-tp2" onclick="setClose('tp2',this)">
+              <div class="close-btn-lbl">✅ TP2 / Full Close</div>
+              <div class="close-btn-sub">Both targets hit tonight</div>
+            </button>
+            <button class="close-btn sl" id="cbtn-sl" onclick="setClose('sl',this)">
+              <div class="close-btn-lbl">❌ SL Hit</div>
+              <div class="close-btn-sub">Stopped out</div>
+            </button>
+          </div>
+          <!-- P&L input (shown for closes) -->
+          <div id="close-pnl-wrap" style="display:none">
+            <div class="pnl-input-wrap">
+              <div class="pnl-input-lbl" id="close-pnl-lbl">Profit $ (positive number)</div>
+              <input type="number" id="i_tpnl" inputmode="decimal" placeholder="0" step="1" style="margin-top:4px">
+            </div>
+          </div>
+          <!-- Unrealised P&L for "still open" -->
+          <div id="still-open-wrap" style="display:none">
+            <div class="pnl-input-wrap">
+              <div class="pnl-input-lbl">Unrealised P&L $ (for analysis context)</div>
+              <input type="number" id="i_upnl" inputmode="decimal" placeholder="0" value="0" step="1" style="margin-top:4px">
+            </div>
+          </div>
+          <button class="save-btn" onclick="saveTradeRecord()" style="width:100%;margin-top:4px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+            Save Trade Record
+          </button>
         </div>
+
+        <!-- No open trade — new trade entry -->
+        <div id="no-trade-section">
+          <div class="new-trade-wrap" id="new-trade-wrap" onclick="showNewTradeForm()">
+            <div style="font-size:18px;margin-bottom:4px">➕</div>
+            <div style="font-size:12px;font-weight:700;color:var(--ink2)">Opened a new trade tonight?</div>
+            <div style="font-size:10px;color:var(--ink4);margin-top:2px">Tap to record entry</div>
+          </div>
+          <div id="new-trade-form" style="display:none;margin-top:10px">
+            <div class="pnl-input-wrap">
+              <div class="pnl-input-lbl">Direction</div>
+              <div class="trade-btns" style="margin-top:6px">
+                <button class="tbtn tp" id="nt-long" onclick="setNewDir('long',this)">Long ▲</button>
+                <button class="tbtn sl" id="nt-short" onclick="setNewDir('short',this)">Short ▼</button>
+              </div>
+            </div>
+            <div class="pnl-input-wrap" style="margin-top:8px">
+              <div class="pnl-input-lbl">Entry price $</div>
+              <input type="number" id="i_pe_new" inputmode="decimal" placeholder="10.20" step="0.01" style="margin-top:4px">
+            </div>
+            <div class="pnl-input-wrap" style="margin-top:8px">
+              <div class="pnl-input-lbl">Notional amount $ <span style="font-size:9px;font-weight:400;color:var(--ink4)">how much to trade (not margin)</span></div>
+              <input type="number" id="i_notional" inputmode="decimal" placeholder="500" step="100" style="margin-top:4px">
+              <div style="font-size:9px;color:var(--ink4);margin-top:4px">e.g. $500 = $250 margin at 2× · $1,000 = $500 margin at 2×</div>
+            </div>
+            <button class="save-btn" onclick="saveNewTrade()" style="width:100%;margin-top:8px;background:var(--amber)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Record Trade Entry
+            </button>
+          </div>
+        </div>
+
+        <!-- Hidden fields still needed for analysis -->
+        <input type="hidden" id="i_pe" value="">
       </div>
     </div>
 
-    <!-- ═══ SECTION 3: TRADE POSITION ═══ -->
-    <div class="slbl">Open Trade Position <span style="font-size:8px;color:var(--ink4);font-weight:400;text-transform:none;letter-spacing:0">on Hyperliquid</span></div>
-    <div class="card cp">
-      <div class="field">
-        <div class="flbl">Current position</div>
-        <div class="trade-btns">
-          <button class="tbtn on" onclick="setDir('none',this)">None</button>
-          <button class="tbtn tp" onclick="setDir('long',this)">Long ▲</button>
-          <button class="tbtn tp" onclick="setDir('long_half',this)">Long ▲ ½</button>
-          <button class="tbtn sl" onclick="setDir('short',this)">Short ▼</button>
-          <button class="tbtn sl" onclick="setDir('short_half',this)">Short ▼ ½</button>
-        </div>
-      </div>
-      <div id="pos-fields" style="display:none;margin-top:4px">
-        <div class="g2">
-          <div class="field">
-            <div class="flbl">Entry price $</div>
-            <input type="number" id="i_pe" inputmode="decimal" placeholder="9.85" step="0.01">
-          </div>
-          <div class="field">
-            <div class="flbl">Unrealised P&L $</div>
-            <input type="number" id="i_upnl" inputmode="decimal" placeholder="0" value="0" step="1">
-          </div>
-        </div>
+    <!-- Hidden: position selector for analysis (auto-set from trade state) -->
+    <div style="display:none">
+      <div class="trade-btns" id="trade-btns">
+        <button class="tbtn on" onclick="setTrade('nothing',this)">Nothing</button>
+        <button class="tbtn tp" onclick="setTrade('tp1',this)">TP1</button>
+        <button class="tbtn tp" onclick="setTrade('tp2',this)">TP2</button>
+        <button class="tbtn sl" onclick="setTrade('sl',this)">SL</button>
+        <button class="tbtn new" onclick="setTrade('new',this)">New</button>
       </div>
     </div>
 
     <!-- ═══ ACTION BUTTONS ═══ -->
     <div style="display:flex;gap:8px;margin-bottom:4px">
-      <button class="save-btn" id="save-btn" onclick="logEvent()" style="flex:1">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-        Save
-      </button>
       <button class="test-btn" id="tbtn" onclick="runDataTest()" style="flex:1">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
         <span id="tbtn-txt">Test Data</span>
       </button>
-      <button class="abtn" id="abtn" onclick="runAnalysis()" style="margin-top:0;flex:1.5">
+      <button class="abtn" id="abtn" onclick="runAnalysis()" style="margin-top:0;flex:2">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        <span id="btn-txt">Analyse</span>
+        <span id="btn-txt">Analyse AVAX</span>
       </button>
     </div>
 
@@ -486,17 +586,6 @@ canvas{display:block;width:100%!important;height:100%!important}
         <div class="card" id="r-fees"></div>
         <div id="r-src"></div>
         <div class="ats" id="r-ts"></div>
-        <div id="r-confirm-wrap" style="display:none;margin-top:4px">
-          <div class="slbl">Execution Confirmation</div>
-          <div style="background:var(--gl);border:1.5px solid var(--gb);border-radius:13px;padding:13px;margin-bottom:12px">
-            <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:8px">Did you place the trade on Hyperliquid?</div>
-            <div style="font-size:10px;color:var(--ink3);margin-bottom:10px;line-height:1.5">Tap to record trade placement with timestamp — separates "signal seen" from "trade executed".</div>
-            <div class="g2">
-              <button class="bsm green" onclick="confirmTrade(true)">Yes — Trade Placed</button>
-              <button class="bsm" onclick="confirmTrade(false)">No Trade Tonight</button>
-            </div>
-          </div>
-        </div>
         <div style="height:12px"></div>
       </div>
     </div>
@@ -629,41 +718,223 @@ function goPage(id,btn){
 function toast(msg,t='ok'){const el=$('toast');el.textContent=msg;el.className='toast show '+t;setTimeout(()=>el.className='toast',2600);}
 
 // ── TRADE EVENT BUTTONS ──
+// ── TRADE STATE v15 ──
 let _tradeEvt='nothing';
+let _closeAction='still'; // still | tp1 | tp2 | sl
+let _newDir='none';
+let _newSize='mixed';
+let _dir='none'; // used by analysis — synced from trade state
+
+// Legacy setTrade kept for hidden buttons (analysis still uses _tradeEvt)
 function setTrade(val,btn){
   _tradeEvt=val;
   document.querySelectorAll('#trade-btns .tbtn').forEach(b=>b.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+}
+
+function setDir(val,btn){
+  _dir=val;
+  // no visible UI to update — direction driven by trade state now
+}
+
+// ── NEW TRADE FORM ──
+function showNewTradeForm(){
+  const wrap=$('new-trade-wrap');
+  const form=$('new-trade-form');
+  if(wrap)wrap.classList.add('active');
+  if(form)form.style.display='block';
+}
+
+function setNewDir(val,btn){
+  _newDir=val;
+  document.querySelectorAll('#new-trade-form .tbtn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  const wrap=$('trade-amt-wrap');
-  const lbl=$('trade-amt-lbl');
-  if(val==='nothing'){
-    wrap.style.display='none';
-    if($('i_tpnl'))$('i_tpnl').value='0';
-  } else if(val==='new'){
-    // New trade — show entry price field, no P&L yet
-    wrap.style.display='block';
-    lbl.textContent='Trade entry price $ (what you paid)';
-    if($('i_tpnl'))$('i_tpnl').value='';
+}
+
+function setNewSize(val,btn){
+  _newSize=val;
+  [$('nt-full'),$('nt-half')].forEach(b=>{if(b)b.classList.remove('on');});
+  btn.classList.add('on');
+}
+
+function saveNewTrade(){
+  const entryPx=pv($('i_pe_new')?.value)||0;
+  if(!entryPx){toast('Enter entry price','err');return;}
+  if(_newDir==='none'){toast('Select Long or Short','err');return;}
+  const notional=pv($('i_notional')?.value)||500;
+  const tradeState={
+    direction:_newDir,
+    entry:entryPx,
+    notional:notional,
+    margin:+(notional/2).toFixed(0),
+    size:notional>=1000?'strong':'mixed',
+    opened:new Date().toISOString(),
+    status:'open'
+  };
+  localStorage.setItem('avax_open_trade',JSON.stringify(tradeState));
+  _dir=_newDir;
+  if($('i_pe'))$('i_pe').value=entryPx;
+  updateTradeUI();
+  toast('Trade entry recorded','ok');
+  // Also save a journal entry for the open
+  const j=loadJ();
+  const prev=j.length?j[0].cum:0;
+  const now=new Date(),sgt=new Date(now.getTime()+8*3600*1000);
+  const p=v=>String(v).padStart(2,'0');
+  const px=_hl?.px||0;
+  const avax=pv($('i_avax')?.value)||0;
+  const usdc=pv($('i_usdc')?.value)||0;
+  const lpVal=avax>0&&usdc>0&&px>0?(avax*px+usdc):0;
+  j.unshift({
+    date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
+    lpVal:+lpVal.toFixed(0),avaxPx:+px.toFixed(2),
+    blackSold:0,tradePnl:0,net:0,cum:+(prev).toFixed(2),
+    evtType:'trade_new',
+    trade:{direction:_newDir,entry:entryPx,notional,entry_size:tradeState.size,signal_date:now.toISOString(),confidence:0,rsi:0,macd:'',btc_trend:'',eth_trend:'',regime:'',vol_regime:'',oi_change:'',atr_pct:0,lp_zone:'',lp_pct:0,days_out:0}
+  });
+  saveJ(j);renderJ();
+}
+
+// ── CLOSE ACTION SELECTOR ──
+function setClose(val,btn){
+  _closeAction=val;
+  ['cbtn-still','cbtn-tp1','cbtn-tp2','cbtn-sl'].forEach(id=>{
+    const b=$(id);if(b)b.classList.remove('on');
+  });
+  btn.classList.add('on');
+  const pnlWrap=$('close-pnl-wrap');
+  const stillWrap=$('still-open-wrap');
+  const lbl=$('close-pnl-lbl');
+  if(val==='still'){
+    if(pnlWrap)pnlWrap.style.display='none';
+    if(stillWrap)stillWrap.style.display='block';
   } else {
-    wrap.style.display='block';
-    if(val==='tp1')lbl.textContent='TP1 profit $ (positive number)';
-    else if(val==='tp2')lbl.textContent='TP2 profit $ (positive number)';
-    else if(val==='sl')lbl.textContent='SL loss $ (enter as negative)';
+    if(pnlWrap)pnlWrap.style.display='block';
+    if(stillWrap)stillWrap.style.display='none';
+    if(lbl){
+      if(val==='sl')lbl.textContent='Loss $ (enter as negative, e.g. -45)';
+      else if(val==='tp2')lbl.textContent='Total profit $ — enter combined TP1 + TP2 if both hit tonight';
+      else lbl.textContent='Profit $ (positive number)';
+    }
   }
 }
 
-// ── POSITION BUTTONS ──
-let _dir='none';
-function setDir(val,btn){
-  _dir=val;
-  document.querySelectorAll('#pg-analyse .card:nth-of-type(3) .tbtn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  const pf=$('pos-fields');
-  if(pf)pf.style.display=(val==='none')?'none':'block';
+// ── SAVE LP RECORD (nightly LP snapshot + BLACK income) ──
+function saveLPRecord(){
+  const avax=pv($('i_avax')?.value)||0;
+  const usdc=pv($('i_usdc')?.value)||0;
+  const px=_hl?.px||0;
+  const lpVal=avax>0&&usdc>0&&px>0?(avax*px+usdc):0;
+  const blackSold=pv($('i_black')?.value)||0;
+  const j=loadJ();
+  const prev=j.length?j[0].cum:0;
+  const now=new Date(),sgt=new Date(now.getTime()+8*3600*1000);
+  const p=v=>String(v).padStart(2,'0');
+  const net=+blackSold.toFixed(2);
+  j.unshift({
+    date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
+    lpVal:+lpVal.toFixed(0),avaxPx:+px.toFixed(2),
+    blackSold:+blackSold.toFixed(2),tradePnl:0,
+    net,cum:+(prev+net).toFixed(2),
+    evtType:'routine'
+  });
+  saveJ(j);
+  if($('i_black'))$('i_black').value='0';
+  toast('✓ LP record saved','ok');
+  renderJ();
 }
 
-// ── LEGACY COMPAT ──
-function showPosFields(){}
+// ── SAVE TRADE RECORD (close or still open update) ──
+function saveTradeRecord(){
+  if(!_closeAction){toast('Select what happened tonight','err');return;}
+  const raw=localStorage.getItem('avax_open_trade');
+  if(!raw){toast('No open trade found','err');return;}
+  const tradeState=JSON.parse(raw);
+  const avax=pv($('i_avax')?.value)||0;
+  const usdc=pv($('i_usdc')?.value)||0;
+  const px=_hl?.px||0;
+  const lpVal=avax>0&&usdc>0&&px>0?(avax*px+usdc):0;
+  const j=loadJ();
+  const prev=j.length?j[0].cum:0;
+  const now=new Date(),sgt=new Date(now.getTime()+8*3600*1000);
+  const p=v=>String(v).padStart(2,'0');
+
+  if(_closeAction==='still'){
+    // Just update unrealised P&L, no close
+    const upnl=pv($('i_upnl')?.value)||0;
+    if($('i_pe'))$('i_pe').value=tradeState.entry;
+    toast('Position updated — still running','ok');
+    return;
+  }
+
+  // Trade closed
+  const tradePnl=pv($('i_tpnl')?.value)||0;
+  const evtMap={tp1:'trade_tp1',tp2:'trade_tp2',sl:'trade_sl'};
+  const evtType=evtMap[_closeAction]||'trade_tp1';
+  const net=+tradePnl.toFixed(2);
+  const hoursHeld=+((now-new Date(tradeState.opened))/3600000).toFixed(1);
+  const tradeCtx={
+    ...tradeState,
+    result:_closeAction,
+    hours_held:hoursHeld,
+    pnl:tradePnl,
+    rsi:window._liveTA?.rsi||0,
+    macd:window._liveTA?.macd||'',
+    btc_trend:window._liveBTC?.trend||'',
+    eth_trend:window._liveETH?.trend||''
+  };
+  j.unshift({
+    date:`${sgt.getUTCFullYear()}-${p(sgt.getUTCMonth()+1)}-${p(sgt.getUTCDate())} ${p(sgt.getUTCHours())}:${p(sgt.getUTCMinutes())}`,
+    lpVal:+lpVal.toFixed(0),avaxPx:+px.toFixed(2),
+    blackSold:0,tradePnl:+tradePnl.toFixed(2),
+    net,cum:+(prev+net).toFixed(2),
+    evtType,trade:tradeCtx
+  });
+  saveJ(j);
+  // Clear open trade state
+  localStorage.removeItem('avax_open_trade');
+  _dir='none';
+  if($('i_pe'))$('i_pe').value='';
+  updateTradeUI();
+  toast(`✓ Trade closed — ${evtType.replace('trade_','').toUpperCase()} saved`,'ok');
+  renderJ();
+}
+
+// ── UPDATE TRADE UI from state ──
+function updateTradeUI(){
+  const raw=localStorage.getItem('avax_open_trade');
+  const badge=$('trade-status-badge');
+  const badgeTxt=$('trade-status-txt');
+  const openInfo=$('open-trade-info');
+  const noTradeSection=$('no-trade-section');
+
+  if(raw){
+    try{
+      const t=JSON.parse(raw);
+      if(badge)badge.className='trade-rec-status trs-open';
+      if(badgeTxt)badgeTxt.textContent=`${t.direction.toUpperCase()} open`;
+      if(openInfo)openInfo.style.display='block';
+      if(noTradeSection)noTradeSection.style.display='none';
+      if($('toi-dir'))$('toi-dir').textContent=t.direction==='long'?'▲ LONG':'▼ SHORT';
+      if($('toi-entry'))$('toi-entry').textContent='$'+(t.entry||0).toFixed(2);
+      if($('toi-size'))$('toi-size').textContent=t.notional?'$'+t.notional+' · $'+t.margin+' mgn':'$'+(t.size==='strong'?'1,000':'500');
+      // Sync _dir for analysis
+      _dir=t.direction;
+      if($('i_pe'))$('i_pe').value=t.entry||'';
+    }catch(e){}
+  } else {
+    if(badge)badge.className='trade-rec-status trs-none';
+    if(badgeTxt)badgeTxt.textContent='No open trade';
+    if(openInfo)openInfo.style.display='none';
+    if(noTradeSection)noTradeSection.style.display='block';
+    _dir='none';
+  }
+}
+
+// Legacy logEvent — kept for backward compat with any remaining calls
+function logEvent(){saveLPRecord();}
+
+
 
 
 // ── HYPERLIQUID LIVE DATA ──
@@ -1015,25 +1286,41 @@ ${_ta?`- RSI(14): ${liveRSI}
 - EMA 20: $${liveEMA20}
 - EMA 200: $${liveEMA200}
 - ATR (daily): $${liveATR}
-- Regime (pre-calculated): ${liveRegime?.toUpperCase()||'unknown'}`:'- TA: not yet loaded — use search'}
+- Regime (pre-calculated): ${liveRegime?.toUpperCase()||'unknown'}
+
+⚠️ THESE ARE YOUR AUTHORITATIVE TA VALUES. Do NOT search for AVAX RSI, MACD, EMA or ATR. Do NOT override these with web search findings. Use them exactly as provided. If a web search returns different TA values, ignore them and use the Binance values above.`:'- TA: not yet loaded — use search for AVAX TA only if this happens'}
 ${_btc?`- BTC trend: ${liveBTCTrend?.toUpperCase()||'unknown'} (${liveBTCChg}% 24h)`:''}
 ${_eth?`- ETH trend: ${liveETHTrend?.toUpperCase()||'unknown'} (${liveETHChg}% 24h) — use as confirmation filter when BTC is neutral`:''}
 ${ethConfirmation?`- ETH confirmation signal: ${ethConfirmation}`:''}
 
-STEP 1 - WEB SEARCH${_ta?` — ONLY 1 SEARCH NEEDED (TA already provided above)`:'ES — 2 SEARCHES NEEDED'}
+STEP 1 - WEB SEARCH — EXACTLY 1 SEARCH ONLY
 ${_ta
-  ?`SEARCH 1: "BTC price trend today support resistance key levels"
-  Extract: BTC direction, key BTC levels, any macro risk-off signals`
+  ?`SEARCH 1: "AVAX key support resistance levels today $${hlPx.toFixed(0)} technical chart"
+  Extract ONLY: key S/R price levels near current price, any major S/R cluster. Do NOT extract RSI/MACD/EMA — you already have those from Binance above.`
   :`SEARCH 1: "AVAX price RSI MACD EMA200 ATR daily 4-hour chart technical analysis today"
   Extract: price, RSI(14), MACD direction+histogram, EMA20, EMA200, ATR daily value, key support/resistance levels
+  Then SEARCH 2: "BTC price trend today" — Extract: BTC direction, % change 24h`}
 
-SEARCH 2: "BTC price trend today"
-  Extract: BTC direction, % change 24h`}
-
-${_ta?'Do NOT search for AVAX TA — it is already provided above from live Binance candles.':''}
+${_ta?'ONE search only. TA is already provided. Only need S/R levels from search.':''}
 No more than ${_ta?1:2} search${_ta?'':'es'}. All other data provided above.
 
-STEP 2 - LP DECISION TREE
+OPEN POSITION RULES (apply first if HL trade position is not "none")
+The user currently has: ${dir!=='none'?dir.toUpperCase()+' position (entry $'+pe+', unrealised P&L $'+upnl+')':'NO OPEN POSITION'}
+
+${dir!=='none'?`EXISTING POSITION DETECTED — follow these rules strictly:
+1. DEFAULT ACTION IS "LET IT RUN" — do not recommend closing or reversing unless a specific condition below is met
+2. SET signal = "wait" and explain "let existing ${dir} run to TP or SL" UNLESS one of these is true:
+   - CLOSE condition: A HARD VETO fires (BTC falling >5% AND position is long, or R:R gone) → signal = "wait", open_position_action = "CLOSE — hard veto fired: [reason]"
+   - CLOSE condition: Price has crossed ABOVE SL on a short, or BELOW SL on a long → open_position_action = "SL HIT — close now"
+   - CLOSE condition: RSI gone extreme (>75 for long, <25 for short) AND MACD flipping → open_position_action = "CLOSE — momentum exhausted: RSI [value] + MACD turning"
+   - CLOSE condition: BTC turned strongly bearish (>-4% today) AND position is long → open_position_action = "CLOSE — macro turned bearish"
+   - PARTIAL CLOSE: TP1 is within 0.5% of current price → open_position_action = "TAKE TP1 — price near target $[tp1]"
+3. NEVER recommend opening an opposite position while the current one is open
+4. Confidence score still reflects market conditions — helps user understand if original thesis still holds
+5. set open_position_action = "LET IT RUN — thesis intact" when no close condition met`
+:'No open position — proceed normally with trade signal analysis.'}
+
+
 days_out == 0: decision = "in_range" - continue to LP zone check then trade layers
 
 days_out >= 1 AND price still falling: decision = "wait_falling" - signal = "wait"
@@ -1058,8 +1345,30 @@ LP NEAR-EXIT (lp_pct > 70 OR lp_pct < 30):
     ATR minimum width = max(2.5 x ATR, 8% of price). If range too narrow, widen.
 
   ALL 3 checks pass: lp_shift_recommended = true
-    Calculate: lp_shift_avax_receive, lp_shift_usdc_receive, lp_shift_avax_need, lp_shift_usdc_need, lp_shift_swap
     lp_new_range_low = nearest support from search, lp_new_range_high = nearest resistance from search
+    
+    CALCULATE TOKEN AMOUNTS FOR SHIFT (use these exact formulas):
+    User has: ${avax} AVAX and $${usdc} USDC in LP. Current LP value ≈ $${lpVal.toFixed(0)}.
+    After removing LP from Blackhole, user receives approximately:
+      lp_shift_avax_receive = ${avax} AVAX (all AVAX in position)
+      lp_shift_usdc_receive = ${usdc} USDC (all USDC in position)
+    
+    For the new range, CL LP requires specific AVAX/USDC ratio at current price.
+    Use this formula for the new ratio:
+      price_ratio = (price - new_low) / (new_high - new_low)  [how far price is through new range]
+      target_usdc_pct = price_ratio  [USDC % of LP value at current price position]
+      target_avax_pct = 1 - price_ratio  [AVAX % of LP value]
+      new_lp_value = ${lpVal.toFixed(0)}
+      lp_shift_usdc_need = new_lp_value * target_usdc_pct
+      lp_shift_avax_need = (new_lp_value * target_avax_pct) / price
+    
+    Then calculate swap:
+      avax_delta = lp_shift_avax_need - lp_shift_avax_receive
+      usdc_delta = lp_shift_usdc_need - lp_shift_usdc_receive
+      If avax_delta > 0: need more AVAX → lp_shift_swap = "Sell $" + abs(usdc_delta).toFixed(0) + " USDC → buy " + avax_delta.toFixed(1) + " AVAX at ~$" + price
+      If avax_delta < 0: too much AVAX → lp_shift_swap = "Sell " + abs(avax_delta).toFixed(1) + " AVAX → get $" + abs(usdc_delta).toFixed(0) + " USDC at ~$" + price
+      If both within 5%: lp_shift_swap = "No swap needed — current token ratio works for new range"
+    
   ANY check fails: lp_shift_recommended = false, lp_shift_reason = why holding
 
 REGIME WIDTH CHECK:
@@ -1201,6 +1510,7 @@ RETURN EXACTLY THIS JSON - nothing else:
   ],
   "signal": "long",
   "confidence": 63,
+  "open_position_action": "LET IT RUN — thesis intact",
   "entry": 9.71,
   "entry_type": "limit",
   "entry_size": "strong",
@@ -1311,6 +1621,12 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   // ── 1. DIRECT ACTION BOX (hero — replaces old decision card) ──
   const sig=a.signal||'wait';
   const conf=a.confidence||50;
+  const hasOpenPosition=dir!=='none';
+  const openAction=a.open_position_action||'';
+  const openActionUpper=openAction.toUpperCase();
+  const isCloseAction=openActionUpper.startsWith('CLOSE')||openActionUpper.startsWith('SL HIT');
+  const isTakeTP=openActionUpper.startsWith('TAKE TP');
+  const isLetRun=openActionUpper.startsWith('LET IT RUN');
   const lpShift=a.lp_shift_recommended===true;
   const lpExited=a.decision==='rebalance_up'||a.decision==='rebalance_down';
   const waitLP=a.decision==='wait_falling'||a.decision==='wait_stabilise'||a.decision==='wait_btc'||a.decision==='wait_chop_72h'||a.decision==='wait_second_level';
@@ -1319,7 +1635,26 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   // Determine the single master instruction
   let dabClass,dabCmd,dabSub,dabShowLevels=false,dabWhy='';
 
-  if(lpExited){
+  if(hasOpenPosition&&openAction){
+    // Open position detected — show what to do with it
+    if(isCloseAction){
+      dabClass='dab-wait';
+      dabCmd=`CLOSE YOUR ${dir.toUpperCase()} NOW`;
+      dabSub=openAction;
+      dabWhy=`Conditions have changed since you opened. Do not wait for TP — close to protect capital. Reason: ${openAction}`;
+    } else if(isTakeTP){
+      dabClass='dab-go';
+      dabCmd=`TAKE TP1 — PRICE NEAR TARGET`;
+      dabSub=openAction;
+      dabWhy=`Your ${dir} is approaching TP1. Close 50% now to lock in profit, let the remaining 50% run to TP2.`;
+    } else {
+      // Let it run
+      dabClass='dab-go';
+      dabCmd=`HOLD YOUR ${dir.toUpperCase()} — LET IT RUN`;
+      dabSub=`${conf}% confidence · Original thesis still valid`;
+      dabWhy=openAction+(a.signal_why?'\n\n'+a.signal_why:'');
+    }
+  } else if(lpExited){
     // LP out of range — this is the priority action
     dabClass='dab-lp';
     const dir=a.rebal_direction==='up'?'UP':'DOWN';
@@ -1384,9 +1719,11 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     dabWhy=a.signal_why||'LP is running fine. Check again tomorrow.';
   }
 
-  const notional=(a.entry_size==='strong')?1000:500;
-  const margin=notional/2;
-  const sz=px>0?(notional/px).toFixed(1):'—';
+  // Use user's actual notional if they have an open trade, otherwise use AI recommendation
+  const openTrade=JSON.parse(localStorage.getItem('avax_open_trade')||'{}');
+  const userNotional=openTrade.notional||((a.entry_size==='strong')?1000:500);
+  const userMargin=+(userNotional/2).toFixed(0);
+  const sz=px>0?(userNotional/px).toFixed(1):'—';
 
   $('r-decision').innerHTML=`
     <div class="dab ${dabClass}">
@@ -1400,7 +1737,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
         <div class="dab-lv"><div class="dab-lv-lbl">SL</div><div class="dab-lv-val sl">$${a.sl?.toFixed(2)||'—'}</div></div>
         <div class="dab-lv"><div class="dab-lv-lbl">R:R</div><div class="dab-lv-val rr">${a.rr||'—'}:1</div></div>
       </div>
-      <div class="dab-size">${a.entry_size==='strong'?'$1,000 notional · $500 margin':'$500 notional · $250 margin'} · ${sz} AVAX · ${conf>=65?'✅ FULL SIZE':'⚠️ HALF SIZE — add if confirms in 4h'}</div>
+      <div class="dab-size">$${userNotional} notional · $${userMargin} margin · ${sz} AVAX · ${conf>=65?'✅ FULL SIZE':'⚠️ AI suggests half — enter your amount in Trade Record'}</div>
       ${a.tp2?`<div style="font-size:11px;color:var(--ink3);margin-top:6px">TP2: $${a.tp2.toFixed(2)} · Close remaining 50% there</div>`:''}
       `:''}
       <div class="dab-why">${dabWhy}</div>
@@ -1527,22 +1864,48 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
                 <div class="jrow"><span>Width</span><span style="font-family:'DM Mono',monospace">${newWidth}% of price</span></div>
                 <div class="jrow" style="border-top:1px solid var(--bd);margin-top:4px;padding-top:4px"><span>Reason</span><span style="font-size:10px;color:var(--ink3)">${a.lp_new_range_reason||'Nearest S/R levels'}</span></div>
               </div>
-              ${a.lp_shift_avax_receive>0||a.lp_shift_usdc_receive>0?`
-              <div style="background:var(--w);border-radius:9px;border:1px solid var(--bd);padding:12px;margin-bottom:10px">
-                <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink3);margin-bottom:8px">Token Amounts</div>
-                <div class="jrow"><span>Remove → receive</span><span style="font-family:'DM Mono',monospace">${a.lp_shift_avax_receive.toFixed(1)} AVAX + $${a.lp_shift_usdc_receive.toFixed(0)} USDC</span></div>
-                <div class="jrow"><span>Need to deploy</span><span style="font-family:'DM Mono',monospace">${a.lp_shift_avax_need.toFixed(1)} AVAX + $${a.lp_shift_usdc_need.toFixed(0)} USDC</span></div>
-                ${a.lp_shift_swap?`<div class="jrow"><span>Swap needed</span><span style="font-size:10px;color:var(--blue)">${a.lp_shift_swap}</span></div>`:''}
-              </div>`:'' }
+              ${(()=>{
+                // CLIENT-SIDE EXACT SWAP CALCULATION
+                // Uses user's actual AVAX/USDC amounts — more accurate than Claude's estimate
+                const curAvax=avax||0, curUsdc=usdc||0;
+                const lpValueNow=curAvax>0&&curUsdc>0?(curAvax*px+curUsdc):realLp;
+                if(newLo>0&&newHi>0&&px>0&&lpValueNow>0){
+                  // CL ratio at new range: how far price is through new range
+                  const priceRatio=Math.max(0,Math.min(1,(px-newLo)/(newHi-newLo)));
+                  const targetUsdcPct=priceRatio;
+                  const targetAvaxPct=1-priceRatio;
+                  const needUsdc=+(lpValueNow*targetUsdcPct).toFixed(2);
+                  const needAvax=+(lpValueNow*targetAvaxPct/px).toFixed(2);
+                  const avaxDelta=+(needAvax-curAvax).toFixed(2);
+                  const usdcDelta=+(needUsdc-curUsdc).toFixed(2);
+                  let swapText='';
+                  const tolerance=lpValueNow*0.03; // 3% tolerance
+                  if(Math.abs(avaxDelta*px)<tolerance){
+                    swapText='✅ No swap needed — token ratio is close enough for new range';
+                  } else if(avaxDelta>0){
+                    swapText=`Sell $${Math.abs(usdcDelta).toFixed(0)} USDC → buy ${avaxDelta.toFixed(2)} AVAX at ~$${px.toFixed(2)}`;
+                  } else {
+                    swapText=`Sell ${Math.abs(avaxDelta).toFixed(2)} AVAX → get $${Math.abs(usdcDelta).toFixed(0)} USDC at ~$${px.toFixed(2)}`;
+                  }
+                  return `
+                <div style="background:var(--w);border-radius:9px;border:1.5px solid var(--bb);padding:12px;margin-bottom:10px">
+                  <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:8px">★ Token Amounts (calculated from your position)</div>
+                  <div class="jrow"><span>Remove LP → you receive</span><span style="font-family:'DM Mono',monospace">${curAvax.toFixed(2)} AVAX + $${curUsdc.toFixed(0)} USDC</span></div>
+                  <div class="jrow"><span>New range needs</span><span style="font-family:'DM Mono',monospace">${needAvax.toFixed(2)} AVAX + $${needUsdc.toFixed(0)} USDC</span></div>
+                  <div class="jrow" style="border-top:1px solid var(--bd);margin-top:6px;padding-top:6px"><span style="font-weight:700">Swap required</span><span style="font-size:11px;color:${swapText.startsWith('✅')?'var(--green)':'var(--blue)'};font-weight:600">${swapText}</span></div>
+                  <div class="jrow"><span>LP value preserved</span><span style="color:var(--green)">~$${lpValueNow.toFixed(0)} ✅</span></div>
+                </div>`;
+                }
+                return '';
+              })()}
               <div style="background:var(--bl);border-radius:8px;padding:10px;font-size:11px;line-height:1.9;color:var(--ink2)">
                 <div style="font-size:9px;font-weight:700;color:var(--blue);margin-bottom:4px">★ STEPS TONIGHT</div>
-                <div>1. Remove LP from Blackhole (receive both tokens)</div>
-                <div>2. ${a.lp_shift_swap||'Adjust token ratio as shown above'}</div>
+                <div>1. Remove LP from Blackhole (receive ${avax?.toFixed(2)||'your'} AVAX + $${usdc?.toFixed(0)||'your'} USDC)</div>
+                <div>2. Do the swap shown above to get the right ratio</div>
                 <div>3. Redeploy: range <b>$${newLo.toFixed(2)} → $${newHi.toFixed(2)}</b></div>
                 <div>4. Stake new LP to earn BLACK</div>
                 <div>5. Reset crash hedge: SHORT $500 · TP $${(newLo*0.60).toFixed(2)} · SL $${(newHi*1.10).toFixed(2)}</div>
               </div>
-              <div style="margin-top:8px;padding:7px 10px;background:var(--gl);border-radius:7px;font-size:10px;color:var(--green)">✅ No AVAX sold in this operation. LP shift preserves full AVAX position.</div>
             </div>
           </div>`;
       } else {
@@ -1739,6 +2102,8 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     <tr><td>Veto fired?</td><td><span class="tag ${vetoCls}">${a.veto_fired?'YES — '+a.veto_reason:'NO — clear'}</span></td></tr>
     <tr><td>Session</td><td style="font-size:10px">${a.session||_session}</td></tr>
     <tr><td>AVAX falling?</td><td><span class="tag ${a.price_still_falling?'bear':'bull'}">${a.price_still_falling?'YES':'NO'}</span></td></tr>
+    ${hasOpenPosition&&openAction?`<tr><td colspan="2" style="padding:8px 14px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);background:var(--off)">Open Position Assessment</td></tr>
+    <tr><td>Your ${dir}</td><td style="font-size:10px;color:${isCloseAction?'var(--red)':isTakeTP?'var(--green)':'var(--green)'}">${openAction}</td></tr>`:''}
   </table>`;
 
   // ── 8. LP SNAPSHOT ──
@@ -2331,6 +2696,33 @@ Return ONLY this JSON (no other text):
             <b>Why this range:</b> ${r.regime_context||''}<br>
             <b>Urgency:</b> <span style="color:${urgCol}">${r.shift_urgency_reason||''}</span>
           </div>
+          ${(()=>{
+            const curAvax=pv($('i_avax')?.value)||0;
+            const curUsdc=pv($('i_usdc')?.value)||0;
+            const curPx=px>0?px:0;
+            const lpVal=curAvax>0&&curUsdc>0?(curAvax*curPx+curUsdc):0;
+            const newLo=r.new_range_low||0,newHi=r.new_range_high||0;
+            if(newLo>0&&newHi>0&&curPx>0&&lpVal>0){
+              const priceRatio=Math.max(0,Math.min(1,(curPx-newLo)/(newHi-newLo)));
+              const needUsdc=+(lpVal*priceRatio).toFixed(2);
+              const needAvax=+(lpVal*(1-priceRatio)/curPx).toFixed(2);
+              const avaxDelta=+(needAvax-curAvax).toFixed(2);
+              const usdcDelta=+(needUsdc-curUsdc).toFixed(2);
+              const tolerance=lpVal*0.03;
+              let swapText='';
+              if(Math.abs(avaxDelta*curPx)<tolerance){swapText='✅ No swap needed';}
+              else if(avaxDelta>0){swapText=`Sell $${Math.abs(usdcDelta).toFixed(0)} USDC → buy ${avaxDelta.toFixed(2)} AVAX at ~$${curPx.toFixed(2)}`;}
+              else{swapText=`Sell ${Math.abs(avaxDelta).toFixed(2)} AVAX → get $${Math.abs(usdcDelta).toFixed(0)} USDC at ~$${curPx.toFixed(2)}`;}
+              return `<div style="background:var(--bl);border-radius:9px;border:1px solid var(--bb);padding:12px;margin-bottom:10px">
+                <div style="font-size:9px;font-weight:700;color:var(--blue);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">★ Exact Swap for Your Position</div>
+                <div class="jrow"><span>Remove LP → receive</span><span style="font-family:'DM Mono',monospace">${curAvax.toFixed(2)} AVAX + $${curUsdc.toFixed(0)} USDC</span></div>
+                <div class="jrow"><span>New range needs</span><span style="font-family:'DM Mono',monospace">${needAvax.toFixed(2)} AVAX + $${needUsdc.toFixed(0)} USDC</span></div>
+                <div class="jrow" style="border-top:1px solid var(--bd);margin-top:6px;padding-top:6px"><span style="font-weight:700">Swap</span><span style="color:${swapText.startsWith('✅')?'var(--green)':'var(--blue)'};font-weight:600;font-size:11px">${swapText}</span></div>
+                <div class="jrow"><span>LP value preserved</span><span style="color:var(--green)">~$${lpVal.toFixed(0)} ✅</span></div>
+              </div>`;
+            }
+            return '';
+          })()}
           ${stepsHtml?`<div class="lp-advice-steps">
             <div style="font-size:9px;font-weight:800;color:var(--blue);letter-spacing:1px;margin-bottom:6px">★ STEPS TONIGHT</div>
             ${stepsHtml}
@@ -2372,6 +2764,41 @@ function clearJ(){if(confirm('Delete all?')){localStorage.removeItem(SK);renderJ
 // ── INIT ──
 updateKeyStatus();
 const su=localStorage.getItem(GK);if(su&&$('gs-url'))$('gs-url').value=su;
+
+// ── INPUT PERSISTENCE — restore all inputs from last session ──
+(function restoreInputs(){
+  const fields=[
+    ['avax_save_avax','i_avax'],
+    ['avax_save_usdc','i_usdc'],
+    ['avax_save_apy','i_apy_display'],
+    ['avax_save_hedge','i_hedge'],
+    ['avax_save_hedge_entry','i_hedge_entry'],
+    ['avax_save_range_lo','i_range_lo'],
+    ['avax_save_range_hi','i_range_hi'],
+  ];
+  fields.forEach(([key,id])=>{
+    const val=localStorage.getItem(key);
+    const el=$(id);
+    if(val&&el&&!el.value)el.value=val;
+    // Also set select element
+    if(val&&el&&el.tagName==='SELECT'){
+      [...el.options].forEach(o=>{if(o.value===val)o.selected=true;});
+    }
+  });
+  // Restore LP range to sessionStorage too
+  const lo=localStorage.getItem('avax_save_range_lo');
+  const hi=localStorage.getItem('avax_save_range_hi');
+  if(lo&&hi)sessionStorage.setItem('avax_lp_range',JSON.stringify({lo:parseFloat(lo),hi:parseFloat(hi)}));
+})();
+
+// Save inputs to localStorage whenever they change
+['i_avax','i_usdc','i_apy_display','i_hedge_entry','i_range_lo','i_range_hi'].forEach(id=>{
+  const el=$(id);
+  if(el)el.addEventListener('change',()=>localStorage.setItem('avax_save_'+id.replace('i_',''),el.value));
+});
+const hedgeEl=$('i_hedge');
+if(hedgeEl)hedgeEl.addEventListener('change',()=>localStorage.setItem('avax_save_hedge',hedgeEl.value));
+
 // Pre-fill LP range inputs from localStorage/sessionStorage if available
 (function(){
   try{
@@ -2380,6 +2807,10 @@ const su=localStorage.getItem(GK);if(su&&$('gs-url'))$('gs-url').value=su;
     if(sr.hi&&$('i_range_hi')&&!$('i_range_hi').value)$('i_range_hi').value=sr.hi;
   }catch(e){}
 })();
+
+// ── RESTORE TRADE STATE ──
+updateTradeUI();
+
 loadStrip();
 </script>
 </body>
