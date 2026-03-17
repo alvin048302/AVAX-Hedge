@@ -1739,6 +1739,72 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const waitLP=a.decision==='wait_falling'||a.decision==='wait_stabilise'||a.decision==='wait_btc'||a.decision==='wait_chop_72h'||a.decision==='wait_second_level';
   const veto=a.veto_fired===true;
   // Range too wide — from AI or client-side calc
+  // ── RANGE DURABILITY SCORE (v22 — replaces LP Confidence) ──
+  const daily_atr=window._liveTA?.atr||a.atr||0.47;
+  const ema20=window._liveTA?.ema20||a.ema20||0;
+  const liveRegimeForCalc=window._liveTA?.regime||a.regime||'ranging';
+  const rsiForCalc=window._liveTA?.rsi||a.rsi||50;
+  const btcTrendForCalc=window._liveBTC?.trend||a.btc_trend||'neutral';
+
+  // Step 1: Dynamic volatility multiplier
+  const atr_pct_raw=(daily_atr/px)*100;
+  const vol_mult=atr_pct_raw<3?1.3:atr_pct_raw<6?1.5:atr_pct_raw<9?1.7:2.0;
+
+  // Step 2: Expected 2-week move with trend drift
+  const atr_component=daily_atr*Math.sqrt(10)*vol_mult;
+  const trend_drift=(liveRegimeForCalc==='uptrend'||liveRegimeForCalc==='downtrend')
+    ?Math.abs(ema20-px)*1.5:0;
+  const expected_move=atr_component+trend_drift;
+
+  // Step 3: Nonlinear raw durability (exponential — more realistic than linear)
+  const range_width_val=userRangeHi-userRangeLo;
+  const raw_dur=expected_move>0
+    ?Math.min(95,100*(1-Math.exp(-range_width_val/expected_move))*1.4)
+    :60;
+
+  // Step 4: Edge risk (replaces centre penalty — asymmetric, more accurate)
+  const dist_to_edge=Math.min(px-userRangeLo,userRangeHi-px);
+  const edge_risk=expected_move>0?dist_to_edge/expected_move:0.5;
+  const edge_penalty=edge_risk>=0.6?0:edge_risk>=0.4?5:edge_risk>=0.2?10:20;
+
+  // Step 5: BTC macro adjustment
+  const macro_adj=btcTrendForCalc==='bearish'?-10:btcTrendForCalc==='bullish'?5:0;
+
+  // Step 6: RSI extreme penalty
+  const rsi_penalty=(rsiForCalc>72||rsiForCalc<28)?10:0;
+
+  // Step 7: Range age penalty (from LP shift log)
+  const lpShifts=loadLPShifts();
+  const lastShiftDate=lpShifts.length>0?new Date(lpShifts[0].date):null;
+  const days_since_shift=lastShiftDate?Math.round((Date.now()-lastShiftDate.getTime())/86400000):0;
+  const age_penalty=Math.min(15,days_since_shift*0.5);
+
+  // Final durability score
+  const durability=Math.max(5,Math.round(raw_dur+macro_adj-edge_penalty-rsi_penalty-age_penalty));
+
+  // Shift trigger: durability low AND edge risk confirms (prevents false alarms)
+  const durabilityShiftNeeded=durability<60&&edge_risk<0.35;
+
+  // Labels
+  const lpConf=durability; // keep lpConf name for backward compat with display code
+  const lpConfLabel=durability>=75?'HIGH':durability>=60?'MEDIUM':durability>=45?'LOW':'CRITICAL';
+  const lpConfCol=durability>=75?'var(--green)':durability>=60?'var(--amber)':durability>=45?'var(--red)':'#7c3aed';
+  const lpConfBg=durability>=75?'var(--gl)':durability>=60?'var(--al)':durability>=45?'var(--rl)':'#f5f3ff';
+  const lpConfBorder=durability>=75?'var(--gb)':durability>=60?'var(--ab)':durability>=45?'var(--rb)':'#c4b5fd';
+
+  // Durability explanation
+  const durabilityReason=(()=>{
+    const parts=[];
+    parts.push(`Expected 2-wk move: $${expected_move.toFixed(2)} · Range width: $${range_width_val.toFixed(2)}`);
+    if(edge_risk<0.2)parts.push(`⚠️ Very close to ${px>=(userRangeLo+userRangeHi)/2?'top':'bottom'} exit ($${dist_to_edge.toFixed(2)} away)`);
+    else if(edge_risk<0.35)parts.push(`Near ${px>=(userRangeLo+userRangeHi)/2?'top':'bottom'} boundary ($${dist_to_edge.toFixed(2)} to exit)`);
+    if(trend_drift>0.1)parts.push(`Trend drift adds $${trend_drift.toFixed(2)} to expected move`);
+    if(age_penalty>2)parts.push(`Range ${days_since_shift}d old (+${age_penalty.toFixed(0)}pt age penalty)`);
+    if(rsi_penalty>0)parts.push(`RSI ${rsiForCalc} extreme`);
+    if(macro_adj<0)parts.push('BTC bearish macro risk');
+    return parts.join(' · ')||'Based on ATR, position and trend';
+  })();
+
   const rangeTooWide=a.range_too_wide===true||parseFloat(curWidthPct)>12||durabilityShiftNeeded;
 
   // Determine the single master instruction
@@ -1911,72 +1977,6 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const displayLo=userRangeLo;
   const displayHi=userRangeHi;
   const displayPin=Math.max(2,Math.min(98,displayPct));
-
-  // ── RANGE DURABILITY SCORE (v22 — replaces LP Confidence) ──
-  const daily_atr=window._liveTA?.atr||a.atr||0.47;
-  const ema20=window._liveTA?.ema20||a.ema20||0;
-  const liveRegimeForCalc=window._liveTA?.regime||a.regime||'ranging';
-  const rsiForCalc=window._liveTA?.rsi||a.rsi||50;
-  const btcTrendForCalc=window._liveBTC?.trend||a.btc_trend||'neutral';
-
-  // Step 1: Dynamic volatility multiplier
-  const atr_pct_raw=(daily_atr/px)*100;
-  const vol_mult=atr_pct_raw<3?1.3:atr_pct_raw<6?1.5:atr_pct_raw<9?1.7:2.0;
-
-  // Step 2: Expected 2-week move with trend drift
-  const atr_component=daily_atr*Math.sqrt(10)*vol_mult;
-  const trend_drift=(liveRegimeForCalc==='uptrend'||liveRegimeForCalc==='downtrend')
-    ?Math.abs(ema20-px)*1.5:0;
-  const expected_move=atr_component+trend_drift;
-
-  // Step 3: Nonlinear raw durability (exponential — more realistic than linear)
-  const range_width_val=userRangeHi-userRangeLo;
-  const raw_dur=expected_move>0
-    ?Math.min(95,100*(1-Math.exp(-range_width_val/expected_move))*1.4)
-    :60;
-
-  // Step 4: Edge risk (replaces centre penalty — asymmetric, more accurate)
-  const dist_to_edge=Math.min(px-userRangeLo,userRangeHi-px);
-  const edge_risk=expected_move>0?dist_to_edge/expected_move:0.5;
-  const edge_penalty=edge_risk>=0.6?0:edge_risk>=0.4?5:edge_risk>=0.2?10:20;
-
-  // Step 5: BTC macro adjustment
-  const macro_adj=btcTrendForCalc==='bearish'?-10:btcTrendForCalc==='bullish'?5:0;
-
-  // Step 6: RSI extreme penalty
-  const rsi_penalty=(rsiForCalc>72||rsiForCalc<28)?10:0;
-
-  // Step 7: Range age penalty (from LP shift log)
-  const lpShifts=loadLPShifts();
-  const lastShiftDate=lpShifts.length>0?new Date(lpShifts[0].date):null;
-  const days_since_shift=lastShiftDate?Math.round((Date.now()-lastShiftDate.getTime())/86400000):0;
-  const age_penalty=Math.min(15,days_since_shift*0.5);
-
-  // Final durability score
-  const durability=Math.max(5,Math.round(raw_dur+macro_adj-edge_penalty-rsi_penalty-age_penalty));
-
-  // Shift trigger: durability low AND edge risk confirms (prevents false alarms)
-  const durabilityShiftNeeded=durability<60&&edge_risk<0.35;
-
-  // Labels
-  const lpConf=durability; // keep lpConf name for backward compat with display code
-  const lpConfLabel=durability>=75?'HIGH':durability>=60?'MEDIUM':durability>=45?'LOW':'CRITICAL';
-  const lpConfCol=durability>=75?'var(--green)':durability>=60?'var(--amber)':durability>=45?'var(--red)':'#7c3aed';
-  const lpConfBg=durability>=75?'var(--gl)':durability>=60?'var(--al)':durability>=45?'var(--rl)':'#f5f3ff';
-  const lpConfBorder=durability>=75?'var(--gb)':durability>=60?'var(--ab)':durability>=45?'var(--rb)':'#c4b5fd';
-
-  // Durability explanation
-  const durabilityReason=(()=>{
-    const parts=[];
-    parts.push(`Expected 2-wk move: $${expected_move.toFixed(2)} · Range width: $${range_width_val.toFixed(2)}`);
-    if(edge_risk<0.2)parts.push(`⚠️ Very close to ${px>=(userRangeLo+userRangeHi)/2?'top':'bottom'} exit ($${dist_to_edge.toFixed(2)} away)`);
-    else if(edge_risk<0.35)parts.push(`Near ${px>=(userRangeLo+userRangeHi)/2?'top':'bottom'} boundary ($${dist_to_edge.toFixed(2)} to exit)`);
-    if(trend_drift>0.1)parts.push(`Trend drift adds $${trend_drift.toFixed(2)} to expected move`);
-    if(age_penalty>2)parts.push(`Range ${days_since_shift}d old (+${age_penalty.toFixed(0)}pt age penalty)`);
-    if(rsi_penalty>0)parts.push(`RSI ${rsiForCalc} extreme`);
-    if(macro_adj<0)parts.push('BTC bearish macro risk');
-    return parts.join(' · ')||'Based on ATR, position and trend';
-  })();
 
   const lpRegimeChange=a.lp_regime_change===true;
   // showShiftBtn: durability-driven + existing triggers
