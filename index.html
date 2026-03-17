@@ -149,6 +149,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .as-title{font-size:12px;font-weight:700;margin-bottom:1px}
 .as-body{font-size:11px;color:var(--ink3);line-height:1.4}
 .as-body code{font-family:'DM Mono',monospace;font-size:10px;background:var(--off2);border:1px solid var(--bd);padding:1px 5px;border-radius:3px;color:var(--blue)}
+/* SELF-LEARNING CARD */
+.learn-card{background:var(--w);border:1px solid var(--bd);border-radius:14px;margin-bottom:12px;overflow:hidden;box-shadow:var(--sh)}
+.learn-hdr{background:linear-gradient(135deg,#1e3a5f,#2563eb);padding:12px 14px;color:#fff}
+.learn-hdr-title{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:2px}
+.learn-hdr-sub{font-size:10px;opacity:.8}
+.learn-section{padding:12px 14px;border-bottom:1px solid var(--off3)}
+.learn-section:last-child{border-bottom:none}
+.learn-section-title{font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;color:var(--ink4);margin-bottom:8px}
+.learn-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--off3)}
+.learn-row:last-child{border-bottom:none}
+.learn-lbl{font-size:11px;color:var(--ink2)}
+.learn-val{font-family:'DM Mono',monospace;font-size:12px;font-weight:600}
+.learn-bar-wrap{margin-top:4px;height:4px;background:var(--off3);border-radius:2px;overflow:hidden}
+.learn-bar-fill{height:100%;border-radius:2px;transition:width .3s}
+.calibration-badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:9px;font-weight:800;letter-spacing:.5px}
+.cal-good{background:var(--gl);color:var(--green);border:1px solid var(--gb)}
+.cal-warn{background:var(--al);color:var(--amber);border:1px solid var(--ab)}
+.cal-bad{background:var(--rl);color:var(--red);border:1px solid var(--rb)}
+.learn-correction{padding:10px 12px;border-radius:9px;font-size:11px;line-height:1.6;margin-top:8px}
 /* LP SHIFT ADVICE */
 .lp-shift-btn{width:100%;background:var(--blue);border:none;border-radius:12px;padding:14px;font-size:14px;font-weight:700;color:#fff;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;transition:all .2s;box-shadow:0 3px 10px rgba(37,99,235,.3)}
 .lp-shift-btn:active{transform:scale(.98)}.lp-shift-btn.loading{background:#3b82f6;pointer-events:none}
@@ -327,7 +346,7 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div class="hdr-row">
       <div>
         <div class="hdr-title">AVAX <span>Advisor</span></div>
-        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v16</div>
+        <div class="hdr-sub">Blackhole LP · Hyperliquid · 5-Layer AI · v19</div>
       </div>
       <div class="clock" id="clock">--:--<br>SGT</div>
     </div>
@@ -622,6 +641,12 @@ canvas{display:block;width:100%!important;height:100%!important}
     <div id="j-perf-wrap" style="display:none">
       <div class="slbl">Trade Performance</div>
       <div class="card cp" id="j-perf"></div>
+    </div>
+
+    <!-- SELF-LEARNING CARD -->
+    <div id="j-learn-wrap" style="display:none">
+      <div class="slbl">Self-Learning Calibration</div>
+      <div id="j-learn"></div>
     </div>
 
     <div class="slbl">History</div>
@@ -1251,6 +1276,11 @@ async function runAnalysis(){
     recentTradeCtx=`${summary} → ${streak}`;
   }
 
+  const recentTradeCtx_final=recentTradeCtx;
+
+  // ── SELF-LEARNING CONTEXT ──
+  const learningCtx=buildLearningContext();
+
   const btn=$('abtn');
   btn.classList.add('loading');
   btn.innerHTML='<div class="spinner"></div><span>AI Analysing…</span>';
@@ -1279,6 +1309,7 @@ LIVE DATA (do not search for these)
 - OI change: ${_oiChange}
 - SGT session: ${_session}
 - Last 3 trades: ${recentTradeCtx}${personalStatsCtx}
+${learningCtx?`\n${learningCtx}`:''}
 
 LIVE TECHNICAL INDICATORS (calculated from Binance live candles — 0h old, do NOT search for these)
 ${_ta?`- RSI(14): ${liveRSI}
@@ -1337,48 +1368,91 @@ unclear: decision = "in_range"
 
 STEP 3 - LP ZONE CHECK (always when in_range)
 lp_pct = (price - range_low) / (range_high - range_low) x 100
+current_width_pct = (range_high - range_low) / price x 100
 
-LP NEAR-EXIT (lp_pct > 70 OR lp_pct < 30):
-  Check 1 - Momentum: price move >2% today in exit direction AND volume above avg? YES=strong / NO=weak
-  Check 2 - Signal: do trade layers produce 3/4+ signal in exit direction? YES=true / NO=false
-  Check 3 - New S/R range available? Find nearest support below and resistance above.
-    ATR minimum width = max(2.5 x ATR, 8% of price). If range too narrow, widen.
+HARD WIDTH CAP: New range must NEVER exceed ±10% of price (20% total width).
+MINIMUM WIDTH: max(2.5 × ATR_daily, 6% of price). Never go below this.
+TARGET WIDTH by regime:
+  ranging/normal: 7-9% total width (±3.5-4.5%)
+  trending: 9-12% total width (±4.5-6%)
+  choppy/high_vol: 12-16% total width (±6-8%) — still within ±10% cap
+  If optimal would exceed ±10%, cap at ±10% and note it
 
-  ALL 3 checks pass: lp_shift_recommended = true
-    lp_new_range_low = nearest support from search, lp_new_range_high = nearest resistance from search
-    
-    CALCULATE TOKEN AMOUNTS FOR SHIFT (use these exact formulas):
-    User has: ${avax} AVAX and $${usdc} USDC in LP. Current LP value ≈ $${lpVal.toFixed(0)}.
-    After removing LP from Blackhole, user receives approximately:
-      lp_shift_avax_receive = ${avax} AVAX (all AVAX in position)
-      lp_shift_usdc_receive = ${usdc} USDC (all USDC in position)
-    
-    For the new range, CL LP requires specific AVAX/USDC ratio at current price.
-    Use this formula for the new ratio:
-      price_ratio = (price - new_low) / (new_high - new_low)  [how far price is through new range]
-      target_usdc_pct = price_ratio  [USDC % of LP value at current price position]
-      target_avax_pct = 1 - price_ratio  [AVAX % of LP value]
-      new_lp_value = ${lpVal.toFixed(0)}
-      lp_shift_usdc_need = new_lp_value * target_usdc_pct
-      lp_shift_avax_need = (new_lp_value * target_avax_pct) / price
-    
-    Then calculate swap:
-      avax_delta = lp_shift_avax_need - lp_shift_avax_receive
-      usdc_delta = lp_shift_usdc_need - lp_shift_usdc_receive
-      If avax_delta > 0: need more AVAX → lp_shift_swap = "Sell $" + abs(usdc_delta).toFixed(0) + " USDC → buy " + avax_delta.toFixed(1) + " AVAX at ~$" + price
-      If avax_delta < 0: too much AVAX → lp_shift_swap = "Sell " + abs(avax_delta).toFixed(1) + " AVAX → get $" + abs(usdc_delta).toFixed(0) + " USDC at ~$" + price
-      If both within 5%: lp_shift_swap = "No swap needed — current token ratio works for new range"
-    
-  ANY check fails: lp_shift_recommended = false, lp_shift_reason = why holding
+RANGE WIDTH CHECK:
+  range_too_narrow = true if current_width_pct < 6% (likely to exit frequently)
+  range_too_wide = true if current_width_pct > 20% (APY too low — always flag this)
+  optimal_width_pct = 7 for ranging, 10 for trending, 14 for choppy (all within cap)
 
-REGIME WIDTH CHECK:
-  optimal_width_pct: consolidating+normal=7, trending=10, high_vol=15, bear=20
-  current_width_pct = (range_high - range_low) / price x 100
-  range_too_narrow = true if current_width_pct < optimal_width_pct x 0.7
+LP SHIFT TRIGGER — check BOTH conditions:
+Condition A — PRICE-BASED: lp_pct > 85 OR lp_pct < 15 (near exit)
+Condition B — TA-BASED: regime has CHANGED since range was set
+  e.g. was trending, now ranging → range centre needs to move
+  e.g. was ranging, now strong uptrend → shift range up
+  e.g. RSI > 70 in downtrend → likely reversal, shift range down
+
+lp_near_exit = true if Condition A is met
+lp_regime_change = true if Condition B is met (set this field in JSON)
+Evaluate shift if EITHER condition is true (not just both)
+
+LP SHIFT EVALUATION (2 of 3 checks must pass — not all 3):
+  Check 1 - Direction clear: regime + RSI + MACD all point same way? YES/NO
+  Check 2 - BTC confirms: BTC trend aligns with expected AVAX direction? YES/NO
+  Check 3 - TA-driven range available: can you calculate a valid range within ±10% cap? YES/NO
+
+  2 or 3 checks pass: lp_shift_recommended = true
+  0 or 1 check passes: lp_shift_recommended = false, lp_shift_reason = which checks failed and why
+
+NEW RANGE CALCULATION (when lp_shift_recommended = true):
+  Step 1 — Determine direction bias from TA:
+    uptrend: centre = price × 1.02 (shift range slightly up, room to run)
+    downtrend: centre = price × 0.98 (shift range slightly down, room to fall)
+    ranging: centre = price (balanced)
+    choppy: centre = price (balanced, wider range)
+
+  Step 2 — Set width from regime (within ±10% hard cap):
+    half_width = min(optimal_width_pct/2, 10) / 100 × price
+    lp_new_range_low = max(centre - half_width, price × 0.90) ← hard floor
+    lp_new_range_high = min(centre + half_width, price × 1.10) ← hard ceiling
+
+  Step 3 — Validate: price should be 30-60% through new range. If not, re-centre.
+
+  Step 4 — S/R check from web search: if key S/R level is within 1% of suggested boundary,
+    snap boundary to that level (better than arbitrary price). Still respect ±10% cap.
+
+  CALCULATE TOKEN AMOUNTS FOR SHIFT:
+  User has: ${avax} AVAX and $${usdc} USDC in LP. Current LP value ≈ $${lpVal.toFixed(0)}.
+  price_ratio = (price - new_low) / (new_high - new_low)
+  target_usdc_pct = price_ratio
+  target_avax_pct = 1 - price_ratio
+  lp_shift_usdc_need = ${lpVal.toFixed(0)} × target_usdc_pct
+  lp_shift_avax_need = (${lpVal.toFixed(0)} × target_avax_pct) / price
+  avax_delta = lp_shift_avax_need - ${avax}
+  If avax_delta > 0: lp_shift_swap = "Sell $X USDC → buy Y AVAX"
+  If avax_delta < 0: lp_shift_swap = "Sell Z AVAX → get $X USDC"
+  If within 5%: lp_shift_swap = "No swap needed"
+
+LP CONFIDENCE SCORE — score from 0-100, output as lp_confidence integer:
+Start at 40. Add points:
+  Regime is clear (uptrend/downtrend, not choppy): +20
+  RSI clearly supports direction (>55 for up, <45 for down): +10
+  BTC confirms direction: +15
+  MACD histogram confirms direction: +10
+  lp_pct between 20-80% (not near exit — stable): +5 (skip if shifting)
+  If shifting: new range within ±8% (tighter = more confident): +10
+  If shifting: 3/3 checks pass (not just 2/3): +10
+  0/3 recent LP exits (stable history): +5
+  ATR fits within new range (daily ATR < 30% of range width): +10
+
+lp_confidence thresholds:
+  ≥70: HIGH — shift is well-supported, act tonight
+  55-69: MEDIUM — shift is reasonable, good to proceed
+  <55: LOW — hold current range, not enough conviction to shift
+
+lp_confidence_reason: one sentence explaining the main factors
 
 40% DROP CHECK:
   lp_entry_approx = (range_low + range_high) / 2
-  drop_40pct = true if price < lp_entry_approx x 0.60
+  drop_40pct = true if price < lp_entry_approx × 0.60
 
 LAYER 1 - VOLATILITY FILTER
 atr_pct = ATR / price x 100
@@ -1396,7 +1470,7 @@ Price spiking without EMA structure: regime = "choppy" - entry_size = "mixed" (s
 LP zone sizing:
   regime aligns with LP zone direction: full size allowed
   LP zone mismatches regime: entry_size = "mixed"
-  LP upper half (lp_pct>50): long preferred. LP lower half: short preferred.
+  Note: LP position does NOT determine trade direction. TA determines direction. LP zone only affects size.
 
 LAYER 3 - MACRO FILTER
 HARD VETO (skip trade):
@@ -1485,19 +1559,19 @@ RETURN EXACTLY THIS JSON - nothing else:
   "lp_near_exit": false,
   "lp_exit_direction": "none",
   "lp_momentum": "neutral",
+  "lp_regime_change": false,
+  "lp_regime_change_reason": "",
   "lp_shift_recommended": false,
   "lp_shift_reason": "",
+  "lp_confidence": 62,
+  "lp_confidence_reason": "Ranging regime, RSI neutral, BTC supportive. Range well-centred.",
   "lp_new_range_low": 0,
   "lp_new_range_high": 0,
   "lp_new_range_reason": "",
-  "lp_shift_avax_receive": 0,
-  "lp_shift_usdc_receive": 0,
-  "lp_shift_avax_need": 0,
-  "lp_shift_usdc_need": 0,
-  "lp_shift_swap": "",
   "range_too_narrow": false,
-  "optimal_width_pct": 7,
-  "current_width_pct": 6.2,
+  "range_too_wide": false,
+  "optimal_width_pct": 8,
+  "current_width_pct": 9.8,
   "drop_40pct": false,
   "decision": "in_range",
   "decision_reason": "LP in range at 54%. Proceeding to trade layers.",
@@ -1568,7 +1642,7 @@ rebalance_down (LP exited bottom, ~100% AVAX ~${avax>0?avax:200} AVAX):
       },
       body:JSON.stringify({
         model:'claude-sonnet-4-20250514',
-        max_tokens:2000,
+        max_tokens:4000,
         tools:[{type:'web_search_20250305',name:'web_search'}],
         system:sys,
         messages:[{role:'user',content:'Search for current AVAX price and TA data right now. Run the decision tree based on my LP position. Return only the JSON.'}]
@@ -1655,62 +1729,54 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       dabWhy=openAction+(a.signal_why?'\n\n'+a.signal_why:'');
     }
   } else if(lpExited){
-    // LP out of range — this is the priority action
+    // LP actually exited range — must rebalance before trading
     dabClass='dab-lp';
-    const dir=a.rebal_direction==='up'?'UP':'DOWN';
-    dabCmd=`REBALANCE LP ${dir} — DO THIS FIRST`;
-    dabSub=a.rebal_reason||`LP exited range ${dir==='UP'?'top':'bottom'}. See calculator below.`;
-    dabWhy=`LP rebalance takes priority over any trade tonight. Complete the steps in the Rebalance Calculator below, then re-analyse before trading.`;
-  } else if(clientOverrideLPWarn){
-    // Client-side catch: user's actual range shows near-exit even if AI missed it
-    dabClass='dab-lp';
-    const distPct=userNearTop?userLpPct:(100-userLpPct);
-    dabCmd=`⚠️ LP NEAR ${userExitDir.toUpperCase()} EXIT — REVIEW RANGE FIRST`;
-    dabSub=`Price $${px.toFixed(2)} is ${distPct}% through your range ($${userRangeLo.toFixed(2)}–$${userRangeHi.toFixed(2)}) · Tap button below to get new range`;
-    dabWhy=`LP range action takes priority. At ${userLpPct}% through, ${userNearTop?'you hold mostly USDC and will exit if price rises above $'+userRangeHi.toFixed(2):'you hold mostly AVAX and will exit if price falls below $'+userRangeLo.toFixed(2)}. Get the new range recommendation first, then re-analyse for a trade signal.`;
+    const rebalDir=a.rebal_direction==='up'?'UP':'DOWN';
+    dabCmd=`REBALANCE LP ${rebalDir} — DO THIS FIRST`;
+    dabSub=a.rebal_reason||`LP exited range ${rebalDir==='UP'?'top':'bottom'}. See calculator below.`;
+    dabWhy=`LP has exited its range and is no longer earning. Rebalance first, then re-analyse for a trade signal.`;
   } else if(waitLP){
+    // LP decision tree says wait (falling, stabilising, BTC down)
     dabClass='dab-wait';
     dabCmd='WAIT — DO NOT ACT TONIGHT';
     dabSub=a.decision_reason||'LP conditions require patience.';
     dabWhy=a.signal_why||'Check again tomorrow. No LP action, no trade tonight.';
-  } else if(lpShift){
-    dabClass='dab-lp';
-    dabCmd='SHIFT LP RANGE TONIGHT';
-    dabSub=`Move to $${(a.lp_new_range_low||0).toFixed(2)} → $${(a.lp_new_range_high||0).toFixed(2)}`;
-    dabWhy=a.lp_shift_reason||'LP near range exit — shift now to avoid impermanent loss.';
   } else if(veto){
+    // Hard veto fired — only hard gates block a trade
     dabClass='dab-wait';
     dabCmd='NO TRADE — VETO FIRED';
     dabSub=a.veto_reason||'Hard gate condition triggered.';
     dabWhy=a.signal_why||'LP is running fine. No trade tonight.';
   } else if(sig==='long'||sig==='short'){
+    // ── TRADE SIGNAL — this is the primary output ──
+    // LP near-exit NEVER blocks a trade signal — it becomes an amber note below
     const isHalfSize=a.entry_size==='mixed';
-    // Downgrade to skip if near LP exit + confidence < 65% — LP conflict too high
-    if(userNearExit&&conf<65){
-      dabClass='dab-wait';
-      dabCmd=`SKIP TRADE — LP NEAR EXIT + LOW CONFIDENCE`;
-      dabSub=`${conf}% confidence + LP at ${userLpPct}% through range. Scroll down to shift range first.`;
-      dabWhy=`Signal is ${sig.toUpperCase()} at ${conf}% but your LP is near the ${userExitDir} exit. Opening a new trade while the LP needs attention is high risk. Shift your LP range first (button in LP Range section below), then re-analyse.`;
-    } else if(conf>=65&&!isHalfSize){
+    if(conf>=65&&!isHalfSize){
       dabClass='dab-go';
-      dabCmd=`PLACE ${sig.toUpperCase()} — $1,000 FULL SIZE`;
+      dabCmd=`PLACE ${sig.toUpperCase()} — FULL SIZE`;
       dabSub=`${conf}% confidence · Strong conditions · Entry $${(a.entry||px).toFixed(2)}`;
     } else if(conf>=55||isHalfSize){
       dabClass='dab-go-half';
-      dabCmd=`PLACE ${sig.toUpperCase()} — $500 HALF SIZE`;
+      dabCmd=`PLACE ${sig.toUpperCase()} — HALF SIZE`;
       dabSub=`${conf}% confidence · Mixed conditions · Entry $${(a.entry||px).toFixed(2)}`;
     } else {
       dabClass='dab-wait';
-      dabCmd=`SKIP TRADE — CONFIDENCE TOO LOW`;
-      dabSub=`${conf}% is below 55% threshold. Signal: ${sig.toUpperCase()}.`;
+      dabCmd=`WAIT — CONFIDENCE TOO LOW (${conf}%)`;
+      dabSub=`Signal: ${sig.toUpperCase()} · Need ≥55% to act. ${conf}% is not enough.`;
     }
-    dabShowLevels=conf>=55&&!(userNearExit&&conf<65);
+    dabShowLevels=conf>=55;
     dabWhy=a.signal_why||'';
   } else if(sig==='remove_lp'){
     dabClass='dab-wait';
     dabCmd='REMOVE LP — AVAX DOWN 40%+';
     dabSub='Do NOT rebalance. Remove LP entirely and hold AVAX.';
     dabWhy='Rebalancing here permanently destroys gains. See Trade Signal below for full steps.';
+  } else if(lpShift){
+    // AI recommended LP shift — only shown when no trade signal
+    dabClass='dab-lp';
+    dabCmd='SHIFT LP RANGE TONIGHT';
+    dabSub=`Move to $${(a.lp_new_range_low||0).toFixed(2)} → $${(a.lp_new_range_high||0).toFixed(2)}`;
+    dabWhy=a.lp_shift_reason||'LP near range exit — shift now to avoid impermanent loss.';
   } else {
     // wait signal
     dabClass='dab-wait';
@@ -1718,6 +1784,19 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
     dabSub=a.signal_why||'Signal conditions not met.';
     dabWhy=a.signal_why||'LP is running fine. Check again tomorrow.';
   }
+
+  // ── LP NEAR-EXIT NOTE (amber, informational only — never blocks trade) ──
+  // Shown below the main instruction when LP is near exit but trade signal is valid
+  const lpNearExitNote=(userNearExit&&(sig==='long'||sig==='short')&&conf>=55&&!lpExited&&!waitLP)
+    ?`<div style="margin-top:10px;padding:9px 12px;background:var(--al);border-radius:9px;border:1px solid var(--ab);font-size:11px;color:var(--amber)">
+        <b>⚠️ LP note:</b> Your LP is ${userLpPct}% through range (near ${userExitDir} exit).
+        ${userNearTop&&sig==='long'?'A rising price benefits this trade AND may exit your LP top — consider shifting range after placing trade.':''}
+        ${userNearTop&&sig==='short'?'A falling price benefits this trade and keeps LP in range.':''}
+        ${userNearBottom&&sig==='short'?'A falling price benefits this trade AND may exit your LP bottom — consider shifting range after placing trade.':''}
+        ${userNearBottom&&sig==='long'?'A rising price benefits this trade and keeps LP in range.':''}
+        <span style="font-weight:700"> Scroll to LP Range section to shift range.</span>
+      </div>`
+    :'';
 
   // Use user's actual notional if they have an open trade, otherwise use AI recommendation
   const openTrade=JSON.parse(localStorage.getItem('avax_open_trade')||'{}');
@@ -1741,6 +1820,7 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
       ${a.tp2?`<div style="font-size:11px;color:var(--ink3);margin-top:6px">TP2: $${a.tp2.toFixed(2)} · Close remaining 50% there</div>`:''}
       `:''}
       <div class="dab-why">${dabWhy}</div>
+      ${lpNearExitNote}
     </div>`;
 
   // ── 2. PRICE ──
@@ -1788,19 +1868,42 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const displayHi=userRangeHi;
   const displayPin=Math.max(2,Math.min(98,displayPct));
 
+  // ── LP CONFIDENCE ──
+  const lpConf=a.lp_confidence||0;
+  const lpConfLabel=lpConf>=70?'HIGH':lpConf>=55?'MEDIUM':'LOW';
+  const lpConfCol=lpConf>=70?'var(--green)':lpConf>=55?'var(--amber)':'var(--red)';
+  const lpConfBg=lpConf>=70?'var(--gl)':lpConf>=55?'var(--al)':'var(--rl)';
+  const lpConfBorder=lpConf>=70?'var(--gb)':lpConf>=55?'var(--ab)':'var(--rb)';
+  const lpRegimeChange=a.lp_regime_change===true;
+  const showShiftBtn=userNearExit||lpRegimeChange||a.lp_shift_recommended;
+  const curWidthPct=displayHi>displayLo&&px>0?((displayHi-displayLo)/px*100).toFixed(1):'—';
+  const widthWarning=parseFloat(curWidthPct)>20?'⚠️ Range too wide (>±10%) — APY will be very low. Tighten range.':parseFloat(curWidthPct)<6?'⚠️ Range too narrow — likely to exit frequently':'';
+
   $('r-range').innerHTML=`<div class="range-box">
     <div class="rh-top"><div class="rh-title">YOUR LP RANGE</div><span class="rh-mode ${modeC}">${modeL}</span></div>
     <div class="rh-nums">
       <div class="rn"><div class="rn-lbl">Low</div><div class="rn-val">$${displayLo.toFixed(2)}</div><div class="rn-sub">Your entry</div></div>
-      <div class="rn mid"><div class="rn-lbl">Mid</div><div class="rn-val">$${((displayLo+displayHi)/2).toFixed(2)}</div><div class="rn-sub">Width $${(displayHi-displayLo).toFixed(2)}</div></div>
+      <div class="rn mid"><div class="rn-lbl">Mid</div><div class="rn-val">$${((displayLo+displayHi)/2).toFixed(2)}</div><div class="rn-sub">±${(parseFloat(curWidthPct)/2).toFixed(1)}% · $${(displayHi-displayLo).toFixed(2)}</div></div>
       <div class="rn"><div class="rn-lbl">High</div><div class="rn-val">$${displayHi.toFixed(2)}</div><div class="rn-sub">Your exit</div></div>
     </div>
     <div class="rb-track"><div class="rb-pin" style="left:${displayPin}%"></div></div>
     <div class="rb-lbls"><span>$${displayLo.toFixed(2)}</span><span style="font-weight:${userNearExit?'700':'400'};color:${userNearExit?'var(--red)':'inherit'}">$${px.toFixed(2)} (${displayPct}%${userNearExit?' ⚠️':''})</span><span>$${displayHi.toFixed(2)}</span></div>
+    <div style="margin-top:10px;background:${lpConfBg};border:1px solid ${lpConfBorder};border-radius:10px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <div style="flex:1">
+        <div style="font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--ink4);margin-bottom:3px">LP Range Confidence</div>
+        <div style="font-size:11px;color:var(--ink2);line-height:1.5">${a.lp_confidence_reason||'Based on current TA and range position.'}</div>
+      </div>
+      <div style="text-align:center;flex-shrink:0">
+        <div style="font-family:'DM Mono',monospace;font-size:24px;font-weight:800;color:${lpConfCol};line-height:1">${lpConf}%</div>
+        <div style="font-size:9px;font-weight:800;color:${lpConfCol};letter-spacing:.5px">${lpConfLabel}</div>
+      </div>
+    </div>
+    ${widthWarning?`<div style="margin-top:8px;padding:7px 12px;background:var(--al);border-radius:8px;font-size:11px;font-weight:700;color:var(--amber)">${widthWarning}</div>`:''}
     ${userNearExit?`<div style="margin-top:8px;padding:8px 12px;background:var(--rl);border-radius:8px;font-size:11px;font-weight:700;color:var(--red)">⚠️ ${displayPct}% through range — near ${userExitDir} exit. LP will stop earning if price ${userNearTop?'rises above $'+displayHi.toFixed(2):'falls below $'+displayLo.toFixed(2)}.</div>`:''}
-    ${daysOut>0?`<div style="margin-top:8px;padding:7px 10px;background:${a.decision.includes('rebalance')?'var(--rl)':'var(--al)'};border-radius:7px;font-size:11px;color:${a.decision.includes('rebalance')?'var(--red)':'var(--amber)'}">LP has been out of range for <b>${daysOut} day${daysOut!==1?'s':''}</b>. ${a.decision.includes('rebalance')?'Rebalance required — see actions above.':'Continue waiting for stabilisation.'}</div>`:''}
-    <div class="rh-why">${(()=>{const reg=a.regime||'';if(reg==='uptrend')return'📈 <b>Uptrend</b> — LP selling AVAX into strength. Watch near-exit warning. Shift range or remove LP if breakout sustained above $12+.';if(reg==='downtrend')return'📉 <b>Downtrend</b> — LP accumulating AVAX as price falls. Aligns with long-term hold thesis.';if(reg==='ranging')return'↔️ <b>Ranging market</b> — optimal for LP. Price oscillation generates maximum BLACK emissions.';if(reg==='choppy')return'⚡ <b>Choppy</b> — LP earning but range exits likely. 72h rule active for rebalance decisions.';return'LP earning BLACK emissions. Monitor range nightly.';})()}</div>
-    ${userNearExit?`
+    ${lpRegimeChange&&!userNearExit?`<div style="margin-top:8px;padding:8px 12px;background:var(--al);border-radius:8px;font-size:11px;font-weight:700;color:var(--amber)">📊 Regime change: ${a.lp_regime_change_reason||'TA direction has shifted — consider adjusting range.'}</div>`:''}
+    ${daysOut>0?`<div style="margin-top:8px;padding:7px 10px;background:${a.decision.includes('rebalance')?'var(--rl)':'var(--al)'};border-radius:7px;font-size:11px;color:${a.decision.includes('rebalance')?'var(--red)':'var(--amber)'}">LP out of range for <b>${daysOut} day${daysOut!==1?'s':''}</b>. ${a.decision.includes('rebalance')?'Rebalance required — see actions above.':'Continue waiting for stabilisation.'}</div>`:''}
+    <div class="rh-why" style="margin-top:8px">${(()=>{const reg=a.regime||'';if(reg==='uptrend')return'📈 <b>Uptrend</b> — LP selling AVAX into strength. Watch near-exit warning.';if(reg==='downtrend')return'📉 <b>Downtrend</b> — LP accumulating AVAX as price falls.';if(reg==='ranging')return'↔️ <b>Ranging market</b> — optimal for LP. Price oscillation generates maximum BLACK emissions.';if(reg==='choppy')return'⚡ <b>Choppy</b> — LP earning but range exits likely.';return'LP earning BLACK emissions. Monitor range nightly.';})()}</div>
+    ${showShiftBtn?`
     <button class="lp-shift-btn" id="lp-shift-btn" onclick="runLPShiftAnalysis()">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="18" height="18"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
       Get New LP Range Recommendation
@@ -1965,19 +2068,13 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const cL=tc>=70?`${tc}% HIGH`:tc>=50?`${tc}% MED`:`${tc}% WAIT`;
   const tCls=td==='long'?'long':td==='short'?'short':'wait';
   const tDir=td==='long'?'▲ LONG':td==='short'?'▼ SHORT':'⏸ WAIT';
-  // Save LP range for next session
+  // Save LP range for next session + log shift if recommended
   if(a.range_low&&a.range_high){
     sessionStorage.setItem('avax_lp_range',JSON.stringify({lo:a.range_low,hi:a.range_high}));
-  }
-  const entryType=a.entry_type||'limit';
-  const entrySize=a.entry_size||'strong';
-  // Stage 1 sizing: strong=$1,000 notional, mixed=$500 notional
-  const tradeNotional=entrySize==='strong'?1000:500;
-  const tradeMargin=tradeNotional/2;
-  const tradeSz=(tradeNotional/px).toFixed(1);
-  // Save range for next session
-  if(a.range_low&&a.range_high){
-    sessionStorage.setItem('avax_lp_range',JSON.stringify({lo:a.range_low,hi:a.range_high}));
+    // Log shift for self-learning if Claude recommends it
+    if(a.lp_shift_recommended&&a.lp_new_range_low&&a.lp_new_range_high){
+      logLPShift(a.lp_new_range_low,a.lp_new_range_high,a.lp_confidence||0,a.regime||'',a.rsi||0,a.btc_trend||'','main-analysis');
+    }
   }
   $('r-trade').innerHTML=`<div class="trade-box ${tCls}">
     <div class="tb-head"><div class="tb-dir">${tDir}</div><div class="conf ${cC}">${cL}</div></div>
@@ -2155,6 +2252,270 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   setTimeout(()=>$('results').scrollIntoView({behavior:'smooth',block:'start'}),100);
 }
 
+// ── SELF-LEARNING SYSTEM ──
+
+// LP shift history key
+const LP_SHIFTS_KEY='avax_lp_shifts_v1';
+
+function loadLPShifts(){
+  try{return JSON.parse(localStorage.getItem(LP_SHIFTS_KEY))||[];}catch{return[];}
+}
+function saveLPShifts(d){try{localStorage.setItem(LP_SHIFTS_KEY,JSON.stringify(d));}catch{}}
+
+// Called when user confirms a range shift (new range saved)
+function logLPShift(newLo,newHi,lpConf,regime,rsi,btcTrend,triggerReason){
+  const shifts=loadLPShifts();
+  const px=_hl?.px||0;
+  shifts.unshift({
+    date:new Date().toISOString(),
+    old_lo:pv($('i_range_lo')?.value)||0,
+    old_hi:pv($('i_range_hi')?.value)||0,
+    new_lo:newLo,
+    new_hi:newHi,
+    lp_confidence:lpConf||0,
+    regime:regime||'',
+    rsi:rsi||0,
+    btc_trend:btcTrend||'',
+    price_at_shift:px,
+    trigger:triggerReason||'manual',
+    outcome:null,  // filled in later: 'good'|'early'|'late'
+    days_held:null // filled in when next shift logged
+  });
+  // Close out previous shift
+  if(shifts.length>1&&!shifts[1].days_held){
+    const prev=shifts[1];
+    const daysHeld=Math.round((Date.now()-new Date(prev.date).getTime())/86400000);
+    prev.days_held=daysHeld;
+    // Auto-assess outcome: held 14+ days = good, 7-13 = ok, <7 = early
+    prev.outcome=daysHeld>=14?'good':daysHeld>=7?'ok':'early';
+  }
+  saveLPShifts(shifts);
+}
+
+// Build the full learning context string for injection into system prompt
+function buildLearningContext(){
+  const j=loadJ();
+  const trades=j.filter(e=>e.trade&&['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType));
+  const shifts=loadLPShifts();
+  let ctx='';
+
+  // ── TRADE SIGNAL CALIBRATION ──
+  if(trades.length>=5){
+    // Group by confidence bands
+    const bands=[
+      {label:'Conf 70%+',  min:70, max:100},
+      {label:'Conf 55-69%',min:55, max:69},
+      {label:'Conf <55%',  min:0,  max:54}
+    ];
+    const calLines=[];
+    bands.forEach(b=>{
+      const grp=trades.filter(e=>(e.trade.confidence||0)>=b.min&&(e.trade.confidence||0)<=b.max);
+      if(grp.length<3)return;
+      const wins=grp.filter(e=>e.tradePnl>0).length;
+      const wr=Math.round(wins/grp.length*100);
+      const expected=b.min===70?70:b.min===55?62:45;
+      const diff=wr-expected;
+      const status=Math.abs(diff)<=10?'✅ calibrated':diff>10?'⬆️ outperforming':diff<-15?'⚠️ overconfident':'~ok';
+      calLines.push(`${b.label}: actual ${wr}% vs expected ~${expected}% (${grp.length} trades) ${status}`);
+    });
+
+    // Best and worst conditions
+    const condGroups={
+      'Uptrend regime':trades.filter(e=>e.trade.regime==='uptrend'),
+      'Downtrend regime':trades.filter(e=>e.trade.regime==='downtrend'),
+      'Ranging regime':trades.filter(e=>e.trade.regime==='ranging'),
+      'Choppy regime':trades.filter(e=>e.trade.regime==='choppy'),
+      'BTC bullish':trades.filter(e=>e.trade.btc_trend==='bullish'),
+      'BTC bearish':trades.filter(e=>e.trade.btc_trend==='bearish'),
+      'RSI 45-60':trades.filter(e=>e.trade.rsi>=45&&e.trade.rsi<=60),
+      'RSI >65':trades.filter(e=>e.trade.rsi>65),
+      'RSI <40':trades.filter(e=>e.trade.rsi<40),
+    };
+    const condResults=Object.entries(condGroups)
+      .filter(([,g])=>g.length>=3)
+      .map(([label,g])=>{const w=g.filter(e=>e.tradePnl>0).length;return{label,wr:Math.round(w/g.length*100),n:g.length};})
+      .sort((a,b)=>b.wr-a.wr);
+    const bestConds=condResults.filter(r=>r.wr>=65).map(r=>`${r.label}:${r.wr}%(${r.n})`);
+    const worstConds=condResults.filter(r=>r.wr<=40).map(r=>`${r.label}:${r.wr}%(${r.n})`);
+
+    // Confidence correction factor
+    const allWins=trades.filter(e=>e.tradePnl>0).length;
+    const overallWR=Math.round(allWins/trades.length*100);
+    const avgConf=Math.round(trades.reduce((s,e)=>s+(e.trade.confidence||0),0)/trades.length);
+    const confCorrection=overallWR-avgConf;
+
+    ctx+=`\nTRADE SIGNAL CALIBRATION (from ${trades.length} logged trades):
+- Overall win rate: ${overallWR}% (avg confidence was ${avgConf}% → correction factor: ${confCorrection>0?'+':''}${confCorrection}%)
+${calLines.map(l=>'- '+l).join('\n')}
+${bestConds.length?'- BEST conditions: '+bestConds.join(', '):''}
+${worstConds.length?'- AVOID conditions (low win rate): '+worstConds.join(', '):''}
+INSTRUCTION: When assigning confidence score tonight, apply the correction factor (${confCorrection>0?'+':''}${confCorrection}%) and weight conditions by user\'s personal win rates above.
+${worstConds.length?`INSTRUCTION: If tonight\'s conditions match AVOID list, reduce confidence by 10-15% extra.`:''}`;
+  }
+
+  // ── LP SHIFT CALIBRATION ──
+  const completedShifts=shifts.filter(s=>s.days_held!==null);
+  if(completedShifts.length>=2){
+    const goodShifts=completedShifts.filter(s=>s.outcome==='good');
+    const earlyShifts=completedShifts.filter(s=>s.outcome==='early');
+    const avgHeld=Math.round(completedShifts.reduce((s,x)=>s+(x.days_held||0),0)/completedShifts.length);
+    const highConfShifts=completedShifts.filter(s=>s.lp_confidence>=70);
+    const lowConfShifts=completedShifts.filter(s=>s.lp_confidence<70);
+    const highConfAvgHeld=highConfShifts.length?Math.round(highConfShifts.reduce((s,x)=>s+(x.days_held||0),0)/highConfShifts.length):null;
+    const lowConfAvgHeld=lowConfShifts.length?Math.round(lowConfShifts.reduce((s,x)=>s+(x.days_held||0),0)/lowConfShifts.length):null;
+
+    ctx+=`\nLP RANGE SHIFT CALIBRATION (from ${completedShifts.length} completed shifts):
+- Average range held: ${avgHeld} days
+- Good shifts (14+ days): ${goodShifts.length}/${completedShifts.length}
+- Early shifts (<7 days): ${earlyShifts.length}/${completedShifts.length}
+${highConfAvgHeld!==null?`- High confidence (70%+) shifts held avg ${highConfAvgHeld} days`:''}
+${lowConfAvgHeld!==null?`- Lower confidence (<70%) shifts held avg ${lowConfAvgHeld} days`:''}
+INSTRUCTION: When calculating lp_confidence tonight, ${earlyShifts.length>goodShifts.length?'user shifts too early — raise threshold, be more conservative about recommending shift':'high-confidence shifts perform well — trust the signal'}.`;
+  }
+
+  return ctx.trim();
+}
+
+// ── RENDER LEARNING CARD ──
+function renderLearning(){
+  const wrap=$('j-learn-wrap');
+  const card=$('j-learn');
+  if(!wrap||!card)return;
+
+  const j=loadJ();
+  const trades=j.filter(e=>e.trade&&['trade_tp1','trade_tp2','trade_sl'].includes(e.evtType));
+  const shifts=loadLPShifts();
+  const completedShifts=shifts.filter(s=>s.days_held!==null);
+
+  if(trades.length<5&&completedShifts.length<2){
+    wrap.style.display='block';
+    card.innerHTML=`<div class="learn-card">
+      <div class="learn-hdr">
+        <div class="learn-hdr-title">🧠 Self-Learning Calibration</div>
+        <div class="learn-hdr-sub">Needs 5+ trades and 2+ LP shifts to activate</div>
+      </div>
+      <div class="learn-section">
+        <div style="text-align:center;padding:10px 0">
+          <div style="font-size:28px;margin-bottom:8px">📊</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:4px">Building your baseline</div>
+          <div style="font-size:11px;color:var(--ink4);line-height:1.6">You have <b>${trades.length}/5</b> trades and <b>${completedShifts.length}/2</b> LP shifts logged.<br>Keep logging nightly — calibration activates automatically.</div>
+        </div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  wrap.style.display='block';
+
+  // Trade calibration section
+  let tradeSection='';
+  if(trades.length>=5){
+    const allWins=trades.filter(e=>e.tradePnl>0).length;
+    const overallWR=Math.round(allWins/trades.length*100);
+    const avgConf=Math.round(trades.reduce((s,e)=>s+(e.trade.confidence||0),0)/trades.length);
+    const confCorrection=overallWR-avgConf;
+    const corrClass=Math.abs(confCorrection)<=10?'cal-good':confCorrection<-10?'cal-warn':'cal-good';
+    const corrLabel=Math.abs(confCorrection)<=10?'CALIBRATED':confCorrection<-15?'OVERCONFIDENT':confCorrection>10?'UNDERCONFIDENT':'~OK';
+
+    const bands=[{l:'70%+ conf',min:70,max:100,exp:70},{l:'55-69% conf',min:55,max:69,exp:62},{l:'<55% conf',min:0,max:54,exp:45}];
+    const bandRows=bands.map(b=>{
+      const g=trades.filter(e=>(e.trade.confidence||0)>=b.min&&(e.trade.confidence||0)<=b.max);
+      if(g.length<2)return'';
+      const w=g.filter(e=>e.tradePnl>0).length;
+      const wr=Math.round(w/g.length*100);
+      const col=wr>=55?'var(--green)':wr>=45?'var(--amber)':'var(--red)';
+      return`<div class="learn-row">
+        <div><div class="learn-lbl">${b.l}</div><div class="learn-bar-wrap"><div class="learn-bar-fill" style="width:${wr}%;background:${col}"></div></div></div>
+        <div style="text-align:right"><div class="learn-val" style="color:${col}">${wr}%</div><div style="font-size:9px;color:var(--ink4)">${g.length} trades</div></div>
+      </div>`;
+    }).join('');
+
+    const condGroups={
+      'Uptrend':trades.filter(e=>e.trade.regime==='uptrend'),
+      'Downtrend':trades.filter(e=>e.trade.regime==='downtrend'),
+      'Ranging':trades.filter(e=>e.trade.regime==='ranging'),
+      'Choppy':trades.filter(e=>e.trade.regime==='choppy'),
+      'BTC bullish':trades.filter(e=>e.trade.btc_trend==='bullish'),
+      'BTC bearish':trades.filter(e=>e.trade.btc_trend==='bearish'),
+      'RSI 45-60':trades.filter(e=>e.trade.rsi>=45&&e.trade.rsi<=60),
+      'RSI >65':trades.filter(e=>e.trade.rsi>65),
+    };
+    const condResults=Object.entries(condGroups)
+      .filter(([,g])=>g.length>=3)
+      .map(([label,g])=>{const w=g.filter(e=>e.tradePnl>0).length;return{label,wr:Math.round(w/g.length*100),n:g.length};})
+      .sort((a,b)=>b.wr-a.wr);
+    const bestConds=condResults.filter(r=>r.wr>=65);
+    const worstConds=condResults.filter(r=>r.wr<=40);
+
+    tradeSection=`
+      <div class="learn-section">
+        <div class="learn-section-title">📈 Trade Signal Calibration</div>
+        <div class="learn-row">
+          <div><div class="learn-lbl">Overall win rate</div><div style="font-size:9px;color:var(--ink4)">Avg confidence was ${avgConf}%</div></div>
+          <div style="text-align:right"><div class="learn-val" style="color:${overallWR>=55?'var(--green)':overallWR>=45?'var(--amber)':'var(--red)'}">${overallWR}%</div><div style="font-size:9px;color:var(--ink4)">${trades.length} trades</div></div>
+        </div>
+        ${bandRows}
+        <div class="learn-correction" style="background:var(--off);margin-top:8px">
+          <b>Confidence correction:</b> <span class="calibration-badge ${corrClass}">${confCorrection>0?'+':''}${confCorrection}% ${corrLabel}</span>
+          <div style="font-size:10px;color:var(--ink3);margin-top:4px">Applied to every analysis automatically. ${Math.abs(confCorrection)<=10?'Claude\'s signals are well calibrated for you.':confCorrection<-10?'Claude is overconfident — scores are adjusted down.':'Claude is conservative — scores are adjusted up.'}</div>
+        </div>
+      </div>
+      ${bestConds.length||worstConds.length?`<div class="learn-section">
+        <div class="learn-section-title">🎯 Your Personal Edge</div>
+        ${bestConds.length?`<div style="margin-bottom:8px"><div style="font-size:10px;font-weight:700;color:var(--green);margin-bottom:4px">✅ Best conditions (trade with confidence)</div>${bestConds.map(r=>`<div style="font-size:11px;color:var(--ink2);padding:3px 0">${r.label}: <b style="color:var(--green)">${r.wr}%</b> win rate (${r.n} trades)</div>`).join('')}</div>`:''}
+        ${worstConds.length?`<div><div style="font-size:10px;font-weight:700;color:var(--red);margin-bottom:4px">❌ Avoid these conditions</div>${worstConds.map(r=>`<div style="font-size:11px;color:var(--ink2);padding:3px 0">${r.label}: <b style="color:var(--red)">${r.wr}%</b> win rate (${r.n} trades)</div>`).join('')}</div>`:''}
+      </div>`:''}`;
+  }
+
+  // LP shift calibration section
+  let lpSection='';
+  if(completedShifts.length>=2){
+    const goodShifts=completedShifts.filter(s=>s.outcome==='good');
+    const earlyShifts=completedShifts.filter(s=>s.outcome==='early');
+    const avgHeld=Math.round(completedShifts.reduce((s,x)=>s+(x.days_held||0),0)/completedShifts.length);
+    const highConf=completedShifts.filter(s=>s.lp_confidence>=70);
+    const lowConf=completedShifts.filter(s=>s.lp_confidence<70);
+    const hcAvg=highConf.length?Math.round(highConf.reduce((s,x)=>s+(x.days_held||0),0)/highConf.length):null;
+    const lcAvg=lowConf.length?Math.round(lowConf.reduce((s,x)=>s+(x.days_held||0),0)/lowConf.length):null;
+    const shiftAccuracy=Math.round(goodShifts.length/completedShifts.length*100);
+
+    lpSection=`
+      <div class="learn-section">
+        <div class="learn-section-title">📐 LP Range Shift Calibration</div>
+        <div class="learn-row">
+          <div class="learn-lbl">Shift accuracy (held 14+ days)</div>
+          <div class="learn-val" style="color:${shiftAccuracy>=60?'var(--green)':shiftAccuracy>=40?'var(--amber)':'var(--red)'}">${shiftAccuracy}%</div>
+        </div>
+        <div class="learn-row">
+          <div class="learn-lbl">Avg days range held</div>
+          <div class="learn-val">${avgHeld}d</div>
+        </div>
+        <div class="learn-row">
+          <div class="learn-lbl">Good shifts / Early shifts</div>
+          <div class="learn-val">${goodShifts.length} good · ${earlyShifts.length} early</div>
+        </div>
+        ${hcAvg!==null?`<div class="learn-row"><div class="learn-lbl">High conf (70%+) shifts</div><div class="learn-val" style="color:var(--green)">${hcAvg}d avg</div></div>`:''}
+        ${lcAvg!==null?`<div class="learn-row"><div class="learn-lbl">Lower conf (<70%) shifts</div><div class="learn-val" style="color:${lcAvg>=10?'var(--amber)':'var(--red)'}">${lcAvg}d avg</div></div>`:''}
+        <div class="learn-correction" style="background:var(--off);margin-top:8px">
+          <b>LP shift verdict:</b> ${earlyShifts.length>goodShifts.length?'<span class="calibration-badge cal-warn">SHIFTING TOO EARLY</span> — system will raise the confidence threshold for shift recommendations.':'<span class="calibration-badge cal-good">WELL TIMED</span> — shift signals are working. Keep logging.'}
+          <div style="font-size:10px;color:var(--ink3);margin-top:4px">Applied to LP analysis automatically every night.</div>
+        </div>
+      </div>`;
+  }
+
+  card.innerHTML=`<div class="learn-card">
+    <div class="learn-hdr">
+      <div class="learn-hdr-title">🧠 Self-Learning Calibration</div>
+      <div class="learn-hdr-sub">Updated from your journal · Applied to every analysis</div>
+    </div>
+    ${tradeSection}
+    ${lpSection}
+    <div class="learn-section">
+      <div style="font-size:10px;color:var(--ink4);line-height:1.6;text-align:center">Keep logging every trade close and LP shift. The more data, the more personalised the advice.</div>
+    </div>
+  </div>`;
+}
+
 // ── JOURNAL ──
 const loadJ=()=>{try{return JSON.parse(localStorage.getItem(SK))||[];}catch{return[];}};
 const saveJ=d=>{try{localStorage.setItem(SK,JSON.stringify(d));}catch{}};
@@ -2284,6 +2645,7 @@ function renderJ(){
   // Render trade performance card
   renderPerf(d);
   renderStats(d);
+  renderLearning();
 
   if(d.length>=2){
     const lbs=d.map(e=>e.date.slice(5,10)).reverse();
@@ -2616,13 +2978,32 @@ SEARCH: "AVAX support resistance levels today key price levels technical analysi
 Extract: nearest support below current price, nearest resistance above, any key S/R clusters
 
 Then calculate the optimal new LP range using these rules:
-1. Anchor low to nearest strong support below current price
-2. Anchor high to nearest strong resistance above current price  
-3. Minimum width = 2.5 × ATR daily (or 8% of price, whichever is larger)
-4. In ranging regime: use tighter range (8-12% width)
-5. In trending/volatile regime: use wider range (12-20% width)
-6. Centre the range slightly above current price if uptrend, slightly below if downtrend
-7. Range must capture current price comfortably (price should be 30-60% through new range after shift)
+HARD CAP: Total range width must NEVER exceed 20% of price (±10%). This is absolute.
+MINIMUM: Total width must be at least max(2.5×ATR_daily, 6%) to avoid frequent exits.
+
+1. Determine direction bias from regime:
+   uptrend → centre = price × 1.02 (shift slightly up)
+   downtrend → centre = price × 0.98 (shift slightly down)
+   ranging/choppy → centre = price (balanced)
+
+2. Set width from regime (within ±10% hard cap):
+   ranging: 7-9% total width
+   trending: 9-12% total width
+   choppy/high_vol: 12-16% total width (cap at 20% absolute max)
+
+3. Calculate boundaries:
+   half_width = min(chosen_width/2, 10%) × price
+   new_low = centre - half_width (floor: never below price × 0.90)
+   new_high = centre + half_width (ceiling: never above price × 1.10)
+
+4. S/R snap: if a key S/R level is within 1% of a boundary, snap to it (still respect ±10% cap)
+
+5. Validate: price should land at 30-60% through new range. If not, re-centre.
+
+6. Calculate LP confidence score (0-100):
+   Start 40. Add: clear regime +20, RSI confirms direction +10, BTC confirms +15,
+   MACD confirms +10, new range within ±8% (tighter) +10, 3/3 checks pass +10.
+   Output as lp_confidence. Reason in lp_confidence_reason.
 
 Return ONLY this JSON (no other text):
 {
@@ -2637,6 +3018,8 @@ Return ONLY this JSON (no other text):
   "regime_context": "Ranging — tighter range optimal for BLACK emissions",
   "shift_urgency": "tonight",
   "shift_urgency_reason": "Price at 91% through current range, exit imminent",
+  "lp_confidence": 74,
+  "lp_confidence_reason": "Clear ranging regime, RSI neutral at 52, BTC supportive. New range ±8% within cap.",
   "avax_composition_after": 50,
   "estimated_weekly_black_usd": 45,
   "steps": [
@@ -2736,6 +3119,17 @@ Return ONLY this JSON (no other text):
     // Auto-update the range inputs with the recommendation
     if(r.new_range_low&&$('i_range_lo'))$('i_range_lo').value=r.new_range_low.toFixed(2);
     if(r.new_range_high&&$('i_range_hi'))$('i_range_hi').value=r.new_range_high.toFixed(2);
+    // Log LP shift for self-learning
+    if(r.new_range_low&&r.new_range_high){
+      logLPShift(
+        r.new_range_low, r.new_range_high,
+        r.lp_confidence||0,
+        window._liveTA?.regime||'',
+        window._liveTA?.rsi||0,
+        window._liveBTC?.trend||'',
+        'mini-analysis'
+      );
+    }
     // Save to storage
     if(r.new_range_low&&r.new_range_high){
       const newRange={lo:r.new_range_low,hi:r.new_range_high};
