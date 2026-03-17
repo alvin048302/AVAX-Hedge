@@ -1899,11 +1899,22 @@ HYPERLIQUID LIMIT ORDER INSTRUCTIONS (always output when signal is long/short):
   Output as three specific order lines the user can copy directly.
 
 CONFIDENCE
-Start 40. Add: regime aligns LP zone +15, 4h+daily aligned +15, BTC strongly supporting +15 (neutral +5),
-OI rising +8, normal vol +5, 3/3 recent wins +8 (2/3 +3, 1/3 -5), US session +5, entry at key S/R +10.
-confidence = confidence at optimal_entry (not current price)
-confidence_now = confidence at current price (for comparison display)
-≥72=HIGH (trade), 70-71=MED (limit/half only), <70=WAIT (backtest shows negative EV below 70)
+Start 50 (baseline for any signal passing vol + regime filters — raised from 40 to reflect that filtered signals already have baseline quality).
+Add points:
+  4h MACD aligns with daily MACD: +15 (timeframe confirmation — most important factor)
+  4h RSI confirms direction (long: >50, short: <50): +8
+  BTC strongly confirming: +12 (BTC neutral: +4, BTC contradicting: -8)
+  ETH confirms when BTC neutral: +5
+  Daily MACD histogram expanding: +8
+  OI supports direction: +6
+  Entry at key candle S/R level: +10
+  Volume ratio > 1.2 (above average): +5
+  US session (9pm-2am SGT): +4
+  Win streak: 3/3 recent +6, 2/3 +2, 1/3 or worse -5
+Maximum possible: 95. Cap at 95.
+confidence = score at optimal_entry price
+confidence_now = score at current price
+≥72=HIGH (trade, ~3-4/month), 70-71=MED (half size limit only), <70=WAIT
 
 RETURN EXACTLY THIS JSON - nothing else:
 {
