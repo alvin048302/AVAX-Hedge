@@ -1374,18 +1374,18 @@ lp_pct = (price - range_low) / (range_high - range_low) x 100
 current_width_pct = (range_high - range_low) / price x 100
 
 HARD WIDTH CAP: New range must NEVER exceed ±10% of price (20% total width).
-MINIMUM WIDTH: max(2.5 × ATR_daily, 6% of price). Never go below this.
+MINIMUM WIDTH: max(2.5 × ATR_daily, 7% of price). Never go below this.
 TARGET WIDTH by regime:
   ranging/normal: 7-9% total width (±3.5-4.5%)
   trending: 9-12% total width (±4.5-6%)
-  choppy/high_vol: 12-16% total width (±6-8%) — still within ±10% cap
+  choppy/high_vol: 12-16% total width (±6-8%) — cap at 16% — still within ±10% cap
   If optimal would exceed ±10%, cap at ±10% and note it
 
 RANGE WIDTH CHECK:
-  range_too_narrow = true if current_width_pct < 6% (likely to exit frequently)
+  range_too_narrow = true if current_width_pct < 7% (likely to exit frequently)
   range_too_wide = true if current_width_pct > 16% (exceeds ±8% soft cap — APY too low)
   range_critically_wide = true if current_width_pct > 20% (exceeds ±10% hard cap)
-  optimal_width_pct = 8 for ranging, 10 for trending, 14 for choppy (all within cap)
+  optimal_width_pct = 9 for ranging, 10 for trending, 14 for choppy (all within cap)
   If range_too_wide = true: recommend tightening in lp_shift_reason even if not near exit
 
 LP SHIFT TRIGGER — check BOTH conditions:
@@ -1823,8 +1823,8 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   // ── RANGE TOO WIDE NOTE ──
   const rangeTooWideNote=rangeTooWide&&!lpExited
     ?`<div style="margin-top:10px;padding:9px 12px;background:var(--al);border-radius:9px;border:1px solid var(--ab);font-size:11px;color:var(--amber)">
-        <b>⚠️ LP range too wide (${curWidthPct}% total / ±${(parseFloat(curWidthPct)/2).toFixed(1)}%).</b> Your APY is reduced. Target is ±7-8% for ranging market.
-        Tap <b>Get New LP Range Recommendation</b> in the LP Range section below to get the optimal tighter range.
+        <b>⚠️ LP range too wide (${curWidthPct}% / ±${(parseFloat(curWidthPct)/2).toFixed(1)}%).</b> Optimal for ranging market is ±4.5-6% (9-12% total). Your APY is lower than it should be.
+        Tap <b>Get New LP Range Recommendation</b> in the LP Range section below to tighten it.
       </div>`
     :'';
 
@@ -1909,11 +1909,11 @@ function render(a,apy,avax,usdc,dir,pe,upnl,isHalf,lpVal,daysOut,hedgeStatus){
   const showShiftBtn=userNearExit||lpRegimeChange||a.lp_shift_recommended||rangeTooWide;
   const curWidthPct=displayHi>displayLo&&px>0?((displayHi-displayLo)/px*100).toFixed(1):'—';
   const widthWarning=parseFloat(curWidthPct)>20
-    ?'🔴 Range too wide ('+curWidthPct+'% total, ±'+( parseFloat(curWidthPct)/2).toFixed(1)+'%) — APY extremely low. Tighten to ±7-8% immediately.'
+    ?'🔴 Range critically wide ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — exceeds ±10% hard cap. Tighten to ±7-8% immediately.'
     :parseFloat(curWidthPct)>16
-    ?'⚠️ Range too wide ('+curWidthPct+'% total, ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — exceeds ±8% recommended max. APY is reduced. Consider tightening.'
-    :parseFloat(curWidthPct)<6
-    ?'⚠️ Range too narrow — likely to exit frequently'
+    ?'⚠️ Range too wide ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — APY reduced. Optimal is ±4.5-6% for this regime. Use the button below to get a tighter range.'
+    :parseFloat(curWidthPct)<7
+    ?'⚠️ Range too narrow ('+curWidthPct+'% / ±'+(parseFloat(curWidthPct)/2).toFixed(1)+'%) — likely to exit frequently. Widen slightly.'
     :'';
 
   $('r-range').innerHTML=`<div class="range-box">
@@ -3016,7 +3016,7 @@ Extract: nearest support below current price, nearest resistance above, any key 
 
 Then calculate the optimal new LP range using these rules:
 HARD CAP: Total range width must NEVER exceed 20% of price (±10%). This is absolute.
-MINIMUM: Total width must be at least max(2.5×ATR_daily, 6%) to avoid frequent exits.
+MINIMUM: Total width must be at least max(2.5×ATR_daily, 7%) to avoid frequent exits.
 
 1. Determine direction bias from regime:
    uptrend → centre = price × 1.02 (shift slightly up)
