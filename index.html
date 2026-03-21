@@ -247,6 +247,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     <span class="pt">LP Position</span>
     <span id="lp-source" style="font-size:10px;color:var(--faint)">—</span>
   </div>
+  <div id="rpc-fail-banner" class="alert alert-a" style="display:none;margin-bottom:10px"></div>
   <div class="rb-wrap">
     <div class="rb-labels">
       <span id="rb-low">$—</span>
@@ -409,7 +410,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
 <script>
 // ── Constants ────────────────────────────────────────────────────────────────
 const POSITION_MANAGER = '0x0B4478e810D48B5882D4019D435A2f864Bab4F39';
-const AVAX_RPC = 'https://api.avax.network/ext/bc/C/rpc';
+const AVAX_RPCS = ['https://avalanche-c-chain-rpc.publicnode.com','https://rpc.ankr.com/avalanche','https://1rpc.io/avax/c','https://api.avax.network/ext/bc/C/rpc'];
 const HL_API = 'https://api.hyperliquid.xyz/info';
 const BINANCE_API = 'https://api.binance.com/api/v3';
 const DEFILLAMA_API = 'https://yields.llama.fi/pools';
@@ -571,23 +572,35 @@ async function fetchHL(walletAddress) {
 
 async function fetchLPChain(tokenId) {
   if (!tokenId) return { ok: false, error: 'No token ID' };
-  try {
-    const tid = BigInt(tokenId).toString(16).padStart(64,'0');
-    const resp = await fetch(AVAX_RPC, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call',
-        params:[{ to: POSITION_MANAGER, data: '0x99fbab88' + tid }, 'latest'] })
-    });
-    const data = await resp.json();
-    if (!data.result || data.result==='0x' || data.result==='0x0') throw new Error('Position not found');
-    const hex = data.result.slice(2);
-    const slots = [];
-    for(let i=0;i<12;i++) slots.push(hex.slice(i*64,(i+1)*64));
-    const tickLower = decodeInt24(slots[5]);
-    const tickUpper = decodeInt24(slots[6]);
-    const liquidity = BigInt('0x'+slots[7]);
-    return { tickLower, tickUpper, liquidity, fetchTime: Date.now(), ok: true };
-  } catch(e) { return { ok: false, error: e.message }; }
+  const tid = BigInt(tokenId).toString(16).padStart(64,'0');
+  const calldata = '0x99fbab88' + tid;
+  // Try each RPC in order until one works (CORS varies by endpoint)
+  for (const rpc of AVAX_RPCS) {
+    try {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      const resp = await fetch(rpc, {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call',
+          params:[{ to: POSITION_MANAGER, data: calldata }, 'latest'] }),
+        signal: ctrl.signal
+      });
+      clearTimeout(timer);
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      if (!data.result || data.result==='0x' || data.result==='0x0') {
+        return { ok: false, error: 'Position not found — verify Token ID ' + tokenId };
+      }
+      const hex = data.result.slice(2);
+      const slots = [];
+      for(let i=0;i<12;i++) slots.push(hex.slice(i*64,(i+1)*64));
+      const tickLower = decodeInt24(slots[5]);
+      const tickUpper = decodeInt24(slots[6]);
+      const liquidity = BigInt('0x'+slots[7]);
+      return { tickLower, tickUpper, liquidity, rpc, fetchTime: Date.now(), ok: true };
+    } catch(e) { continue; }
+  }
+  return { ok: false, error: 'Chain read failed — enter LP values manually in Setup ↑' };
 }
 
 async function fetchAPY() {
@@ -628,6 +641,8 @@ function computeState() {
     rangeLow = tickToPrice(chain.tickLower);
     rangeHigh = tickToPrice(chain.tickUpper);
     source = 'on-chain';
+  } else if (state.lpChain?.error && (c.entryAvax || 0) === 0) {
+    source = 'rpc-failed';
   }
 
   const lpValue = avax * price + usdc;
@@ -856,7 +871,20 @@ function renderAll() {
   document.getElementById('refresh-time').textContent = 'Refreshed ' + new Date().toLocaleTimeString();
 
   // LP panel
-  document.getElementById('lp-source').textContent = c.source === 'on-chain' ? '⛓ On-chain' : '✏ Manual';
+  document.getElementById('lp-source').textContent =
+    c.source === 'on-chain' ? '⛓ On-chain' :
+    c.source === 'rpc-failed' ? '⚠ RPC failed — using manual' : '✏ Manual';
+
+  // Show RPC failure banner if on-chain read failed and no manual data
+  const rpBanner = document.getElementById('rpc-fail-banner');
+  if (rpBanner) {
+    if (c.source === 'rpc-failed') {
+      rpBanner.style.display = 'block';
+      rpBanner.innerHTML = '<b>⚠ On-chain read failed.</b> Enter your LP values manually in Setup — fill Entry AVAX, Entry USDC, Range Low, Range High, This Range Entry, then Save.';
+    } else {
+      rpBanner.style.display = 'none';
+    }
+  }
 
   // Range bar
   const rl = c.rangeLow, rh = c.rangeHigh, p = c.price;
