@@ -426,7 +426,7 @@ const HL_API = 'https://api.hyperliquid.xyz/info';
 const BINANCE_API = 'https://api.binance.com/api/v3';
 const DEFILLAMA_API = 'https://yields.llama.fi/pools';
 const TICK_SPACING = 10;
-const COOLDOWN_MS = 4 * 60 * 60 * 1000; // 4 hours
+const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes (increase to 4h once live)
 
 // ── Storage ───────────────────────────────────────────────────────────────────
 const S = {
@@ -839,13 +839,23 @@ function computeState() {
   let liqDistance = liqPx ? ((liqPx - price) / price * 100) : null;
 
   // Tier 1 recommendation (when no active hedge)
-  // T1 uses 50% of total margin at 1.5x leverage
+  // T1 uses 50% of total margin at 1.5x leverage — intentionally partial
+  // T1 alone = ~33% coverage; T1+T2 combined = ~55-65% coverage
   const tier1Active = t1.status === 'active';
   const t1RecPrice = rangeLow ? (rangeLow * 0.994) : null;
   const hlMargin = c.hlMargin || 1500;
-  const t1Margin = hlMargin * 0.5; // 50% of margin for Tier 1
+  const t1Margin = hlMargin * 0.5; // 50% of margin for Tier 1 ($750 of $1500)
   const t1RecSize = t1RecPrice ? Math.round(t1Margin * 1.5 / t1RecPrice) : null;
   const t1SL = rangeLow ? (rangeLow * 1.005) : null;
+  // T2 guidance (fires at 3% below T1, 2x leverage, remaining $750 margin)
+  const t2RecPrice = t1RecPrice ? t1RecPrice * 0.97 : null;
+  const t2Margin = hlMargin * 0.5;
+  const t2RecSize = t2RecPrice ? Math.round(t2Margin * 2.0 / t2RecPrice) : null;
+  // Combined coverage estimate at 10% further drop
+  const t1CoverageEst = t1RecSize && t1RecPrice && lpValue > 0
+    ? Math.round(t1RecSize * t1RecPrice * 0.10 / (lpValue * 0.10 * 0.85) * 100) : null;
+  const t2CoverageEst = t2RecSize && t2RecPrice && lpValue > 0
+    ? Math.round(t2RecSize * t2RecPrice * 0.10 / (lpValue * 0.10 * 0.85) * 100) : null;
 
   // P&L
   const capital = c.capital || 7000;
@@ -872,6 +882,7 @@ function computeState() {
     rangeLow, rangeHigh, apy, apySource, effectiveAPY, dailyYield, breakEvenAPY, baeColor,
     ilThisRange, t1, t2, t1pnl, t2pnl, fundingCost, netHedgePnl, coverage,
     liqPx, liqDistance, t1RecPrice, t1RecSize, t1SL, tier1Active,
+    t2RecPrice, t2RecSize, t1CoverageEst, t2CoverageEst,
     todayNet, totalEarned, totalHPnl, totalIL, allTimeNet, capitalEff,
     guardFloor, guardStatus, origEntry, capital, rebalMonth, status,
     change24h: bin?.change24h, closes: bin?.closes, high7d: bin?.high7d, low7d: bin?.low7d,
@@ -1058,7 +1069,8 @@ function renderAll() {
   if (!c.tier1Active && c.t1RecPrice) {
     t1rec.style.display = 'block';
     document.getElementById('t1-rec-text').innerHTML =
-      `Set on HL: <b>LIMIT SHORT ${c.t1RecSize} AVAX @ $${c.t1RecPrice?.toFixed(3)}</b> · 1.5x leverage · SL: $${c.t1SL?.toFixed(3)}`;
+      `Set on HL: <b>LIMIT SHORT ${c.t1RecSize} AVAX @ $${c.t1RecPrice?.toFixed(3)}</b> · 1.5x leverage · SL: $${c.t1SL?.toFixed(3)}` +
+      (c.t1CoverageEst ? `<br><span style="color:var(--muted);font-size:11px">T1 alone: ~${c.t1CoverageEst}% coverage · When triggered, manually add T2: SHORT ${c.t2RecSize} AVAX @ ~$${c.t2RecPrice?.toFixed(3)} (2x) · T1+T2 combined: ~${(c.t1CoverageEst||0)+(c.t2CoverageEst||0)}% coverage</span>` : '');
   } else { t1rec.style.display = 'none'; }
 
   // Hedge panel
