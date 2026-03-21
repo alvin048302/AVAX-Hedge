@@ -542,49 +542,84 @@ async function fetchBinance() {
 
 async function fetchHL(walletAddress) {
   try {
-    const results = await Promise.allSettled([
+    const calls = [
+      // Always fetch market data (mark price, funding)
       fetch(HL_API, { method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({type:'metaAndAssetCtxs'})}).then(r=>r.json()),
-      walletAddress ? fetch(HL_API, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({type:'clearinghouseState', user: walletAddress})}).then(r=>r.json())
-        : Promise.resolve(null)
-    ]);
+    ];
 
-    const ctxData = results[0].status==='fulfilled' ? results[0].value : null;
-    const posData = results[1].status==='fulfilled' ? results[1].value : null;
+    if (walletAddress) {
+      // Fetch filled positions AND open (pending) orders
+      calls.push(
+        fetch(HL_API, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({type:'clearinghouseState', user: walletAddress})}).then(r=>r.json()),
+        fetch(HL_API, { method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({type:'openOrders', user: walletAddress})}).then(r=>r.json())
+      );
+    } else {
+      calls.push(Promise.resolve(null), Promise.resolve(null));
+    }
 
-    let markPrice = null, fundingRate = null, positions = [];
+    const results = await Promise.allSettled(calls);
+    const ctxData  = results[0].status==='fulfilled' ? results[0].value : null;
+    const posData  = results[1].status==='fulfilled' ? results[1].value : null;
+    const ordData  = results[2].status==='fulfilled' ? results[2].value : null;
 
+    let markPrice = null, fundingRate = null;
+    let positions = [];   // filled/active shorts
+    let openOrders = [];  // pending limit orders (Tier 1 waiting)
+
+    // Market data
     if (ctxData && Array.isArray(ctxData) && ctxData[0] && ctxData[1]) {
       const meta = ctxData[0]; const ctxs = ctxData[1];
       const idx = meta.universe?.findIndex(a=>a.name==='AVAX') ?? -1;
       if (idx >= 0 && ctxs[idx]) {
         markPrice = parseFloat(ctxs[idx].markPx);
-        fundingRate = parseFloat(ctxs[idx].funding); // per hour
+        fundingRate = parseFloat(ctxs[idx].funding);
       }
     }
 
-    if (posData && posData.assetPositions) {
+    // Filled positions (active shorts)
+    if (posData?.assetPositions) {
       positions = posData.assetPositions
-        .filter(p=>p.position?.coin==='AVAX')
-        .map(p=>({
+        .filter(p => p.position?.coin === 'AVAX')
+        .map(p => ({
           szi: parseFloat(p.position.szi),
           entryPx: parseFloat(p.position.entryPx),
-          unrealizedPnl: parseFloat(p.position.unrealizedPnl||0),
+          unrealizedPnl: parseFloat(p.position.unrealizedPnl || 0),
           liquidationPx: p.position.liquidationPx ? parseFloat(p.position.liquidationPx) : null,
-          marginUsed: parseFloat(p.position.marginUsed||0),
+          marginUsed: parseFloat(p.position.marginUsed || 0),
           leverage: p.position.leverage?.value || null,
         }));
+    }
+
+    // Pending limit orders (Tier 1 / Tier 2 waiting)
+    if (Array.isArray(ordData)) {
+      openOrders = ordData
+        .filter(o => o.coin === 'AVAX' && o.side === 'A') // side A = ask = short
+        .map(o => ({
+          oid: o.oid,
+          limitPx: parseFloat(o.limitPx),
+          sz: parseFloat(o.sz),
+          origSz: parseFloat(o.origSz || o.sz),
+          orderType: o.orderType || 'Limit',
+          timestamp: o.timestamp,
+        }))
+        .sort((a, b) => b.limitPx - a.limitPx); // highest price first = T1
     }
 
     const hlDebug = {
       ctxReceived: !!ctxData,
       posReceived: !!posData,
+      ordReceived: !!ordData,
       posDataKeys: posData ? Object.keys(posData) : [],
       positionsCount: positions.length,
-      rawPosPreview: posData ? JSON.stringify(posData).slice(0,200) : 'null',
+      openOrdersCount: openOrders.length,
+      openOrdersPreview: openOrders.map(o => `SHORT ${o.sz} AVAX @ $${o.limitPx}`).join(', ') || 'none',
+      rawPosPreview: posData ? JSON.stringify(posData).slice(0, 150) : 'null',
     };
-    return { markPrice, fundingRate, positions, debug: hlDebug, fetchTime: Date.now(), ok: true };
+
+    return { markPrice, fundingRate, positions, openOrders, debug: hlDebug, fetchTime: Date.now(), ok: true };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
@@ -748,9 +783,9 @@ function computeState() {
   let t1 = { entry: c.t1Entry, size: c.t1Size, lev: c.t1Lev, status: c.t1Status || 'waiting' };
   let t2 = { entry: c.t2Entry, size: c.t2Size, lev: c.t2Lev, status: c.t2Status || 'none' };
 
-  // Override with HL data if available
-  if (hl?.ok && hl.positions?.length > 0) {
-    const shorts = hl.positions.filter(p => p.szi < 0);
+  if (hl?.ok) {
+    // Override with FILLED positions first (active shorts)
+    const shorts = (hl.positions || []).filter(p => p.szi < 0);
     if (shorts.length >= 1) {
       t1 = { ...t1, entry: shorts[0].entryPx, size: Math.abs(shorts[0].szi),
               lev: shorts[0].leverage, status: 'active',
@@ -760,6 +795,22 @@ function computeState() {
       t2 = { ...t2, entry: shorts[1].entryPx, size: Math.abs(shorts[1].szi),
               lev: shorts[1].leverage, status: 'active',
               pnl: shorts[1].unrealizedPnl };
+    }
+
+    // If no filled positions, check OPEN ORDERS (pending Tier 1 limit order)
+    if (shorts.length === 0 && hl.openOrders?.length > 0) {
+      const t1Order = hl.openOrders[0]; // highest limitPx = Tier 1 (closest to range)
+      t1 = { ...t1,
+              entry: t1Order.limitPx,
+              size: t1Order.sz,
+              status: 'waiting',
+              orderId: t1Order.oid };
+      // Second order = Tier 2 pre-set (if exists)
+      if (hl.openOrders.length >= 2) {
+        const t2Order = hl.openOrders[1];
+        t2 = { ...t2, entry: t2Order.limitPx, size: t2Order.sz,
+                status: 'waiting', orderId: t2Order.oid };
+      }
     }
   }
 
@@ -860,19 +911,23 @@ function runVerification() {
     }
   }
 
-  // Check 3: Hedge consistency
-  let hedgeCheck = { pass: null, msg: 'No hedge active' };
-  const cfg = state.config;
-  if (cfg.t1Status === 'active' && hl?.ok) {
-    const hasShort = hl.positions?.some(p => p.szi < 0);
-    hedgeCheck = hasShort
-      ? { pass: true, msg: 'Hedge confirmed on HL' }
-      : { pass: false, msg: 'Config says active but no short found on HL' };
-  } else if (cfg.t1Status === 'active' && !hl?.ok) {
-    hedgeCheck = { pass: null, msg: 'Could not verify (HL fetch failed)' };
-  } else if (cfg.t1Status === 'waiting') {
-    hedgeCheck = { pass: null, msg: 'Tier 1 limit order pending' };
+  // Check 3: Hedge consistency — check both filled positions AND open orders
+  let hedgeCheck = { pass: null, msg: 'No hedge set' };
+  if (hl?.ok) {
+    const hasActive = hl.positions?.some(p => p.szi < 0);
+    const hasPending = hl.openOrders?.length > 0;
+    if (hasActive) {
+      hedgeCheck = { pass: true, msg: `${hl.positions.filter(p=>p.szi<0).length} active short(s) confirmed on HL` };
+    } else if (hasPending) {
+      const orders = hl.openOrders.map(o => `SHORT ${o.sz} @ $${o.limitPx}`).join(', ');
+      hedgeCheck = { pass: true, msg: `T1 limit order set: ${orders}` };
+    } else {
+      hedgeCheck = { pass: null, msg: 'No hedge or pending orders found on HL' };
+    }
+  } else if (!hl?.ok) {
+    hedgeCheck = { pass: null, msg: `HL fetch failed: ${hl?.error || 'unknown error'}` };
   }
+  const cfg = state.config;
 
   // Check 4: APY freshness
   let apyCheck = { pass: null, msg: 'Manual APY' };
@@ -1319,14 +1374,20 @@ function renderDebug() {
 
   // Hyperliquid
   html += row('HL Mark Price:', hl?.ok ? `$${hl.markPrice?.toFixed(3)} ✅` : `FAILED: ${hl?.error}`, hl?.ok);
-  html += row('HL Positions:', hl?.ok ? `${hl.positions?.length || 0} found` : '—', hl?.ok ? hl.positions?.length > 0 : null);
+  const hlPosOk = hl?.ok ? (hl.positions?.length > 0 || hl.openOrders?.length > 0) : null;
+  html += row('HL Positions (filled):', hl?.ok ? `${hl.positions?.length || 0} active shorts` : '—', hl?.ok ? hl.positions?.length > 0 : null);
+  html += row('HL Open Orders:', hl?.ok ? `${hl.openOrders?.length || 0} pending` : '—', hl?.ok ? hl.openOrders?.length > 0 : null);
   if (hl?.debug) {
     html += row('  ctx received:', hl.debug.ctxReceived ? 'yes' : 'no', hl.debug.ctxReceived);
     html += row('  pos received:', hl.debug.posReceived ? 'yes' : 'no', hl.debug.posReceived);
-    html += row('  pos data keys:', hl.debug.posDataKeys?.join(', ') || 'none', null);
-    html += row('  AVAX positions:', hl.debug.positionsCount, hl.debug.positionsCount > 0);
-    if (hl.debug.rawPosPreview) {
-      html += `<div style="margin:4px 0 8px;padding:6px 8px;background:#f8fafc;border-radius:4px;word-break:break-all;color:#475569;font-size:10px">${hl.debug.rawPosPreview}</div>`;
+    html += row('  orders received:', hl.debug.ordReceived ? 'yes' : 'no', hl.debug.ordReceived);
+    html += row('  AVAX shorts (active):', hl.debug.positionsCount, null);
+    html += row('  AVAX shorts (pending):', hl.debug.openOrdersCount, hl.debug.openOrdersCount > 0);
+    if (hl.debug.openOrdersPreview && hl.debug.openOrdersPreview !== 'none') {
+      html += `<div style="margin:2px 0 8px;padding:6px 8px;background:#fffbeb;border-radius:4px;color:#92400e;font-size:11px">📋 ${hl.debug.openOrdersPreview}</div>`;
+    }
+    if (hl.debug.rawPosPreview && hl.debug.rawPosPreview !== 'null') {
+      html += `<div style="margin:2px 0 8px;padding:6px 8px;background:#f8fafc;border-radius:4px;word-break:break-all;color:#475569;font-size:10px">${hl.debug.rawPosPreview}</div>`;
     }
   }
 
