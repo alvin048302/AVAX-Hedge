@@ -154,6 +154,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
       <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
         <button class="btn btn-out btn-sm" onclick="refreshAll()"><span id="refresh-icon">↺</span> Refresh</button>
         <button class="btn btn-out btn-sm" onclick="toggleSetup()">⚙ Setup</button>
+        <button class="btn btn-out btn-sm" onclick="showDebug()" style="color:#94a3b8">🔧</button>
       </div>
     </div>
   </div>
@@ -405,6 +406,16 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   </div>
 </div>
 
+
+<!-- DEBUG PANEL -->
+<div id="debug-panel" class="panel" style="display:none">
+  <div class="ph">
+    <span class="pt">🔧 Debug Info</span>
+    <button class="btn btn-out btn-sm" onclick="document.getElementById('debug-panel').style.display='none'">✕</button>
+  </div>
+  <div id="debug-content" style="font-family:monospace;font-size:11px;line-height:1.8;color:#334155"></div>
+</div>
+
 </div><!-- /app -->
 
 <script>
@@ -566,7 +577,14 @@ async function fetchHL(walletAddress) {
         }));
     }
 
-    return { markPrice, fundingRate, positions, fetchTime: Date.now(), ok: true };
+    const hlDebug = {
+      ctxReceived: !!ctxData,
+      posReceived: !!posData,
+      posDataKeys: posData ? Object.keys(posData) : [],
+      positionsCount: positions.length,
+      rawPosPreview: posData ? JSON.stringify(posData).slice(0,200) : 'null',
+    };
+    return { markPrice, fundingRate, positions, debug: hlDebug, fetchTime: Date.now(), ok: true };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
@@ -683,7 +701,7 @@ function computeState() {
   let rangeHigh = c.rangeHigh || null;
   let source = 'manual';
 
-  if (chain?.ok && chain.liquidity > 0n) {
+  if (chain?.ok && chain.liquidity != null && chain.liquidity > 0n) {
     const sqrtX96 = priceToSqrtPriceX96(price);
     const amounts = getAmountsFromLiquidity(chain.liquidity, sqrtX96, chain.tickLower, chain.tickUpper);
     avax = amounts.avax;
@@ -691,7 +709,7 @@ function computeState() {
     rangeLow = tickToPrice(chain.tickLower);
     rangeHigh = tickToPrice(chain.tickUpper);
     source = 'on-chain';
-  } else if (state.lpChain?.error && (c.entryAvax || 0) === 0) {
+  } else if (!chain?.ok && (c.entryAvax || 0) === 0) {
     source = 'rpc-failed';
   }
 
@@ -1259,7 +1277,7 @@ async function refreshAll() {
 
   state.binance = bin;
   state.hl = hl;
-  state.lpChain = chain?.ok ? chain : null;
+  state.lpChain = chain;  // keep full result including errors for debugging
   state.apy = apy;
 
   computeState();
@@ -1272,6 +1290,81 @@ async function refreshAll() {
   const lastCall = S.get('lastAnalysis_time', 0);
   const remaining = Math.ceil((COOLDOWN_MS - (Date.now()-lastCall)) / 60000);
   if (remaining > 0 && remaining < 240) showCooldown(remaining);
+}
+
+
+// ── Debug ──────────────────────────────────────────────────────────────────────
+function showDebug() {
+  renderDebug();
+  document.getElementById('debug-panel').style.display = 'block';
+  document.getElementById('debug-panel').scrollIntoView({ behavior: 'smooth' });
+}
+
+function renderDebug() {
+  const bin = state.binance;
+  const hl = state.hl;
+  const chain = state.lpChain;
+  const apy = state.apy;
+  const cfg = state.config;
+
+  const row = (label, val, ok) => {
+    const color = ok === true ? '#16a34a' : ok === false ? '#dc2626' : '#64748b';
+    return `<div style="margin-bottom:4px"><span style="color:#94a3b8;width:160px;display:inline-block">${label}</span><span style="color:${color}">${val}</span></div>`;
+  };
+
+  let html = '<div style="margin-bottom:12px;font-weight:700;color:#0f172a">API Fetch Results</div>';
+
+  // Binance
+  html += row('Binance Price:', bin?.ok ? `$${bin.price?.toFixed(3)} ✅` : `FAILED: ${bin?.error}`, bin?.ok);
+
+  // Hyperliquid
+  html += row('HL Mark Price:', hl?.ok ? `$${hl.markPrice?.toFixed(3)} ✅` : `FAILED: ${hl?.error}`, hl?.ok);
+  html += row('HL Positions:', hl?.ok ? `${hl.positions?.length || 0} found` : '—', hl?.ok ? hl.positions?.length > 0 : null);
+  if (hl?.debug) {
+    html += row('  ctx received:', hl.debug.ctxReceived ? 'yes' : 'no', hl.debug.ctxReceived);
+    html += row('  pos received:', hl.debug.posReceived ? 'yes' : 'no', hl.debug.posReceived);
+    html += row('  pos data keys:', hl.debug.posDataKeys?.join(', ') || 'none', null);
+    html += row('  AVAX positions:', hl.debug.positionsCount, hl.debug.positionsCount > 0);
+    if (hl.debug.rawPosPreview) {
+      html += `<div style="margin:4px 0 8px;padding:6px 8px;background:#f8fafc;border-radius:4px;word-break:break-all;color:#475569;font-size:10px">${hl.debug.rawPosPreview}</div>`;
+    }
+  }
+
+  // LP Chain
+  html += row('LP Chain (Token ' + (cfg.tokenId||'—') + '):', chain?.ok ? `✅ via ${chain.rpc}` : `FAILED: ${chain?.error}`, chain?.ok);
+  if (chain?.ok) {
+    html += row('  tickLower:', chain.tickLower, null);
+    html += row('  tickUpper:', chain.tickUpper, null);
+    html += row('  liquidity:', chain.liquidity?.toString(), chain.liquidity > 0n);
+  }
+
+  // APY
+  html += row('DeFiLlama APY:', apy?.ok ? `${apy.apy?.toFixed(1)}% (TVL $${(apy.tvl/1000).toFixed(0)}k)` : `FAILED: ${apy?.error}`, apy?.ok);
+
+  // Config
+  html += '<div style="margin:12px 0 4px;font-weight:700;color:#0f172a">Config State</div>';
+  html += row('Wallet:', cfg.hlWallet ? cfg.hlWallet.slice(0,20)+'...' : 'NOT SET', !!cfg.hlWallet);
+  html += row('Token ID:', cfg.tokenId || 'NOT SET', !!cfg.tokenId);
+  html += row('Entry AVAX:', cfg.entryAvax || 'NOT SET', !!cfg.entryAvax);
+  html += row('Entry USDC:', cfg.entryUsdc || 'NOT SET', !!cfg.entryUsdc);
+  html += row('Range Low:', cfg.rangeLow || 'NOT SET', !!cfg.rangeLow);
+  html += row('Range High:', cfg.rangeHigh || 'NOT SET', !!cfg.rangeHigh);
+  html += row('APY Override:', cfg.apyOverride || 'NOT SET (using auto)', !!cfg.apyOverride);
+  html += row('API Key:', cfg.apiKey ? 'SET (' + cfg.apiKey.length + ' chars)' : 'NOT SET', !!cfg.apiKey);
+
+  // Computed
+  const c = state.computed;
+  if (c.price) {
+    html += '<div style="margin:12px 0 4px;font-weight:700;color:#0f172a">Computed Values</div>';
+    html += row('Price:', '$' + c.price?.toFixed(3), null);
+    html += row('AVAX in LP:', c.avax?.toFixed(2), c.avax > 0);
+    html += row('USDC in LP:', '$' + c.usdc?.toFixed(2), c.usdc > 0);
+    html += row('LP Value:', '$' + c.lpValue?.toFixed(2), c.lpValue > 0);
+    html += row('Source:', c.source, c.source === 'on-chain');
+    html += row('In Range:', c.inRange === null ? 'unknown (no range)' : c.inRange ? 'YES' : 'NO', c.inRange);
+  }
+
+  document.getElementById('debug-content').innerHTML = html;
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
