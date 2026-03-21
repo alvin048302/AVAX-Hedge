@@ -172,7 +172,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   </div>
   <div class="g2">
     <div class="ig"><label>Initial Capital ($)</label><input id="s-capital" placeholder="7000"></div>
-    <div class="ig"><label>APY Override (%)</label><input id="s-apy" placeholder="Auto from DeFiLlama"><div class="hint">Overrides auto-fetch (update Thursdays)</div></div>
+    <div class="ig"><label>APY Override (%)</label><input id="s-apy" placeholder="e.g. 98.69"><div class="hint">⚡ Use this — enter APY shown on Pharaoh UI. DeFiLlama auto-fetch may be inaccurate.</div></div>
   </div>
   <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Manual LP inputs (used when no Token ID or RPC fails)</div>
   <div class="g3">
@@ -267,7 +267,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   </div>
   <div class="g4">
     <div class="dc"><span class="lbl">Composition</span><span class="val-sm" id="lp-comp">—</span></div>
-    <div class="dc"><span class="lbl">APY (Epoch)</span><span class="val-sm pos" id="lp-apy">—</span></div>
+    <div class="dc"><span class="lbl" id="lp-apy-lbl">APY (Pharaoh)</span><span class="val-sm pos" id="lp-apy">—</span></div>
     <div class="dc"><span class="lbl">Eff. APY</span><span class="val-sm" id="lp-effapy">—</span></div>
     <div class="dc"><span class="lbl">Daily Yield</span><span class="val-sm pos" id="lp-daily">—</span></div>
   </div>
@@ -572,47 +572,97 @@ async function fetchHL(walletAddress) {
 
 async function fetchLPChain(tokenId) {
   if (!tokenId) return { ok: false, error: 'No token ID' };
+  const PM = POSITION_MANAGER;
   const tid = BigInt(tokenId).toString(16).padStart(64,'0');
   const calldata = '0x99fbab88' + tid;
-  // Try each RPC in order until one works (CORS varies by endpoint)
+
+  // Helper to parse result from either Etherscan-format or raw JSON-RPC
+  function parseResult(hex) {
+    if (!hex || hex === '0x' || hex === '0x0' || hex.length < 386) return null;
+    const h = hex.startsWith('0x') ? hex.slice(2) : hex;
+    const slots = [];
+    for (let i = 0; i < 12; i++) slots.push(h.slice(i*64, (i+1)*64));
+    const tickLower = decodeInt24(slots[5]);
+    const tickUpper = decodeInt24(slots[6]);
+    const liquidity = BigInt('0x' + slots[7]);
+    return { tickLower, tickUpper, liquidity };
+  }
+
+  // Strategy 1: Routescan REST API (GET request — no CORS issues in browser)
+  try {
+    const url = `https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest`;
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(url, { signal: ctrl.signal });
+    if (r.ok) {
+      const d = await r.json();
+      if (d.result && d.status !== '0') {
+        const parsed = parseResult(d.result);
+        if (parsed) return { ...parsed, rpc: 'routescan', fetchTime: Date.now(), ok: true };
+      }
+    }
+  } catch(e) {}
+
+  // Strategy 2: Snowtrace REST API (also GET, CORS-friendly)
+  try {
+    const url = `https://api.snowtrace.io/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest&apikey=YourApiKeyToken`;
+    const ctrl = new AbortController();
+    setTimeout(() => ctrl.abort(), 8000);
+    const r = await fetch(url, { signal: ctrl.signal });
+    if (r.ok) {
+      const d = await r.json();
+      if (d.result && d.status !== '0') {
+        const parsed = parseResult(d.result);
+        if (parsed) return { ...parsed, rpc: 'snowtrace', fetchTime: Date.now(), ok: true };
+      }
+    }
+  } catch(e) {}
+
+  // Strategy 3: JSON-RPC endpoints (may be blocked by CORS in some browsers)
   for (const rpc of AVAX_RPCS) {
     try {
       const ctrl = new AbortController();
-      const timer = setTimeout(() => ctrl.abort(), 8000);
-      const resp = await fetch(rpc, {
-        method:'POST', headers:{'Content-Type':'application/json'},
+      setTimeout(() => ctrl.abort(), 6000);
+      const r = await fetch(rpc, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call',
-          params:[{ to: POSITION_MANAGER, data: calldata }, 'latest'] }),
+          params:[{ to: PM, data: calldata }, 'latest'] }),
         signal: ctrl.signal
       });
-      clearTimeout(timer);
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      if (!data.result || data.result==='0x' || data.result==='0x0') {
-        return { ok: false, error: 'Position not found — verify Token ID ' + tokenId };
+      if (!r.ok) continue;
+      const d = await r.json();
+      if (d.result) {
+        const parsed = parseResult(d.result);
+        if (parsed) return { ...parsed, rpc, fetchTime: Date.now(), ok: true };
       }
-      const hex = data.result.slice(2);
-      const slots = [];
-      for(let i=0;i<12;i++) slots.push(hex.slice(i*64,(i+1)*64));
-      const tickLower = decodeInt24(slots[5]);
-      const tickUpper = decodeInt24(slots[6]);
-      const liquidity = BigInt('0x'+slots[7]);
-      return { tickLower, tickUpper, liquidity, rpc, fetchTime: Date.now(), ok: true };
     } catch(e) { continue; }
   }
-  return { ok: false, error: 'Chain read failed — enter LP values manually in Setup ↑' };
+
+  return { ok: false, error: 'Chain read failed — fill LP values manually in Setup ↑' };
 }
 
 async function fetchAPY() {
+  // NOTE: DeFiLlama APY is used as a fallback reference only.
+  // Always set APY Override in Setup to match what Pharaoh UI shows.
+  // DeFiLlama may return wrong pool or inflated rates.
   try {
     const resp = await fetch(DEFILLAMA_API);
     const data = await resp.json();
-    const pool = data.data?.find(p =>
+    // Match specifically: pharaoh exchange, AVAX-USDC, 0.05% fee tier
+    // Sort by TVL descending to get the main pool, not a minor one
+    const pools = data.data?.filter(p =>
       p.project?.toLowerCase().includes('pharaoh') &&
       p.symbol?.toUpperCase().includes('AVAX') &&
       p.symbol?.toUpperCase().includes('USDC')
-    );
-    if (pool) return { apy: pool.apy || pool.apyBase, project: pool.project, fetchTime: Date.now(), ok: true };
+    ).sort((a,b) => (b.tvlUsd||0) - (a.tvlUsd||0));
+    const pool = pools?.[0]; // highest TVL = main pool
+    if (pool) {
+      // Use apyBase (swap fees only) if total apy seems inflated vs apyBase
+      const apy = pool.apy || pool.apyBase;
+      return { apy, apyBase: pool.apyBase, apyReward: pool.apyReward,
+               tvl: pool.tvlUsd, project: pool.project, fetchTime: Date.now(), ok: true };
+    }
     return { ok: false, error: 'Pool not found on DeFiLlama' };
   } catch(e) { return { ok: false, error: e.message }; }
 }
@@ -652,10 +702,13 @@ function computeState() {
     ? Math.max(0, Math.min(100, (price - rangeLow) / (rangeHigh - rangeLow) * 100)) : null;
 
   // APY
-  const apy = c.apyOverride || (state.apy?.ok ? state.apy.apy : null) || 87;
-  const inRangeEst = 0.70; // estimated 70% time in range
-  const effectiveAPY = apy * inRangeEst;
-  const dailyYield = lpValue * (apy/100) / 365;
+  // Manual override = what Pharaoh actually shows (use as-is)
+  // DeFiLlama = theoretical max (apply 0.70 in-range estimate)
+  const apySource = c.apyOverride ? 'manual' : (state.apy?.ok ? 'defillama' : 'default');
+  const rawApy = c.apyOverride || (state.apy?.ok ? state.apy.apy : null) || 87;
+  const apy = rawApy;
+  const effectiveAPY = apySource === 'manual' ? apy : apy * 0.70;
+  const dailyYield = lpValue * (effectiveAPY/100) / 365;
 
   // Break-even APY: (rebalCosts + estimated IL) / lpValue * 365 * 100
   const rebalMonth = c.rebalMonth || 0;
@@ -747,7 +800,7 @@ function computeState() {
 
   state.computed = {
     price, avax, usdc, lpValue, avaxPct, inRange, pctThrough, source,
-    rangeLow, rangeHigh, apy, effectiveAPY, dailyYield, breakEvenAPY, baeColor,
+    rangeLow, rangeHigh, apy, apySource, effectiveAPY, dailyYield, breakEvenAPY, baeColor,
     ilThisRange, t1, t2, t1pnl, t2pnl, fundingCost, netHedgePnl, coverage,
     liqPx, liqDistance, t1RecPrice, t1RecSize, t1SL, tier1Active,
     todayNet, totalEarned, totalHPnl, totalIL, allTimeNet, capitalEff,
@@ -907,8 +960,17 @@ function renderAll() {
   const lpDiff = c.lpValue - c.capital;
   document.getElementById('lp-value').innerHTML = `${fmt$(c.lpValue)} <span style="font-size:11px">${fmtPnl(lpDiff)}</span>`;
   document.getElementById('lp-comp').textContent = `${c.avaxPct?.toFixed(0)}% AVAX / ${(100-c.avaxPct)?.toFixed(0)}% USDC`;
-  document.getElementById('lp-apy').textContent = c.apy?.toFixed(0) + '%';
-  document.getElementById('lp-effapy').textContent = c.effectiveAPY?.toFixed(0) + '%';
+  document.getElementById('lp-apy').textContent = c.apy?.toFixed(1) + '%';
+  const apyLblEl = document.getElementById('lp-apy-lbl');
+  if (apyLblEl) apyLblEl.textContent = c.apySource === 'manual' ? 'APY (Pharaoh)' : c.apySource === 'defillama' ? 'APY (DeFiLlama)' : 'APY (Default)';
+  const effApyEl = document.getElementById('lp-effapy');
+  if (c.apySource === 'manual') {
+    effApyEl.textContent = '= ' + c.effectiveAPY?.toFixed(1) + '%';
+    effApyEl.title = 'Pharaoh rate used directly';
+  } else {
+    effApyEl.textContent = c.effectiveAPY?.toFixed(1) + '%';
+    effApyEl.title = '70% in-range estimate applied';
+  }
   document.getElementById('lp-daily').textContent = fmt$(c.dailyYield);
   const beaEl = document.getElementById('lp-bea');
   beaEl.className = 'val-sm ' + c.baeColor;
