@@ -189,8 +189,8 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   <hr>
   <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Hedge state (auto-fetched from HL if wallet set; manual fallback)</div>
   <div class="g2">
-    <div class="ig"><label>Tier 1 Entry ($)</label><input id="s-t1entry" placeholder="9.185"></div>
-    <div class="ig"><label>Tier 1 Size (AVAX)</label><input id="s-t1size" placeholder="168"></div>
+    <div class="ig"><label>Tier 1 Entry ($)</label><input id="s-t1entry" placeholder="9.275"></div>
+    <div class="ig"><label>Tier 1 Size (AVAX)</label><input id="s-t1size" placeholder="215"></div>
   </div>
   <div class="g2">
     <div class="ig"><label>Tier 1 Leverage</label>
@@ -198,18 +198,6 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     </div>
     <div class="ig"><label>Tier 1 Status</label>
       <select id="s-t1status"><option value="waiting">Waiting (limit order set)</option><option value="active">Active (filled)</option><option value="closed">Closed</option></select>
-    </div>
-  </div>
-  <div class="g2">
-    <div class="ig"><label>Tier 2 Entry ($)</label><input id="s-t2entry" placeholder="8.90"></div>
-    <div class="ig"><label>Tier 2 Size (AVAX)</label><input id="s-t2size" placeholder="168"></div>
-  </div>
-  <div class="g2">
-    <div class="ig"><label>Tier 2 Leverage</label>
-      <select id="s-t2lev"><option value="">— Not Set —</option><option value="2">2x</option><option value="3">3x</option></select>
-    </div>
-    <div class="ig"><label>Tier 2 Status</label>
-      <select id="s-t2status"><option value="none">Not Set</option><option value="active">Active</option><option value="closed">Closed</option></select>
     </div>
   </div>
   <div class="g2">
@@ -305,24 +293,8 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     </div>
   </div>
 
-  <div id="t2-block" class="ht inactive">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Tier 2 — Manual</span>
-      <span id="t2-badge" class="badge" style="background:var(--surface);color:var(--muted);border:1px solid var(--border)">NOT SET</span>
-    </div>
-    <div class="g3">
-      <div><span class="lbl">Entry</span><span class="val-sm" id="t2-entry">—</span></div>
-      <div><span class="lbl">Size</span><span class="val-sm" id="t2-size">—</span></div>
-      <div><span class="lbl">Leverage</span><span class="val-sm" id="t2-lev">—</span></div>
-    </div>
-    <div class="g2" style="margin-top:8px">
-      <div><span class="lbl">Unrealised P&L</span><span class="val-sm" id="t2-pnl">—</span></div>
-      <div><span class="lbl">Status</span><span class="val-sm" id="t2-status-txt">—</span></div>
-    </div>
-  </div>
-
   <div class="g4" style="margin-top:10px">
-    <div class="dc"><span class="lbl">Combined P&L</span><span class="val-sm" id="h-combined">—</span></div>
+    <div class="dc"><span class="lbl">Hedge P&L</span><span class="val-sm" id="h-combined">—</span></div>
     <div class="dc"><span class="lbl">Coverage</span><span class="val-sm" id="h-coverage">—</span></div>
     <div class="dc"><span class="lbl">Funding Cost</span><span class="val-sm neg" id="h-funding">—</span></div>
     <div class="dc"><span class="lbl">Liq. Price</span><span class="val-sm" id="h-liq">—</span></div>
@@ -493,8 +465,6 @@ function loadConfig() {
   f('s-rebals', c.rebalMonth||'0');
   f('s-t1entry', c.t1Entry); f('s-t1size', c.t1Size); f('s-t1lev', c.t1Lev);
   f('s-t1status', c.t1Status||'waiting');
-  f('s-t2entry', c.t2Entry); f('s-t2size', c.t2Size); f('s-t2lev', c.t2Lev);
-  f('s-t2status', c.t2Status||'none');
   f('s-margin', c.hlMargin); f('s-hedgedays', c.hedgeDays||'0');
   f('s-totalearned', c.totalEarned||'0'); f('s-totalhpnl', c.totalHPnl||'0');
   f('s-totalil', c.totalIL||'0');
@@ -511,8 +481,6 @@ function saveConfig() {
     rangeEntry: parseFloat(g('s-rangeprice'))||null, rebalMonth: parseInt(g('s-rebals'))||0,
     t1Entry: parseFloat(g('s-t1entry'))||null, t1Size: parseFloat(g('s-t1size'))||null,
     t1Lev: g('s-t1lev'), t1Status: g('s-t1status'),
-    t2Entry: parseFloat(g('s-t2entry'))||null, t2Size: parseFloat(g('s-t2size'))||null,
-    t2Lev: g('s-t2lev'), t2Status: g('s-t2status'),
     hlMargin: parseFloat(g('s-margin'))||1500, hedgeDays: parseInt(g('s-hedgedays'))||0,
     totalEarned: parseFloat(g('s-totalearned'))||0,
     totalHPnl: parseFloat(g('s-totalhpnl'))||0,
@@ -779,87 +747,65 @@ function computeState() {
   const holdValue = hasEntryData ? (entryAvax * price + entryUsdc) : lpValue;
   const ilThisRange = hasEntryData ? (lpValue - holdValue) : null;
 
-  // Hedge from HL or config
+  // Hedge from HL or config — Tier 1 only
   let t1 = { entry: c.t1Entry, size: c.t1Size, lev: c.t1Lev, status: c.t1Status || 'waiting' };
-  let t2 = { entry: c.t2Entry, size: c.t2Size, lev: c.t2Lev, status: c.t2Status || 'none' };
 
   if (hl?.ok) {
-    // Override with FILLED positions first (active shorts)
+    // Override with FILLED position first (active short)
     const shorts = (hl.positions || []).filter(p => p.szi < 0);
     if (shorts.length >= 1) {
       t1 = { ...t1, entry: shorts[0].entryPx, size: Math.abs(shorts[0].szi),
               lev: shorts[0].leverage, status: 'active',
               pnl: shorts[0].unrealizedPnl, liqPx: shorts[0].liquidationPx };
     }
-    if (shorts.length >= 2) {
-      t2 = { ...t2, entry: shorts[1].entryPx, size: Math.abs(shorts[1].szi),
-              lev: shorts[1].leverage, status: 'active',
-              pnl: shorts[1].unrealizedPnl };
-    }
-
-    // If no filled positions, check OPEN ORDERS (pending Tier 1 limit order)
+    // If no filled position, check OPEN ORDERS for pending T1 limit order
     if (shorts.length === 0 && hl.openOrders?.length > 0) {
-      const t1Order = hl.openOrders[0]; // highest limitPx = Tier 1 (closest to range)
-      t1 = { ...t1,
-              entry: t1Order.limitPx,
-              size: t1Order.sz,
-              status: 'waiting',
-              orderId: t1Order.oid };
-      // Second order = Tier 2 pre-set (if exists)
-      if (hl.openOrders.length >= 2) {
-        const t2Order = hl.openOrders[1];
-        t2 = { ...t2, entry: t2Order.limitPx, size: t2Order.sz,
-                status: 'waiting', orderId: t2Order.oid };
-      }
+      const t1Order = hl.openOrders[0];
+      t1 = { ...t1, entry: t1Order.limitPx, size: t1Order.sz,
+              status: 'waiting', orderId: t1Order.oid };
     }
   }
 
   // Hedge P&L calculation
   const calcPnl = (entry, size, status) => {
-    if (!entry || !size || status === 'waiting' || status === 'none' || status === 'closed') return 0;
+    if (!entry || !size || status === 'waiting' || status === 'closed') return 0;
     return (entry - price) * size;
   };
   const t1pnl = t1.pnl !== undefined ? t1.pnl : calcPnl(t1.entry, t1.size, t1.status);
-  const t2pnl = t2.pnl !== undefined ? t2.pnl : calcPnl(t2.entry, t2.size, t2.status);
 
-  // Funding cost
-  const fundingRate = hl?.ok ? (hl.fundingRate || 0.0001) : 0.0001; // per hour
+  // Funding cost — T1 only
+  const fundingRate = hl?.ok ? (hl.fundingRate || 0.0001) : 0.0001;
   const hedgeDays = c.hedgeDays || 0;
-  const totalNotional = ((t1.status === 'active' ? (t1.size||0)*price : 0) +
-                         (t2.status === 'active' ? (t2.size||0)*price : 0));
+  const totalNotional = t1.status === 'active' ? (t1.size||0) * price : 0;
   const fundingCost = totalNotional * fundingRate * 24 * hedgeDays;
-  const netHedgePnl = t1pnl + t2pnl - fundingCost;
+  const netHedgePnl = t1pnl - fundingCost;
 
-  // Coverage ratio
-  const coverage = ilThisRange != null && ilThisRange < 0 && netHedgePnl > 0
-    ? Math.min(100, netHedgePnl / Math.abs(ilThisRange) * 100) : null;
+  // Coverage ratio (T1 only, target 50%)
+  const avaxExposureAtExit = rangeLow ? lpValue / rangeLow : 0;
+  const coverage = avaxExposureAtExit > 0 && (t1.size||0) > 0
+    ? Math.min(100, (t1.size||0) / avaxExposureAtExit * 100) : null;
 
   // Liquidation warning
   let liqPx = t1.liqPx || null;
   let liqDistance = liqPx ? ((liqPx - price) / price * 100) : null;
 
-  // Tier 1 recommendation (when no active hedge)
-  // T1 uses 50% of total margin at 1.5x leverage — intentionally partial
-  // T1 alone = ~33% coverage; T1+T2 combined = ~55-65% coverage
-  const tier1Active = t1.status === 'active';
+  // T1 recommendation (50% coverage, 2x leverage, full margin, SL = range_low + 20% ATR)
+  const tier1Active = t1.status === 'active' || t1.status === 'waiting';
   const t1RecPrice = rangeLow ? (rangeLow * 0.994) : null;
   const hlMargin = c.hlMargin || 1500;
-  const t1Margin = hlMargin * 0.5; // 50% of margin for Tier 1 ($750 of $1500)
-  const t1RecSize = t1RecPrice ? Math.round(t1Margin * 1.5 / t1RecPrice) : null;
-  const t1SL = rangeLow ? (rangeLow * 1.005) : null;
-  // T2 guidance (fires at 3% below T1, 2x leverage, remaining $750 margin)
-  const t2RecPrice = t1RecPrice ? t1RecPrice * 0.97 : null;
-  const t2Margin = hlMargin * 0.5;
-  const t2RecSize = t2RecPrice ? Math.round(t2Margin * 2.0 / t2RecPrice) : null;
-  // Combined coverage estimate at 10% further drop
-  const t1CoverageEst = t1RecSize && t1RecPrice && lpValue > 0
-    ? Math.round(t1RecSize * t1RecPrice * 0.10 / (lpValue * 0.10 * 0.85) * 100) : null;
-  const t2CoverageEst = t2RecSize && t2RecPrice && lpValue > 0
-    ? Math.round(t2RecSize * t2RecPrice * 0.10 / (lpValue * 0.10 * 0.85) * 100) : null;
+  // Size = 50% of AVAX exposure at range exit
+  const avaxAtExit = rangeLow && lpValue > 0 ? lpValue / rangeLow : 0;
+  const t1RecSize = avaxAtExit > 0 ? Math.round(avaxAtExit * 0.50) : null;
+  const t1RecMargin = t1RecSize && t1RecPrice ? Math.round(t1RecSize * t1RecPrice / 2) : null;
+  // SL = range_low + 20% of ATR (ATR estimated as 2.5% of price daily = 14-day)
+  const atrEst = rangeLow ? rangeLow * 0.025 : 0.25;
+  const t1SL = rangeLow ? (rangeLow + atrEst * 0.20) : null;
+  const t1SLLoss = t1RecSize && t1SL && t1RecPrice ? Math.round(t1RecSize * (t1SL - t1RecPrice)) : null;
+  const t1SLDays = t1SLLoss && dailyYield > 0 ? (t1SLLoss / dailyYield).toFixed(1) : null;
 
   // P&L
   const capital = c.capital || 7000;
-  const todayNet = dailyYield + (t1pnl + t2pnl > 0 ? (t1pnl + t2pnl) / Math.max(hedgeDays,1) : 0);
+  const todayNet = dailyYield + (t1pnl > 0 ? t1pnl / Math.max(hedgeDays,1) : 0);
   const totalEarned = c.totalEarned || 0;
   const totalHPnl = c.totalHPnl || 0;
   const totalIL = c.totalIL || 0;
@@ -880,9 +826,9 @@ function computeState() {
   state.computed = {
     price, avax, usdc, lpValue, avaxPct, inRange, pctThrough, source,
     rangeLow, rangeHigh, apy, apySource, effectiveAPY, dailyYield, breakEvenAPY, baeColor,
-    ilThisRange, t1, t2, t1pnl, t2pnl, fundingCost, netHedgePnl, coverage,
-    liqPx, liqDistance, t1RecPrice, t1RecSize, t1SL, tier1Active,
-    t2RecPrice, t2RecSize, t1CoverageEst, t2CoverageEst,
+    ilThisRange, t1, t1pnl, fundingCost, netHedgePnl, coverage,
+    liqPx, liqDistance, t1RecPrice, t1RecSize, t1RecMargin, t1SL, t1SLLoss, t1SLDays,
+    tier1Active, avaxExposureAtExit,
     todayNet, totalEarned, totalHPnl, totalIL, allTimeNet, capitalEff,
     guardFloor, guardStatus, origEntry, capital, rebalMonth, status,
     change24h: bin?.change24h, closes: bin?.closes, high7d: bin?.high7d, low7d: bin?.low7d,
@@ -930,7 +876,7 @@ function runVerification() {
     if (hasActive) {
       hedgeCheck = { pass: true, msg: `${hl.positions.filter(p=>p.szi<0).length} active short(s) confirmed on HL` };
     } else if (hasPending) {
-      const orders = hl.openOrders.map(o => `SHORT ${o.sz} @ $${o.limitPx}`).join(', ');
+      const orders = hl.openOrders.length > 0 ? `SHORT ${hl.openOrders[0].sz} AVAX @ $${hl.openOrders[0].limitPx}` : 'none';
       hedgeCheck = { pass: true, msg: `T1 limit order set: ${orders}` };
     } else {
       hedgeCheck = { pass: null, msg: 'No hedge or pending orders found on HL' };
@@ -1066,11 +1012,12 @@ function renderAll() {
 
   // Tier 1 recommendation
   const t1rec = document.getElementById('t1-rec');
-  if (!c.tier1Active && c.t1RecPrice) {
+  if (!c.tier1Active && c.t1RecPrice && c.t1RecSize) {
     t1rec.style.display = 'block';
     document.getElementById('t1-rec-text').innerHTML =
-      `Set on HL: <b>LIMIT SHORT ${c.t1RecSize} AVAX @ $${c.t1RecPrice?.toFixed(3)}</b> · 1.5x leverage · SL: $${c.t1SL?.toFixed(3)}` +
-      (c.t1CoverageEst ? `<br><span style="color:var(--muted);font-size:11px">T1 alone: ~${c.t1CoverageEst}% coverage · When triggered, manually add T2: SHORT ${c.t2RecSize} AVAX @ ~$${c.t2RecPrice?.toFixed(3)} (2x) · T1+T2 combined: ~${(c.t1CoverageEst||0)+(c.t2CoverageEst||0)}% coverage</span>` : '');
+      `<b>LIMIT SHORT ${c.t1RecSize} AVAX @ $${c.t1RecPrice?.toFixed(3)}</b> · 2× leverage · $${c.t1RecMargin} margin` +
+      `<br><b>Stop Loss: $${c.t1SL?.toFixed(3)}</b> · Loss if triggered: <b>$${c.t1SLLoss}</b> (${c.t1SLDays} days earnings)` +
+      `<br><span style="color:var(--green);font-size:11px">Coverage: ~50% of LP downside · SL = Range low + 20% ATR</span>`;
   } else { t1rec.style.display = 'none'; }
 
   // Hedge panel
@@ -1089,9 +1036,9 @@ function renderAll() {
 }
 
 function renderHedge(c) {
-  const t1 = c.t1, t2 = c.t2;
+  const t1 = c.t1;
 
-  // Tier 1
+  // Tier 1 block
   const t1block = document.getElementById('t1-block');
   t1block.className = 'ht ' + (t1.status==='active' ? 'active' : 'inactive');
   const t1badge = document.getElementById('t1-badge');
@@ -1100,29 +1047,24 @@ function renderHedge(c) {
   else t1badge.innerHTML = '<span class="badge bb"><span class="dot" style="background:var(--blue)"></span>WAITING</span>';
 
   document.getElementById('t1-entry').textContent = t1.entry ? '$'+parseFloat(t1.entry).toFixed(3) : '—';
-  document.getElementById('t1-size').textContent = t1.size ? parseFloat(t1.size).toFixed(1)+' AVAX' : '—';
-  document.getElementById('t1-lev').textContent = t1.lev ? t1.lev+'x' : '—';
+  document.getElementById('t1-size').textContent = t1.size ? parseFloat(t1.size).toFixed(0)+' AVAX' : '—';
+  document.getElementById('t1-lev').textContent = t1.lev ? t1.lev+'x' : '2x';
   document.getElementById('t1-pnl').innerHTML = t1.status==='active' ? fmtPnl(c.t1pnl) : '—';
-  document.getElementById('t1-sl').textContent = c.rangeLow ? '$'+( c.rangeLow * 1.005).toFixed(3) : '—';
+  // SL = range_low + 20% ATR
+  const slPrice = c.t1SL;
+  const slLoss = c.t1SLLoss;
+  document.getElementById('t1-sl').innerHTML = slPrice
+    ? `$${slPrice.toFixed(3)} <span style="color:var(--muted);font-size:10px">(loss: $${slLoss||'—'})</span>`
+    : '—';
 
-  // Tier 2
-  const t2block = document.getElementById('t2-block');
-  t2block.className = 'ht ' + (t2.status==='active' ? 'active' : 'inactive');
-  const t2badge = document.getElementById('t2-badge');
-  if (t2.status==='active') t2badge.innerHTML = '<span class="badge br"><span class="dot dr"></span>ACTIVE</span>';
-  else t2badge.innerHTML = `<span class="badge" style="background:var(--surface);color:var(--muted);border:1px solid var(--border)">${t2.status?.toUpperCase()||'NOT SET'}</span>`;
-  document.getElementById('t2-entry').textContent = t2.entry ? '$'+parseFloat(t2.entry).toFixed(3) : '—';
-  document.getElementById('t2-size').textContent = t2.size ? parseFloat(t2.size).toFixed(1)+' AVAX' : '—';
-  document.getElementById('t2-lev').textContent = t2.lev ? t2.lev+'x' : '—';
-  document.getElementById('t2-pnl').innerHTML = t2.status==='active' ? fmtPnl(c.t2pnl) : '—';
-  document.getElementById('t2-status-txt').textContent = t2.status || 'none';
-
-  // Combined
+  // Hedge P&L and stats
   const combined = document.getElementById('h-combined');
-  combined.innerHTML = (t1.status==='active'||t2.status==='active') ? fmtPnl(c.netHedgePnl) : '—';
+  combined.innerHTML = t1.status==='active' ? fmtPnl(c.netHedgePnl) : '—';
+
   const cov = document.getElementById('h-coverage');
   cov.textContent = c.coverage!=null ? c.coverage.toFixed(0)+'%' : '—';
   cov.className = 'val-sm' + (c.coverage>=50?' pos':c.coverage>=30?' warn':' neg');
+
   document.getElementById('h-funding').textContent = c.fundingCost > 0 ? fmt$(c.fundingCost) : '—';
 
   // Liquidation
@@ -1132,15 +1074,14 @@ function renderHedge(c) {
     hlEl.innerHTML = `<span class="${dist>20?'pos':dist>10?'warn':'neg'}">$${c.liqPx.toFixed(2)} (${dist>0?'+':''}${dist?.toFixed(0)}%)</span>`;
     if (dist < 15) {
       document.getElementById('liq-warning').style.display='block';
-      document.getElementById('liq-warning').innerHTML = `<div class="alert alert-r">⚠ Liquidation price $${c.liqPx.toFixed(2)} is only ${dist.toFixed(0)}% away. Consider reducing leverage or adding margin.</div>`;
-    }
+      document.getElementById('liq-warning').innerHTML = `<div class="alert alert-r">⚠ Liquidation price $${c.liqPx.toFixed(2)} is only ${dist.toFixed(0)}% away.</div>`;
+    } else { document.getElementById('liq-warning').style.display='none'; }
   } else { hlEl.textContent = '—'; }
 
   // Summary badge
   const sbEl = document.getElementById('hedge-summary-badge');
-  const anyActive = t1.status==='active'||t2.status==='active';
-  if (anyActive) sbEl.innerHTML = `<span class="badge ba">HEDGE ON · ${fmtPnl(c.netHedgePnl)}</span>`;
-  else if (t1.status==='waiting') sbEl.innerHTML = `<span class="badge bb">T1 PENDING</span>`;
+  if (t1.status==='active') sbEl.innerHTML = `<span class="badge ba">HEDGE ON · ${fmtPnl(c.netHedgePnl)}</span>`;
+  else if (t1.status==='waiting') sbEl.innerHTML = `<span class="badge bb">T1 WAITING @ $${parseFloat(t1.entry||0).toFixed(3)}</span>`;
   else sbEl.innerHTML = `<span class="badge" style="background:var(--surface);color:var(--muted);border:1px solid var(--border)">NO HEDGE</span>`;
 }
 
@@ -1159,7 +1100,7 @@ function buildPrompt(c) {
        c.closes[c.closes.length-2] < c.closes[c.closes.length-3] ? 'DOWN' :
        c.closes[c.closes.length-1] > c.closes[c.closes.length-2] ? 'UP' : 'FLAT') : 'N/A';
 
-  return `AVAX:${c.price?.toFixed(3)}|CHG:${c.change24h?.toFixed(2)}%|RANGE:${c.rangeLow?.toFixed(3)}-${c.rangeHigh?.toFixed(3)}|STATUS:${c.status}|PCT:${c.pctThrough?.toFixed(0)}%|POS:${c.avax?.toFixed(1)}A+${c.usdc?.toFixed(0)}U|VAL:${c.lpValue?.toFixed(0)}|APY:${c.apy}%|IL:${c.ilThisRange?.toFixed(0)}|REBALS:${c.rebalMonth}/3|CLOSES:${closes}|TREND:${trend}|7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|T1:${c.t1.status}@${c.t1.entry||'N/A'}x${c.t1.size||0}|T2:${c.t2.status}@${c.t2.entry||'N/A'}x${c.t2.size||0}|HPNL:${c.netHedgePnl?.toFixed(2)}|GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}|CAPITAL:${c.capital}|ORIG:${c.origEntry}`;
+  return `AVAX:${c.price?.toFixed(3)}|CHG:${c.change24h?.toFixed(2)}%|RANGE:${c.rangeLow?.toFixed(3)}-${c.rangeHigh?.toFixed(3)}|STATUS:${c.status}|PCT:${c.pctThrough?.toFixed(0)}%|POS:${c.avax?.toFixed(1)}A+${c.usdc?.toFixed(0)}U|VAL:${c.lpValue?.toFixed(0)}|APY:${c.apy}%|IL:${c.ilThisRange?.toFixed(0)}|REBALS:${c.rebalMonth}/3|CLOSES:${closes}|TREND:${trend}|7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|T1:${c.t1.status}@${c.t1.entry||'N/A'}x${c.t1.size||0}|HPNL:${c.netHedgePnl?.toFixed(2)}|GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}|CAPITAL:${c.capital}|ORIG:${c.origEntry}`;
 }
 
 async function runAnalysis() {
@@ -1201,7 +1142,7 @@ async function runAnalysis() {
   const model = selectModel(c);
   document.getElementById('model-badge').textContent = model.includes('haiku') ? 'haiku-4-5 (lite)' : 'sonnet-4-6';
 
-  const systemPrompt = `You are an LP strategy advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge. Strategy rules: 15% geometric range, tickspacing 10, max 3 rebalances/month, Tier1 pre-set short at range_low×0.994 (1.5x lev), Tier2 manual on confirmed breakdown >3% breach, rebalance only after 48h out-of-range + 3-day trend guard passes + capital guard (no rebalance if price <70% of original entry). Respond in exactly 3 labelled sections: SITUATION (1-2 sentences on current state), ACTION (2-4 bullet points with specific numbers where applicable), RISK (1 sentence on main risk right now). Max 260 words total. Be direct and specific.`;
+  const systemPrompt = `You are an LP strategy advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge. Strategy rules: 15% geometric range, tickspacing 10, max 3 rebalances/month, single Tier1 pre-set short at range_low×0.994 (2x leverage, 50% LP coverage, SL=range_low+20%ATR=$23 max loss), rebalance only after 48h out-of-range + 3-day trend guard passes + capital guard (no rebalance if price <70% of original entry). Respond in exactly 3 labelled sections: SITUATION (1-2 sentences on current state), ACTION (2-4 bullet points with specific numbers where applicable), RISK (1 sentence on main risk right now). Max 260 words total. Be direct and specific.`;
 
   const userMsg = buildPrompt(c);
 
@@ -1388,7 +1329,7 @@ function renderDebug() {
   html += row('HL Mark Price:', hl?.ok ? `$${hl.markPrice?.toFixed(3)} ✅` : `FAILED: ${hl?.error}`, hl?.ok);
   const hlPosOk = hl?.ok ? (hl.positions?.length > 0 || hl.openOrders?.length > 0) : null;
   html += row('HL Positions (filled):', hl?.ok ? `${hl.positions?.length || 0} active shorts` : '—', hl?.ok ? hl.positions?.length > 0 : null);
-  html += row('HL Open Orders:', hl?.ok ? `${hl.openOrders?.length || 0} pending` : '—', hl?.ok ? hl.openOrders?.length > 0 : null);
+  html += row('HL Limit Order (T1):', hl?.ok ? (hl.openOrders?.length > 0 ? `${hl.openOrders[0]?.sz} AVAX @ $${hl.openOrders[0]?.limitPx}` : 'None found') : '—', hl?.ok ? hl.openOrders?.length > 0 : null);
   if (hl?.debug) {
     html += row('  ctx received:', hl.debug.ctxReceived ? 'yes' : 'no', hl.debug.ctxReceived);
     html += row('  pos received:', hl.debug.posReceived ? 'yes' : 'no', hl.debug.posReceived);
