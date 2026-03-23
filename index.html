@@ -162,6 +162,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   <div class="g2">
     <div class="ig"><label>ATR 14-day ($)</label><input id="s-atr" placeholder="0.235"><div class="hint">Update weekly · default 2.5% of price</div></div>
     <div class="ig"><label>4h Candles Override</label><input id="s-fourh" placeholder="auto"><div class="hint">Auto-computed · override only</div></div>
+    <div class="ig"><label>Confirm Candles</label><input id="s-confirmcandles" placeholder="0"><div class="hint">4H candles since trigger fired · must be ≥ 1 to act</div></div>
   </div>
   <hr>
   <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Cumulative P&amp;L tracking</div>
@@ -379,7 +380,7 @@ function loadConfig(){
   f('s-t1status',c.t1Status||'waiting');
   f('s-margin',c.hlMargin||'1500');f('s-hedgedays',c.hedgeDays||'0');
   f('s-oohours',c.ooHours||'0');
-  f('s-atr',c.atrInput||'');f('s-fourh',c.fourHCandles||'0');
+  f('s-atr',c.atrInput||'');f('s-fourh',c.fourHCandles||'0');f('s-confirmcandles',c.confirmCandles||'0');
   f('s-totalearned',c.totalEarned||'0');f('s-totalhpnl',c.totalHPnl||'0');f('s-totalil',c.totalIL||'0');
 }
 function saveConfig(){
@@ -395,7 +396,7 @@ function saveConfig(){
     t1Lev:g('s-t1lev'),t1Status:g('s-t1status'),
     hlMargin:parseFloat(g('s-margin'))||1500,hedgeDays:parseInt(g('s-hedgedays'))||0,
     ooHours:parseInt(g('s-oohours'))||0,
-    atrInput:parseFloat(g('s-atr'))||null,fourHCandles:parseInt(g('s-fourh'))||0,
+    atrInput:parseFloat(g('s-atr'))||null,fourHCandles:parseInt(g('s-fourh'))||0,confirmCandles:parseInt(g('s-confirmcandles'))||0,
     totalEarned:parseFloat(g('s-totalearned'))||0,
     totalHPnl:parseFloat(g('s-totalhpnl'))||0,
     totalIL:parseFloat(g('s-totalil'))||0,
@@ -656,11 +657,28 @@ function computeState(){
     rebalTriggerReason=`${ooHours}h out of range + 3-day trend DOWN`;
   }
 
+  // Confirm candles: how many 4H candles have closed below Pa SINCE trigger fired
+  // User increments manually each 4H once they see the trigger
+  // Auto-resets to 0 when price returns in range (handled in checkAlerts)
+  const confirmCandles=c.confirmCandles||0;
+
+  // ── TWO-STAGE RED ─────────────────────────────────────────────────────────
+  // RED-WATCH: trigger met but not yet confirmed (confirmCandles < 1)
+  // RED-ACT:   trigger confirmed (confirmCandles >= 1) → show Analyse Now
+  // IMMEDIATE trigger bypasses confirmation (structural break — act now)
   let actionState='green';
+  let redStage=null; // 'watch' or 'act'
   if(status!=='IN_RANGE'){
-    if(guardStatus==='TRIGGERED') actionState='hold';
-    else if(rebalTrigger) actionState='red';
-    else actionState='amber';
+    if(guardStatus==='TRIGGERED'){
+      actionState='hold';
+    } else if(rebalTrigger==='immediate'){
+      actionState='red'; redStage='act'; // no wait on 2×ATR break
+    } else if(rebalTrigger==='fast'||rebalTrigger==='standard'){
+      actionState='red';
+      redStage=confirmCandles>=1?'act':'watch';
+    } else {
+      actionState='amber';
+    }
   }
 
   // ── TREND-ADJUSTED RANGE CALCULATION ─────────────────────────────────────
@@ -767,7 +785,7 @@ function computeState(){
     liqPx,liqDistance,
     totalEarned,totalHPnl,totalIL,allTimeNet,capital,
     guardFloor,guardStatus,origEntry,
-    ooHours,fourHCandles,trend,strongDowntrend,status,actionState,rebalMonth:c.rebalMonth||0,
+    ooHours,fourHCandles,confirmCandles,trend,strongDowntrend,status,actionState,redStage,rebalMonth:c.rebalMonth||0,
     atr,rebalTrigger,rebalTriggerReason,
     newRangeLow,newRangeHigh,newT1Trigger,newT1Size,newT1Margin,newT1SL,
     newCentre,newPctThrough,newAvaxComp,trendShift,newRangeWidthPct,
@@ -930,57 +948,34 @@ function renderAction(c){
       `Triggers: immediate if close &lt; <b>${immThresh}</b> · fast if 4h candles ≥ 3 · standard at 48h+DOWN</span><br>`+
       `${c.ooHours<48?`~${remaining}h to standard window`:'Standard window open — needs DOWN trend'}<br>`+
       `${c.tier1Set?'Hedge running ✅':'<b style="color:var(--red)">Hedge not set ⚠</b>'}`;
-    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--faint)">Update OO hours + 4h candles in Setup</span>`;
+    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--faint)">Update OO hours · 4h candles · reset confirm candles in Setup</span>`;
   }else if(c.actionState==='red'){
     block.classList.add('action-red');
-    const triggerLabel=c.rebalTrigger==='immediate'?'🔴 Rebalance NOW':c.rebalTrigger==='fast'?'🔴 Rebalance (12h)':'🔴 Rebalance recommended';
-
-    // Hedge step
-    const hedgeStep = c.hedgeAction==='close'
-      ? `① <b>Close T1 short on HL</b> → take profit <span class="pos">+${fmt$(c.hedgeClosePnl)}</span>`
-      : c.hedgeAction==='cancel'
-      ? `① <b>Cancel T1 limit order on HL</b> (never fired — no P&L)`
-      : `① No hedge to close`;
-
-    // LP withdrawal step
-    const lpStep = c.exitedBottom
-      ? `② <b>Withdraw LP</b> → receive <b>${c.lpAvaxNow?.toFixed(1)} AVAX</b> + $0 USDC`
-      : c.exitedTop
-      ? `② <b>Withdraw LP</b> → receive <b>${fmt$(c.lpUsdcNow)}</b> + 0 AVAX (+${fmt$(c.lpGainAtTop)} CL gain)`
-      : `② <b>Withdraw LP</b> → receive ${c.avax?.toFixed(1)} AVAX + ${fmt$(c.usdc)} USDC`;
-
-    // Swap step
-    let swapStep='';
-    if(c.swapDirection==='sell_avax'&&c.swapAvaxAmt>0.5){
-      swapStep=`③ <b>SELL ${c.swapAvaxAmt?.toFixed(1)} AVAX → USDC</b> on Pharaoh <span style="color:var(--muted);font-size:11px">(fee ~${fmt$(c.swapFee,1)})</span><br>`+
-               `&nbsp;&nbsp;&nbsp;Target: <b>${c.newAvaxPct?.toFixed(0)}% AVAX / ${c.newUsdcPct?.toFixed(0)}% USDC</b> for new range`;
-    } else if(c.swapDirection==='buy_avax'&&c.swapUsdcAmt>1){
-      swapStep=`③ <b>BUY AVAX with ${fmt$(c.swapUsdcAmt)} USDC</b> on Pharaoh <span style="color:var(--muted);font-size:11px">(fee ~${fmt$(c.swapFee,1)})</span><br>`+
-               `&nbsp;&nbsp;&nbsp;Target: <b>${c.newAvaxPct?.toFixed(0)}% AVAX / ${c.newUsdcPct?.toFixed(0)}% USDC</b> for new range`;
+    if(c.redStage==='watch'){
+      // ── RED-WATCH: trigger met, waiting for 1 confirmation candle ──────────
+      block.classList.remove('action-red');
+      block.classList.add('action-amber'); // amber colour — not yet confirmed
+      const watchLabel=c.rebalTrigger==='fast'?'🟠 Signal — wait for confirmation':'🟠 Signal — wait for confirmation';
+      title.innerHTML=watchLabel;
+      body.innerHTML=
+        `<b>${c.rebalTriggerReason}</b><br>`+
+        `<span style="color:var(--amber);font-weight:700">Do NOT act yet — wait for 1 more 4H candle to close below Pa</span><br>`+
+        `<span style="color:var(--muted);font-size:12px">`+
+        `Once next 4H candle closes below $${c.rangeLow?.toFixed(3)||'—'}: open Setup → set Confirm Candles to 1 → Save<br>`+
+        `Trend: ${c.trend} &middot; 4H below Pa: ${c.fourHCandles} &middot; Confirm candles: ${c.confirmCandles}/1 needed`+
+        `</span>`;
+      sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--amber)">Confirm before acting</span>`;
     } else {
-      swapStep=`③ No swap needed — composition already matches new range`;
+      // ── RED-ACT: confirmed — show execution trigger + Analyse Now ──────────
+      const triggerLabel=c.rebalTrigger==='immediate'?'🔴 Rebalance NOW':c.rebalTrigger==='fast'?'🔴 Rebalance — confirmed':'🔴 Rebalance — confirmed';
+      title.innerHTML=triggerLabel;
+      const hasAnalysis=S.get('lastAnalysis_result')&&S.get('lastActionState')==='red';
+      body.innerHTML=
+        `<b>${c.rebalTriggerReason}</b> &middot; <span class="pos">✅ ${c.confirmCandles} confirm candle(s)</span><br>`+
+        `Total available: ~<b>${fmt$(c.totalValueAfter)}</b><br>`+
+        `<span style="color:var(--muted);font-size:12px">${hasAnalysis?'↓ See instructions below':'⬇ Tap Analyse Now for step-by-step execution instructions'}</span>`;
+      sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--faint)">Reset confirm candles to 0 after rebalance</span>`;
     }
-
-    // Range step
-    const shiftNote=c.trendShift>0?` <span style="color:var(--muted);font-size:11px">(trend-biased ${c.trendShift?.toFixed(3)} lower)</span>`:'';
-    const rangeStep=`④ <b>Deploy LP:</b> $${c.newRangeLow?.toFixed(3)} – $${c.newRangeHigh?.toFixed(3)}${shiftNote}`;
-
-    // Hedge step
-    const newHedgeStep=`⑤ <b style="color:var(--red)">SET NEW T1 ON HL IMMEDIATELY:</b><br>`+
-      `&nbsp;&nbsp;&nbsp;SHORT <b>${c.newT1Size} AVAX @ $${c.newT1Trigger?.toFixed(3)}</b> · 2× · $${c.newT1Margin} margin · SL $${c.newT1SL?.toFixed(3)}`;
-
-    const setupStep=`⑥ Update Setup: Range Low/High · reset OO hours to 0`;
-
-    title.innerHTML=triggerLabel;
-    body.innerHTML=
-      `<span style="color:var(--muted);font-size:12px">${c.rebalTriggerReason}</span><br><br>`+
-      `${hedgeStep}<br>`+
-      `${lpStep}<br>`+
-      `${swapStep}<br>`+
-      `${rangeStep}<br>`+
-      `${newHedgeStep}<br>`+
-      `<span style="color:var(--muted);font-size:12px">${setupStep}</span>`;
-    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--faint)">Total available: ~${fmt$(c.totalValueAfter)}</span>`;
   }else if(c.actionState==='hold'){
     block.classList.add('action-hold');
     title.innerHTML='🟣 Hold — do not rebalance';
@@ -1022,12 +1017,28 @@ function renderHedgeDetail(c){
 }
 
 function selectModel(c){
-  if(c.status==='IN_RANGE'&&c.tier1Set&&c.rebalMonth===0)return 'claude-haiku-4-5-20251001';
+  // Haiku only for routine in-range check; Sonnet for rebalance/amber/hold
+  if(c.actionState==='green')return 'claude-haiku-4-5-20251001';
   return 'claude-sonnet-4-6';
 }
 function buildPrompt(c){
   const closes=(state.binance?.closes||[]).map(v=>v.toFixed(2)).join(',')||'N/A';
-  return `AVAX:${c.price?.toFixed(3)}|CHG:${c.change24h?.toFixed(2)}%|RANGE:${c.rangeLow?.toFixed(3)}-${c.rangeHigh?.toFixed(3)}|STATUS:${c.status}|PCT:${c.pctThrough?.toFixed(0)}%|POS:${c.avax?.toFixed(1)}A+${c.usdc?.toFixed(0)}U|VAL:${c.lpValue?.toFixed(0)}|APY:${c.effectiveAPY?.toFixed(1)}%|IL:${c.ilNow?.toFixed(0)}|OO:${c.ooHours}h|4H:${c.fourHCandles||0}|ATR:${c.atr?.toFixed(3)}|REBALS:${c.rebalMonth}/3|CLOSES:${closes}|TREND:${c.trend}|7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|T1:${c.t1.status}@${c.t1.entry||'N/A'}x${c.t1.size||0}|HPNL:${c.netHedgePnl?.toFixed(2)}|GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}|TRIGGER:${c.rebalTrigger||'none'}`;
+  // Base state data
+  let prompt=`AVAX:${c.price?.toFixed(3)}|CHG:${c.change24h?.toFixed(2)}%|RANGE:${c.rangeLow?.toFixed(3)}-${c.rangeHigh?.toFixed(3)}|STATUS:${c.status}|PCT:${c.pctThrough?.toFixed(0)}%|POS:${c.avax?.toFixed(1)}A+${c.usdc?.toFixed(0)}U|VAL:${c.lpValue?.toFixed(0)}|APY:${c.effectiveAPY?.toFixed(1)}%|IL:${c.ilNow?.toFixed(0)}|OO:${c.ooHours}h|4H:${c.fourHCandles||0}|ATR:${c.atr?.toFixed(3)}|REBALS:${c.rebalMonth}/3|CLOSES:${closes}|TREND:${c.trend}|7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|T1:${c.t1.status}@${c.t1.entry||'N/A'}x${c.t1.size||0}|HPNL:${c.netHedgePnl?.toFixed(2)}|GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}|TRIGGER:${c.rebalTrigger||'none'}|STAGE:${c.redStage||'none'}|CONFIRM:${c.confirmCandles||0}`;
+  // When rebalance is triggered, append pre-computed execution numbers
+  // AI must use THESE numbers exactly — do not recompute
+  if(c.actionState==='red'||c.actionState==='amber'){
+    prompt+=`|REBAL_DATA:hedge_action=${c.hedgeAction||'none'},hedge_pnl=${c.hedgeClosePnl?.toFixed(2)||'0'}`;
+    prompt+=`,lp_avax=${c.lpAvaxNow?.toFixed(1)||'0'},lp_usdc=${c.lpUsdcNow?.toFixed(0)||'0'}`;
+    prompt+=`,total_after=${c.totalValueAfter?.toFixed(0)||'0'}`;
+    prompt+=`,swap_dir=${c.swapDirection||'none'},swap_avax=${c.swapAvaxAmt?.toFixed(1)||'0'},swap_usdc=${c.swapUsdcAmt?.toFixed(0)||'0'}`;
+    prompt+=`,new_range=${c.newRangeLow?.toFixed(3)||'?'}-${c.newRangeHigh?.toFixed(3)||'?'}`;
+    prompt+=`,new_avax_pct=${c.newAvaxPct?.toFixed(0)||'50'},new_usdc_pct=${c.newUsdcPct?.toFixed(0)||'50'}`;
+    prompt+=`,new_t1_trigger=${c.newT1Trigger?.toFixed(3)||'?'},new_t1_size=${c.newT1Size||'?'}`;
+    prompt+=`,new_t1_margin=${c.newT1Margin||'?'},new_t1_sl=${c.newT1SL?.toFixed(3)||'?'}`;
+    prompt+=`,trend_shift=${c.trendShift?.toFixed(3)||'0'}`;
+  }
+  return prompt;
 }
 async function runAnalysis(){
   const c=state.computed;if(!c.price){alert('Refresh data first.');return;}
@@ -1043,7 +1054,17 @@ async function runAnalysis(){
   btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analysing...';
   const model=selectModel(c);
   document.getElementById('model-badge').textContent=model.includes('haiku')?'haiku-4-5':'sonnet-4-6';
-  const systemPrompt=`You are an LP strategy advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge. Strategy: 15% geometric range, tickspacing 10, max 3 rebalances/month, single T1 pre-set short at range_low−0.5×ATR (2x leverage, 65% LP coverage, SL=trigger+1×ATR). 3 rebalance triggers: IMMEDIATE if daily close <2×ATR below Pa, FAST if 3+ 4h closes below Pa, STANDARD after 48h+trend DOWN. Capital guard: no rebalance if price <70% original entry. Range is trend-adjusted (bias lower by 0.5×ATR if DOWN, 1×ATR if strong DOWN). Respond in exactly 3 labelled sections: SITUATION (1-2 sentences), ACTION (2-4 bullets with specific numbers), RISK (1 sentence). Max 260 words. Be direct.`;
+  const systemPrompt=`You are an LP execution advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge.
+Strategy: 15% geometric range, tickspacing 10, max 3 rebalances/month, T1 short at Pa−0.5×ATR (2× lev, 65% coverage, SL=trigger+1×ATR). Rebalance triggers: IMMEDIATE <2×ATR below Pa, FAST 3+ 4h closes below Pa, STANDARD 48h+DOWN. Capital guard: no rebalance if price <70% original entry.
+
+IMPORTANT RULES:
+1. When REBAL_DATA is present in the prompt, you MUST use those exact numbers in ACTION. Do not recompute.
+2. REBAL_DATA contains: hedge_action (close/cancel), hedge_pnl, lp_avax, lp_usdc, swap_dir, swap_avax/usdc amounts, new_range, new_t1 parameters.
+3. LP exits bottom = 100% AVAX (no USDC). LP exits top = 100% USDC. Swap step corrects the ratio for new range.
+4. Do NOT use markdown headers (##). Plain text only.
+5. When rebalance is triggered, ACTION must be numbered steps: ① ② ③ ④ ⑤ ⑥
+
+Respond in exactly 3 sections labelled SITUATION, ACTION, RISK. Max 300 words. Be direct and specific.`;
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -1069,7 +1090,7 @@ function showAnalysisResult(text,fromCache,timestamp){
     const next=sections[i+1]?.key,start=remaining.search(new RegExp(key+'[:\\s*]*','i'));
     if(start===-1)return;
     const end=next?remaining.search(new RegExp(next+'[:\\s*]*','i')):remaining.length;
-    const content=remaining.slice(start+key.length+1,end>start?end:undefined).trim().replace(/\n/g,'<br>');
+    const content=remaining.slice(start+key.length+1,end>start?end:undefined).trim().replace(/^#{1,3}\s*/gm,'').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
     html+=`<div class="asec"><h4>${label}</h4><p>${content}</p></div>`;
   });
   if(!html)html=`<div class="asec"><p>${text.replace(/\n/g,'<br>')}</p></div>`;
@@ -1215,6 +1236,15 @@ function checkAlerts(){
   else if(now==='hold') document.title='🟣 Hold — '+baseTitle;
   else document.title=baseTitle;
 
+  // Auto-reset confirm candles when price returns in range
+  if(now==='green'&&prevState!=='green'){
+    const cfg=S.get('config',{});
+    if(cfg.confirmCandles>0){
+      cfg.confirmCandles=0;S.set('config',cfg);state.config=cfg;
+      const el=document.getElementById('s-confirmcandles');
+      if(el)el.value='0';
+    }
+  }
   // Save state for next comparison
   S.set('lastActionState', now);
   S.set('lastRebalTrigger', c.rebalTrigger||null);
