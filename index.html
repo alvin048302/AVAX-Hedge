@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AVAX LP Calculator — Pharaoh × Hyperliquid</title>
+<title>AVAX LP — Pharaoh × Hyperliquid</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -13,38 +13,31 @@
   --amber:#d97706;--amber-bg:#fffbeb;--amber-b:#fde68a;
   --red:#dc2626;--red-bg:#fef2f2;--red-b:#fecaca;
   --blue:#2563eb;--blue-bg:#eff6ff;--blue-b:#bfdbfe;
+  --purple:#7c3aed;--purple-bg:#f5f3ff;--purple-b:#ddd6fe;
   --mono:'IBM Plex Mono',monospace;
   --sans:'Inter',-apple-system,sans-serif;
 }
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;padding:16px;max-width:620px;margin:0 auto}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;padding:16px;max-width:600px;margin:0 auto}
 .mono{font-family:var(--mono)}
 .lbl{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:3px;display:block}
 .val{font-family:var(--mono);font-weight:600;font-size:15px}
 .val-sm{font-family:var(--mono);font-size:12px}
 .pos{color:var(--green)}.neg{color:var(--red)}.warn{color:var(--amber)}
-
-/* Panels */
-.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:10px}
 .ph{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)}
 .pt{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
-
-/* Badges */
 .badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
 .bg{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
 .ba{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b)}
 .br{background:var(--red-bg);color:var(--red);border:1px solid var(--red-b)}
 .bb{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-b)}
+.bp{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-b)}
 .dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex-shrink:0}
 .dg{background:var(--green)}.da{background:var(--amber)}.dr{background:var(--red)}
-
-/* Grid */
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px}
 .dc{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
-
-/* Range bar */
 .rb-wrap{margin:12px 0}
 .rb-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--muted);margin-bottom:6px}
 .rb-track{height:10px;background:var(--border);border-radius:5px;position:relative;overflow:visible}
@@ -52,191 +45,141 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .rb-fill.out{background:linear-gradient(90deg,#fecaca,#dc2626)}
 .rb-cur{position:absolute;top:-3px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2);transform:translateX(-50%);transition:left .4s;z-index:1}
 .rb-cur.in-c{background:var(--green)}.rb-cur.out-c{background:var(--red)}
-
-/* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .15s;font-family:var(--sans)}
 .btn-dark{background:#0f172a;color:#fff}.btn-dark:hover{background:#1e293b}
 .btn-out{background:var(--bg);color:var(--text);border:1px solid var(--border)}.btn-out:hover{background:var(--surface)}
 .btn-sm{padding:5px 12px;font-size:12px}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-full{width:100%}
-
-/* Inputs */
 .ig{margin-bottom:10px}
 .ig label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:3px;letter-spacing:.04em}
 .ig input,.ig select{width:100%;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:var(--mono);background:var(--bg);color:var(--text);outline:none;transition:border-color .15s}
 .ig input:focus,.ig select:focus{border-color:#94a3b8}
 .ig .hint{font-size:11px;color:var(--faint);margin-top:3px}
-
-/* Header */
-.app-header{margin-bottom:14px;padding-bottom:14px;border-bottom:2px solid var(--border)}
-.header-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
-.app-title{font-size:15px;font-weight:700}
-.app-sub{font-size:11px;color:var(--faint);margin-top:2px}
-.price-big{font-family:var(--mono);font-size:24px;font-weight:700}
-.header-actions{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
-
-/* Verify strip */
-.vs{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:12px;font-size:12px}
-.vi{display:flex;align-items:center;gap:4px;color:var(--muted)}
-
-/* Hedge tier */
-.ht{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px}
-.ht.active{border-color:var(--amber-b);background:var(--amber-bg)}
-.ht.inactive{opacity:.7}
-
-/* Analysis */
+.app-header{margin-bottom:12px;padding-bottom:12px;border-bottom:2px solid var(--border)}
+.price-big{font-family:var(--mono);font-size:26px;font-weight:700}
+.action-block{border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.action-green{background:var(--green-bg);border:1.5px solid var(--green-b)}
+.action-amber{background:var(--amber-bg);border:1.5px solid var(--amber-b)}
+.action-red{background:var(--red-bg);border:1.5px solid var(--red-b)}
+.action-hold{background:var(--purple-bg);border:1.5px solid var(--purple-b)}
+.action-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.action-body{font-size:13px;line-height:1.7}
+.action-sub{display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.08);font-size:12px;color:var(--muted);flex-wrap:wrap}
+.hd-row{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px}
+.hd-row:last-child{border-bottom:none}
 .abox{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:14px;margin-top:12px}
 .asec{margin-bottom:10px}.asec:last-child{margin-bottom:0}
 .asec h4{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:5px}
-.asec p{font-size:13px;line-height:1.65;color:var(--text)}
-
-/* P&L rows */
-.pr{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--border)}
-.pr:last-child{border-bottom:none}
-
-/* Log table */
+.asec p{font-size:13px;line-height:1.65}
 .lt{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
 .lt th{text-align:left;padding:6px 8px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);border-bottom:1px solid var(--border)}
 .lt td{padding:6px 8px;border-bottom:1px solid var(--border);font-family:var(--mono);font-size:11px}
 .lt tr:last-child td{border-bottom:none}
-
-/* Spinner */
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--text);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-
-/* Override */
-.ovr{background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:8px;padding:12px;margin-bottom:12px;display:none}
-
-/* Divider */
 hr{border:none;border-top:1px solid var(--border);margin:10px 0}
-
-/* Collapsible */
 .col-hdr{cursor:pointer;user-select:none;display:flex;justify-content:space-between;align-items:center}
 .col-body{display:none;margin-top:12px}.col-body.open{display:block}
-
-/* Alert box */
-.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:10px}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:8px}
 .alert-r{background:var(--red-bg);color:var(--red);border:1px solid var(--red-b)}
 .alert-a{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-b)}
-.alert-g{background:var(--green-bg);color:var(--green);border:1px solid var(--green-b)}
-
-/* Tier 1 recommendation */
-.t1-rec{background:var(--blue-bg);border:1px solid var(--blue-b);border-radius:8px;padding:12px;margin-top:10px}
-.t1-rec .lbl{color:var(--blue)}
-
-/* Cache notice */
 .cn{font-size:11px;color:var(--faint);display:flex;align-items:center;gap:5px;margin-top:6px}
-
-@media(max-width:420px){.g4{grid-template-columns:1fr 1fr}.g3{grid-template-columns:1fr 1fr}}
+@media(max-width:420px){.g3{grid-template-columns:1fr 1fr}}
 </style>
 </head>
 <body>
-
 <div id="app">
 
 <!-- HEADER -->
 <div class="app-header">
-  <div class="header-top">
+  <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div>
-      <div class="app-title">AVAX / USDC LP Calculator</div>
-      <div class="app-sub">Pharaoh Exchange · Hyperliquid Hedge</div>
-    </div>
-    <div id="status-badge"><span class="badge bb"><span class="dot" style="background:var(--blue)"></span>LOADING</span></div>
-  </div>
-  <div style="display:flex;justify-content:space-between;align-items:center">
-    <div>
-      <div class="price-big" id="price-display">—</div>
-      <div id="price-change" style="font-size:12px;color:var(--muted);margin-top:2px">Fetching price...</div>
+      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">AVAX/USDC · Pharaoh × Hyperliquid</div>
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <div class="price-big" id="price-display">—</div>
+        <div id="price-change" style="font-size:13px;color:var(--muted)">—</div>
+      </div>
+      <div id="price-range" style="font-size:12px;color:var(--faint);margin-top:2px">7d: —</div>
     </div>
     <div style="text-align:right">
-      <div style="font-size:11px;color:var(--faint)" id="refresh-time">Never refreshed</div>
-      <div style="display:flex;gap:6px;margin-top:6px;justify-content:flex-end">
+      <div id="status-badge"><span class="badge bb"><span class="dot" style="background:var(--blue)"></span>LOADING</span></div>
+      <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
         <button class="btn btn-out btn-sm" onclick="refreshAll()"><span id="refresh-icon">↺</span> Refresh</button>
-        <button class="btn btn-out btn-sm" onclick="toggleSetup()">⚙ Setup</button>
-        <button class="btn btn-out btn-sm" onclick="showDebug()" style="color:#94a3b8">🔧</button>
+        <button class="btn btn-out btn-sm" onclick="toggleSetup()">⚙</button>
+        <button class="btn btn-out btn-sm" onclick="showDebug()" style="color:var(--faint)">🔧</button>
       </div>
+      <div style="font-size:10px;color:var(--faint);margin-top:5px" id="refresh-time">—</div>
     </div>
   </div>
 </div>
 
 <!-- SETUP PANEL -->
 <div id="setup-panel" class="panel" style="display:none">
-  <div class="ph"><span class="pt">⚙ Configuration</span><button class="btn btn-out btn-sm" onclick="toggleSetup()">✕ Close</button></div>
+  <div class="ph"><span class="pt">⚙ Configuration</span><button class="btn btn-out btn-sm" onclick="toggleSetup()">✕</button></div>
   <div class="g2">
-    <div class="ig"><label>Claude API Key</label><input type="password" id="s-apikey" placeholder="sk-ant-..."><div class="hint">Required for Analysis</div></div>
-    <div class="ig"><label>HL Wallet Address</label><input id="s-hlwallet" placeholder="0x..."><div class="hint">For auto-fetching hedge positions</div></div>
+    <div class="ig"><label>Claude API Key</label><input type="password" id="s-apikey" placeholder="sk-ant-..."><div class="hint">For Deep Analysis</div></div>
+    <div class="ig"><label>HL Wallet Address</label><input id="s-hlwallet" placeholder="0x..."><div class="hint">Auto-fetches hedge</div></div>
   </div>
   <div class="g2">
-    <div class="ig"><label>NFT Token ID (optional)</label><input id="s-tokenid" placeholder="e.g. 12345"><div class="hint">Auto-reads LP from chain</div></div>
-    <div class="ig"><label>Original Entry Price ($)</label><input id="s-origentry" placeholder="9.882"><div class="hint">All-time entry, never resets</div></div>
+    <div class="ig"><label>NFT Token ID (optional)</label><input id="s-tokenid" placeholder="169390"><div class="hint">Auto-reads LP from chain</div></div>
+    <div class="ig"><label>Original Entry Price ($)</label><input id="s-origentry" placeholder="9.882"><div class="hint">All-time, never resets</div></div>
   </div>
   <div class="g2">
-    <div class="ig"><label>Initial Capital ($)</label><input id="s-capital" placeholder="7000"></div>
-    <div class="ig"><label>APY Override (%)</label><input id="s-apy" placeholder="e.g. 98.69"><div class="hint">⚡ Use this — enter APY shown on Pharaoh UI. DeFiLlama auto-fetch may be inaccurate.</div></div>
+    <div class="ig"><label>Total Capital ($)</label><input id="s-capital" placeholder="5012"></div>
+    <div class="ig"><label>APY Override (%)</label><input id="s-apy" placeholder="98.69"><div class="hint">⚡ Use Pharaoh UI rate</div></div>
   </div>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Manual LP inputs (used when no Token ID or RPC fails)</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Manual LP inputs (when no Token ID or RPC fails)</div>
   <div class="g3">
     <div class="ig"><label>Entry AVAX</label><input id="s-eavax" placeholder="412.5"></div>
     <div class="ig"><label>Entry USDC ($)</label><input id="s-eusdc" placeholder="2847"></div>
-    <div class="ig"><label>Range Low</label><input id="s-rlow" placeholder="9.238"></div>
+    <div class="ig"><label>Range Low ($)</label><input id="s-rlow" placeholder="9.331"></div>
   </div>
   <div class="g3">
-    <div class="ig"><label>Range High</label><input id="s-rhigh" placeholder="10.54"></div>
-    <div class="ig"><label>This Range Entry ($)</label><input id="s-rangeprice" placeholder="9.60"></div>
+    <div class="ig"><label>Range High ($)</label><input id="s-rhigh" placeholder="10.500"></div>
+    <div class="ig"><label>Range Entry ($)</label><input id="s-rangeprice" placeholder="9.60"></div>
     <div class="ig"><label>Rebalances / Month</label><input id="s-rebals" placeholder="0"></div>
   </div>
   <hr>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Hedge state (auto-fetched from HL if wallet set; manual fallback)</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Hedge (auto-fetched from HL if wallet set)</div>
   <div class="g2">
-    <div class="ig"><label>Tier 1 Entry ($)</label><input id="s-t1entry" placeholder="9.275"></div>
-    <div class="ig"><label>Tier 1 Size (AVAX)</label><input id="s-t1size" placeholder="215"></div>
+    <div class="ig"><label>T1 Entry ($)</label><input id="s-t1entry" placeholder="9.275"></div>
+    <div class="ig"><label>T1 Size (AVAX)</label><input id="s-t1size" placeholder="215"></div>
   </div>
   <div class="g2">
-    <div class="ig"><label>Tier 1 Leverage</label>
+    <div class="ig"><label>T1 Leverage</label>
       <select id="s-t1lev"><option value="">— Not Set —</option><option value="1.5">1.5x</option><option value="2">2x</option><option value="3">3x</option></select>
     </div>
-    <div class="ig"><label>Tier 1 Status</label>
-      <select id="s-t1status"><option value="waiting">Waiting (limit order set)</option><option value="active">Active (filled)</option><option value="closed">Closed</option></select>
+    <div class="ig"><label>T1 Status</label>
+      <select id="s-t1status"><option value="waiting">Waiting (limit order)</option><option value="active">Active (filled)</option><option value="closed">Closed</option></select>
     </div>
   </div>
-  <div class="g2">
-    <div class="ig"><label>HL Margin Posted ($)</label><input id="s-margin" placeholder="1500"></div>
+  <div class="g3">
+    <div class="ig"><label>HL Margin ($)</label><input id="s-margin" placeholder="1500"></div>
     <div class="ig"><label>Days Hedge Open</label><input id="s-hedgedays" placeholder="0"></div>
+    <div class="ig"><label>Out-of-Range Hours</label><input id="s-oohours" placeholder="0"><div class="hint">Reset on rebalance</div></div>
+  </div>
+  <div class="g2">
+    <div class="ig"><label>ATR 14-day ($)</label><input id="s-atr" placeholder="0.235"><div class="hint">Update weekly · default 2.5% of price</div></div>
+    <div class="ig"><label>4h Candles Below Range</label><input id="s-fourh" placeholder="0"><div class="hint">Consecutive 4h closes below Pa</div></div>
   </div>
   <hr>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:10px">Cumulative tracking</div>
+  <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Cumulative P&amp;L tracking</div>
   <div class="g3">
     <div class="ig"><label>Total LP Earned ($)</label><input id="s-totalearned" placeholder="0"></div>
-    <div class="ig"><label>Total Hedge P&L ($)</label><input id="s-totalhpnl" placeholder="0"></div>
+    <div class="ig"><label>Total Hedge P&amp;L ($)</label><input id="s-totalhpnl" placeholder="0"></div>
     <div class="ig"><label>Total IL Realised ($)</label><input id="s-totalil" placeholder="0"></div>
   </div>
   <button class="btn btn-dark btn-full" onclick="saveConfig()">✓ Save Configuration</button>
 </div>
 
-<!-- VERIFY STRIP -->
-<div id="verify-strip" class="vs">
-  <span style="font-weight:600;font-size:11px;color:var(--muted)">DATA</span>
-  <span class="vi" id="v-price">⚪ Price</span>
-  <span class="vi" id="v-lp">⚪ LP</span>
-  <span class="vi" id="v-hedge">⚪ Hedge</span>
-  <span class="vi" id="v-apy">⚪ APY</span>
-  <span style="margin-left:auto;font-size:11px;color:var(--faint)" id="v-summary">—</span>
-</div>
-
-<!-- OVERRIDE PANEL -->
-<div id="override-panel" class="ovr">
-  <div style="font-weight:600;color:var(--amber);margin-bottom:8px;font-size:13px">⚠ Data issue detected — enter values manually:</div>
-  <div class="g2" id="override-fields"></div>
-</div>
-
-<!-- LP PANEL -->
-<div class="panel" id="lp-panel">
+<!-- PANEL 1: POSITION -->
+<div class="panel" id="pos-panel">
   <div class="ph">
-    <span class="pt">LP Position</span>
-    <span id="lp-source" style="font-size:10px;color:var(--faint)">—</span>
+    <span class="pt">Position</span>
+    <span id="pos-source" style="font-size:10px;color:var(--faint)">—</span>
   </div>
-  <div id="rpc-fail-banner" class="alert alert-a" style="display:none;margin-bottom:10px"></div>
+  <div id="rpc-banner" style="display:none"></div>
   <div class="rb-wrap">
     <div class="rb-labels">
       <span id="rb-low">$—</span>
@@ -250,1148 +193,844 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     <div style="text-align:center;font-size:11px;color:var(--muted);margin-top:5px" id="rb-pct">—</div>
   </div>
   <div class="g3" style="margin-bottom:10px">
-    <div class="dc"><span class="lbl">AVAX in LP</span><span class="val" id="lp-avax">—</span></div>
-    <div class="dc"><span class="lbl">USDC in LP</span><span class="val" id="lp-usdc">—</span></div>
-    <div class="dc"><span class="lbl">Total Value</span><span class="val" id="lp-value">—</span></div>
+    <div class="dc"><span class="lbl">LP Value</span><span class="val" id="pos-value">—</span></div>
+    <div class="dc"><span class="lbl">Daily Yield</span><span class="val pos" id="pos-daily">—</span></div>
+    <div class="dc"><span class="lbl">Composition</span><span class="val-sm" id="pos-comp" style="white-space:pre-line">—</span></div>
   </div>
-  <div class="g4">
-    <div class="dc"><span class="lbl">Composition</span><span class="val-sm" id="lp-comp">—</span></div>
-    <div class="dc"><span class="lbl" id="lp-apy-lbl">APY (Pharaoh)</span><span class="val-sm pos" id="lp-apy">—</span></div>
-    <div class="dc"><span class="lbl">Eff. APY</span><span class="val-sm" id="lp-effapy">—</span></div>
-    <div class="dc"><span class="lbl">Daily Yield</span><span class="val-sm pos" id="lp-daily">—</span></div>
+  <div class="g2">
+    <div class="dc"><span class="lbl">Hedge</span><span class="val-sm" id="pos-hedge">—</span></div>
+    <div class="dc"><span class="lbl">IL This Range</span><span class="val-sm" id="pos-il">—</span></div>
   </div>
-  <hr>
-  <div class="g3">
-    <div class="dc"><span class="lbl">Break-even APY</span><span class="val-sm" id="lp-bea">—</span></div>
-    <div class="dc"><span class="lbl">IL This Range</span><span class="val-sm" id="lp-il">—</span></div>
-    <div class="dc"><span class="lbl">Rebal Count</span><span class="val-sm" id="lp-rebals">—</span></div>
-  </div>
-
-  <!-- Tier 1 recommendation (shown when no active hedge) -->
-  <div class="t1-rec" id="t1-rec" style="display:none">
-    <span class="lbl">Tier 1 Pre-Set Recommendation</span>
-    <div id="t1-rec-text" style="font-size:13px;margin-top:4px"></div>
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px">
+    <span><span style="color:var(--muted)">APY </span><b id="pos-apy" class="mono">—</b></span>
+    <span><span style="color:var(--muted)">Month est. </span><b id="pos-month" class="mono pos">—</b></span>
+    <span><span style="color:var(--muted)">All-time </span><b id="pos-alltime" class="mono">—</b></span>
   </div>
 </div>
 
-<!-- HEDGE PANEL -->
-<div class="panel" id="hedge-panel">
-  <div class="ph"><span class="pt">Hedge — Hyperliquid</span><span id="hedge-summary-badge">—</span></div>
-  <div id="t1-block" class="ht inactive">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-      <span style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Tier 1 — Auto (Limit Order)</span>
-      <span id="t1-badge" class="badge ba"><span class="dot da"></span>WAITING</span>
-    </div>
-    <div class="g3">
-      <div><span class="lbl">Entry</span><span class="val-sm" id="t1-entry">—</span></div>
-      <div><span class="lbl">Size</span><span class="val-sm" id="t1-size">—</span></div>
-      <div><span class="lbl">Leverage</span><span class="val-sm" id="t1-lev">—</span></div>
-    </div>
-    <div class="g2" style="margin-top:8px">
-      <div><span class="lbl">Unrealised P&L</span><span class="val-sm" id="t1-pnl">—</span></div>
-      <div><span class="lbl">SL Level</span><span class="val-sm" id="t1-sl">—</span></div>
-    </div>
+<!-- IL & VIABILITY (collapsible) -->
+<div class="panel" id="viab-panel">
+  <div class="col-hdr ph" onclick="toggleViability()" style="margin-bottom:0;border-bottom:none">
+    <span class="pt">IL &amp; Viability</span>
+    <span style="font-size:12px;color:var(--muted)" id="viab-toggle-txt">▾ Show</span>
   </div>
+  <div class="col-body" id="viab-body">
+    <div style="margin-top:12px">
 
-  <div class="g4" style="margin-top:10px">
-    <div class="dc"><span class="lbl">Hedge P&L</span><span class="val-sm" id="h-combined">—</span></div>
-    <div class="dc"><span class="lbl">Coverage</span><span class="val-sm" id="h-coverage">—</span></div>
-    <div class="dc"><span class="lbl">Funding Cost</span><span class="val-sm neg" id="h-funding">—</span></div>
-    <div class="dc"><span class="lbl">Liq. Price</span><span class="val-sm" id="h-liq">—</span></div>
+      <!-- IL Now + IL at exit -->
+      <div class="g2" style="margin-bottom:10px">
+        <div class="dc">
+          <span class="lbl">IL Now</span>
+          <span id="viab-il-now" class="val-sm">—</span>
+          <div style="font-size:10px;color:var(--faint);margin-top:2px">vs holding entry amounts</div>
+        </div>
+        <div class="dc">
+          <span class="lbl">IL at Range Low</span>
+          <span id="viab-il-exit" class="val-sm">—</span>
+          <div style="font-size:10px;color:var(--faint);margin-top:2px">locked in at rebalance</div>
+        </div>
+      </div>
+
+      <!-- Upward exit scenario -->
+      <div id="viab-top" style="background:var(--green-bg);border:1px solid var(--green-b);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px">
+        <div style="font-weight:700;color:var(--green);margin-bottom:4px">▲ If exits top (<span id="viab-pb">—</span>)</div>
+        <div id="viab-top-body" style="color:var(--text);line-height:1.7">—</div>
+      </div>
+
+      <!-- Downward exit scenario -->
+      <div id="viab-bot" style="background:var(--amber-bg);border:1px solid var(--amber-b);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12px">
+        <div style="font-weight:700;color:var(--amber);margin-bottom:4px">▼ If exits bottom (<span id="viab-pa">—</span>)</div>
+        <div id="viab-bot-body" style="color:var(--text);line-height:1.7">—</div>
+      </div>
+
+      <!-- APY viability -->
+      <div id="viab-apy" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:12px">
+        <div style="font-weight:700;color:var(--muted);margin-bottom:4px;font-size:10px;letter-spacing:.08em;text-transform:uppercase">APY Viability</div>
+        <div id="viab-apy-body" style="line-height:1.8">—</div>
+      </div>
+
+    </div>
   </div>
-  <div id="liq-warning" style="display:none;margin-top:8px"></div>
 </div>
 
-<!-- P&L PANEL -->
+<!-- PANEL 2: ACTION -->
+<div id="action-block" class="action-block action-green">
+  <div class="action-title" id="action-title">—</div>
+  <div class="action-body" id="action-body">—</div>
+  <div class="action-sub" id="action-sub">—</div>
+</div>
+
+<!-- DEEP ANALYSIS -->
 <div class="panel">
-  <div class="ph"><span class="pt">Profit & Loss</span></div>
-  <div class="pr">
-    <span style="font-size:13px">Today's Net (yield + hedge − costs)</span>
-    <span class="val" id="pnl-today">—</span>
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <span class="pt">Deep Analysis</span>
+    <span id="model-badge" style="font-size:11px;color:var(--faint)">—</span>
   </div>
-  <div class="pr">
-    <span style="font-size:13px">This Month</span>
-    <span class="val" id="pnl-month">—</span>
-  </div>
-  <div class="pr">
-    <span style="font-size:13px">All-Time Net</span>
-    <span class="val" id="pnl-alltime">—</span>
-  </div>
-  <div class="pr">
-    <span style="font-size:13px">Capital Efficiency</span>
-    <span class="val" id="pnl-capital">—</span>
-  </div>
-  <div class="pr">
-    <span style="font-size:13px">30% Guard Floor</span>
-    <span class="val" id="pnl-guard">—</span>
-  </div>
-</div>
-
-<!-- ANALYSIS PANEL -->
-<div class="panel">
-  <div class="ph"><span class="pt">AI Analysis</span><span id="model-badge" class="val-sm" style="color:var(--faint)">—</span></div>
-
-  <div id="analysis-checks" style="display:none;margin-bottom:12px"></div>
-
-  <button class="btn btn-dark btn-full" id="analyse-btn" onclick="runAnalysis()">
+  <button class="btn btn-dark btn-full" id="analyse-btn" onclick="runAnalysis()" style="margin-top:10px">
     <span id="analyse-icon">🔍</span> Analyse Now
   </button>
   <div id="cooldown-notice" class="cn" style="display:none"></div>
-
   <div id="analysis-output" style="display:none">
     <div class="abox" id="analysis-box"></div>
     <div class="cn" id="analysis-meta"></div>
   </div>
 </div>
 
-<!-- REBALANCE LOG -->
+<!-- PANEL 3: HEDGE DETAIL (collapsible) -->
 <div class="panel">
-  <div class="col-hdr ph" onclick="toggleLog()" style="margin-bottom:0;border-bottom:none;cursor:pointer">
+  <div class="col-hdr ph" onclick="toggleHedge()" style="margin-bottom:0;border-bottom:none">
+    <span class="pt">Hedge Detail</span>
+    <span style="font-size:12px;color:var(--muted)" id="hedge-toggle-txt">▾ Show</span>
+  </div>
+  <div class="col-body" id="hedge-body">
+    <div style="margin-top:12px">
+      <div id="hedge-liq-warn" style="display:none"></div>
+      <div class="hd-row"><span style="color:var(--muted)">T1 Status</span><span id="hd-status">—</span></div>
+      <div class="hd-row"><span style="color:var(--muted)">Entry</span><span id="hd-entry" class="mono">—</span></div>
+      <div class="hd-row"><span style="color:var(--muted)">Size</span><span id="hd-size" class="mono">—</span></div>
+      <div class="hd-row"><span style="color:var(--muted)">Leverage</span><span id="hd-lev" class="mono">—</span></div>
+      <div class="hd-row"><span style="color:var(--muted)">Unrealised P&amp;L</span><span id="hd-pnl">—</span></div>
+      <div class="hd-row"><span style="color:var(--muted)">Stop Loss</span><span id="hd-sl" class="mono">—</span></div>
+      <div class="hd-row"><span style="color:var(--muted)">Coverage</span><span id="hd-coverage" class="mono">—</span></div>
+      <div class="hd-row"><span style="color:var(--muted)">Funding Cost</span><span id="hd-funding" class="mono">—</span></div>
+      <div class="hd-row"><span style="color:var(--muted)">Liq. Price</span><span id="hd-liq" class="mono">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- REBALANCE LOG (collapsible) -->
+<div class="panel">
+  <div class="col-hdr ph" onclick="toggleLog()" style="margin-bottom:0;border-bottom:none">
     <span class="pt">Rebalance Log</span>
     <span style="font-size:12px;color:var(--muted)" id="log-toggle-txt">▾ Show</span>
   </div>
   <div class="col-body" id="log-body">
     <div style="display:flex;gap:8px;margin-top:12px;margin-bottom:8px">
       <button class="btn btn-out btn-sm" onclick="showAddLog()">+ Add Entry</button>
-      <button class="btn btn-out btn-sm" onclick="clearLog()" style="color:var(--red)">Clear Log</button>
+      <button class="btn btn-out btn-sm" onclick="clearLog()" style="color:var(--red)">Clear</button>
     </div>
     <div id="add-log-form" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
       <div class="g3">
         <div class="ig"><label>Date</label><input type="date" id="log-date"></div>
-        <div class="ig"><label>Old Range Low</label><input id="log-oldlow" placeholder="9.238"></div>
+        <div class="ig"><label>Old Range Low</label><input id="log-oldlow" placeholder="9.331"></div>
         <div class="ig"><label>New Range Low</label><input id="log-newlow" placeholder="8.50"></div>
       </div>
       <div class="g3">
-        <div class="ig"><label>IL Realised ($)</label><input id="log-il" placeholder="682"></div>
-        <div class="ig"><label>Hedge P&L ($)</label><input id="log-hpnl" placeholder="176"></div>
-        <div class="ig"><label>Swap Cost ($)</label><input id="log-cost" placeholder="10"></div>
+        <div class="ig"><label>IL Realised ($)</label><input id="log-il" placeholder="30"></div>
+        <div class="ig"><label>Hedge P&amp;L ($)</label><input id="log-hpnl" placeholder="45"></div>
+        <div class="ig"><label>Swap Cost ($)</label><input id="log-cost" placeholder="8"></div>
       </div>
       <div style="display:flex;gap:8px">
         <button class="btn btn-dark btn-sm" onclick="addLogEntry()">Save</button>
         <button class="btn btn-out btn-sm" onclick="hideAddLog()">Cancel</button>
       </div>
     </div>
-    <table class="lt" id="log-table">
-      <thead><tr><th>Date</th><th>Range</th><th>IL</th><th>Hedge P&L</th><th>Cost</th><th>Net</th></tr></thead>
-      <tbody id="log-tbody"></tbody>
-    </table>
+    <table class="lt"><thead><tr><th>Date</th><th>Range</th><th>IL</th><th>Hedge P&L</th><th>Cost</th><th>Net</th></tr></thead>
+    <tbody id="log-tbody"></tbody></table>
   </div>
 </div>
-
 
 <!-- DEBUG PANEL -->
 <div id="debug-panel" class="panel" style="display:none">
-  <div class="ph">
-    <span class="pt">🔧 Debug Info</span>
-    <button class="btn btn-out btn-sm" onclick="document.getElementById('debug-panel').style.display='none'">✕</button>
-  </div>
+  <div class="ph"><span class="pt">🔧 Debug</span>
+    <button class="btn btn-out btn-sm" onclick="document.getElementById('debug-panel').style.display='none'">✕</button></div>
   <div id="debug-content" style="font-family:monospace;font-size:11px;line-height:1.8;color:#334155"></div>
 </div>
 
-</div><!-- /app -->
-
+</div>
 <script>
-// ── Constants ────────────────────────────────────────────────────────────────
 const POSITION_MANAGER = '0x0B4478e810D48B5882D4019D435A2f864Bab4F39';
 const AVAX_RPCS = ['https://avalanche-c-chain-rpc.publicnode.com','https://rpc.ankr.com/avalanche','https://1rpc.io/avax/c','https://api.avax.network/ext/bc/C/rpc'];
 const HL_API = 'https://api.hyperliquid.xyz/info';
 const BINANCE_API = 'https://api.binance.com/api/v3';
 const DEFILLAMA_API = 'https://yields.llama.fi/pools';
-const TICK_SPACING = 10;
-const COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes (increase to 4h once live)
-
-// ── Storage ───────────────────────────────────────────────────────────────────
+const COOLDOWN_MS = 30 * 60 * 1000;
 const S = {
   get:(k,d=null)=>{try{const v=localStorage.getItem('lpc_'+k);return v!=null?JSON.parse(v):d}catch{return d}},
   set:(k,v)=>{try{localStorage.setItem('lpc_'+k,JSON.stringify(v))}catch{}},
 };
+let state = { binance:null, hl:null, lpChain:null, apy:null, config:{}, computed:{} };
 
-// ── App State ─────────────────────────────────────────────────────────────────
-let state = {
-  binance: null, hl: null, lpChain: null, apy: null,
-  config: {}, checks: {price:null,lp:null,hedge:null,apy:null},
-  computed: {},
-};
-
-// ── CL Math ───────────────────────────────────────────────────────────────────
-function tickToSqrtPrice(tick) { return Math.sqrt(Math.pow(1.0001, tick)); }
-
-function priceToSqrtPriceX96(priceUsdc) {
-  // price in USDC per AVAX (human)
-  // base units: priceBase = priceUsdc * 1e6 / 1e18 = priceUsdc / 1e12
-  const sqrtBase = Math.sqrt(priceUsdc / 1e12);
-  return sqrtBase * (2 ** 96);
+function tickToSqrtPrice(tick){return Math.sqrt(Math.pow(1.0001,tick));}
+function priceToSqrtPriceX96(priceUsdc){return Math.sqrt(priceUsdc/1e12)*(2**96);}
+function getAmountsFromLiquidity(liquidityBig,sqrtPriceX96_val,tickLower,tickUpper){
+  const L=Number(liquidityBig);if(L===0)return{avax:0,usdc:0};
+  const sqrtP=sqrtPriceX96_val/(2**96),sqrtPa=tickToSqrtPrice(tickLower),sqrtPb=tickToSqrtPrice(tickUpper);
+  let a0=0,a1=0;
+  if(sqrtP<=sqrtPa){a0=L*(1/sqrtPa-1/sqrtPb);}
+  else if(sqrtP>=sqrtPb){a1=L*(sqrtPb-sqrtPa);}
+  else{a0=L*(1/sqrtP-1/sqrtPb);a1=L*(sqrtP-sqrtPa);}
+  return{avax:a0/1e18,usdc:a1/1e6};
 }
+function tickToPrice(tick){return Math.pow(1.0001,tick)*1e12;}
+function decodeInt24(slot64){const raw=parseInt(slot64.slice(-6),16);return raw>=0x800000?raw-0x1000000:raw;}
 
-function getAmountsFromLiquidity(liquidityBig, sqrtPriceX96_val, tickLower, tickUpper) {
-  const L = Number(liquidityBig);
-  if (L === 0) return { avax: 0, usdc: 0 };
-
-  const sqrtP = sqrtPriceX96_val / (2 ** 96);
-  const sqrtPa = tickToSqrtPrice(tickLower);
-  const sqrtPb = tickToSqrtPrice(tickUpper);
-
-  let a0 = 0, a1 = 0;
-  if (sqrtP <= sqrtPa) {
-    a0 = L * (1/sqrtPa - 1/sqrtPb);
-  } else if (sqrtP >= sqrtPb) {
-    a1 = L * (sqrtPb - sqrtPa);
-  } else {
-    a0 = L * (1/sqrtP - 1/sqrtPb);
-    a1 = L * (sqrtP - sqrtPa);
-  }
-  return { avax: a0 / 1e18, usdc: a1 / 1e6 };
+function loadConfig(){
+  state.config=S.get('config',{});
+  const c=state.config;
+  const f=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
+  f('s-apikey',c.apiKey);f('s-hlwallet',c.hlWallet);f('s-tokenid',c.tokenId);
+  f('s-origentry',c.origEntry);f('s-capital',c.capital||'5012');
+  f('s-apy',c.apyOverride);f('s-eavax',c.entryAvax);f('s-eusdc',c.entryUsdc);
+  f('s-rlow',c.rangeLow);f('s-rhigh',c.rangeHigh);f('s-rangeprice',c.rangeEntry);
+  f('s-rebals',c.rebalMonth||'0');
+  f('s-t1entry',c.t1Entry);f('s-t1size',c.t1Size);f('s-t1lev',c.t1Lev);
+  f('s-t1status',c.t1Status||'waiting');
+  f('s-margin',c.hlMargin||'1500');f('s-hedgedays',c.hedgeDays||'0');
+  f('s-oohours',c.ooHours||'0');
+  f('s-atr',c.atrInput||'');f('s-fourh',c.fourHCandles||'0');
+  f('s-totalearned',c.totalEarned||'0');f('s-totalhpnl',c.totalHPnl||'0');f('s-totalil',c.totalIL||'0');
 }
-
-function tickToPrice(tick) {
-  // Returns human-readable USDC per AVAX
-  return Math.pow(1.0001, tick) * 1e12;
-}
-
-function decodeInt24(slot64) {
-  const raw = parseInt(slot64.slice(-6), 16);
-  return raw >= 0x800000 ? raw - 0x1000000 : raw;
-}
-
-// ── Config helpers ─────────────────────────────────────────────────────────────
-function loadConfig() {
-  state.config = S.get('config', {});
-  const c = state.config;
-  const f = (id, v) => { const el = document.getElementById(id); if(el && v!=null) el.value = v; };
-  f('s-apikey', c.apiKey); f('s-hlwallet', c.hlWallet); f('s-tokenid', c.tokenId);
-  f('s-origentry', c.origEntry); f('s-capital', c.capital||'7000');
-  f('s-apy', c.apyOverride); f('s-eavax', c.entryAvax); f('s-eusdc', c.entryUsdc);
-  f('s-rlow', c.rangeLow); f('s-rhigh', c.rangeHigh); f('s-rangeprice', c.rangeEntry);
-  f('s-rebals', c.rebalMonth||'0');
-  f('s-t1entry', c.t1Entry); f('s-t1size', c.t1Size); f('s-t1lev', c.t1Lev);
-  f('s-t1status', c.t1Status||'waiting');
-  f('s-margin', c.hlMargin); f('s-hedgedays', c.hedgeDays||'0');
-  f('s-totalearned', c.totalEarned||'0'); f('s-totalhpnl', c.totalHPnl||'0');
-  f('s-totalil', c.totalIL||'0');
-}
-
-function saveConfig() {
-  const g = id => document.getElementById(id)?.value?.trim()||'';
-  const c = {
-    apiKey: g('s-apikey'), hlWallet: g('s-hlwallet'), tokenId: g('s-tokenid'),
-    origEntry: parseFloat(g('s-origentry'))||null, capital: parseFloat(g('s-capital'))||7000,
-    apyOverride: parseFloat(g('s-apy'))||null,
-    entryAvax: parseFloat(g('s-eavax'))||null, entryUsdc: parseFloat(g('s-eusdc'))||null,
-    rangeLow: parseFloat(g('s-rlow'))||null, rangeHigh: parseFloat(g('s-rhigh'))||null,
-    rangeEntry: parseFloat(g('s-rangeprice'))||null, rebalMonth: parseInt(g('s-rebals'))||0,
-    t1Entry: parseFloat(g('s-t1entry'))||null, t1Size: parseFloat(g('s-t1size'))||null,
-    t1Lev: g('s-t1lev'), t1Status: g('s-t1status'),
-    hlMargin: parseFloat(g('s-margin'))||1500, hedgeDays: parseInt(g('s-hedgedays'))||0,
-    totalEarned: parseFloat(g('s-totalearned'))||0,
-    totalHPnl: parseFloat(g('s-totalhpnl'))||0,
-    totalIL: parseFloat(g('s-totalil'))||0,
+function saveConfig(){
+  const g=id=>document.getElementById(id)?.value?.trim()||'';
+  const c={
+    apiKey:g('s-apikey'),hlWallet:g('s-hlwallet'),tokenId:g('s-tokenid'),
+    origEntry:parseFloat(g('s-origentry'))||null,capital:parseFloat(g('s-capital'))||5012,
+    apyOverride:parseFloat(g('s-apy'))||null,
+    entryAvax:parseFloat(g('s-eavax'))||null,entryUsdc:parseFloat(g('s-eusdc'))||null,
+    rangeLow:parseFloat(g('s-rlow'))||null,rangeHigh:parseFloat(g('s-rhigh'))||null,
+    rangeEntry:parseFloat(g('s-rangeprice'))||null,rebalMonth:parseInt(g('s-rebals'))||0,
+    t1Entry:parseFloat(g('s-t1entry'))||null,t1Size:parseFloat(g('s-t1size'))||null,
+    t1Lev:g('s-t1lev'),t1Status:g('s-t1status'),
+    hlMargin:parseFloat(g('s-margin'))||1500,hedgeDays:parseInt(g('s-hedgedays'))||0,
+    ooHours:parseInt(g('s-oohours'))||0,
+    atrInput:parseFloat(g('s-atr'))||null,fourHCandles:parseInt(g('s-fourh'))||0,
+    totalEarned:parseFloat(g('s-totalearned'))||0,
+    totalHPnl:parseFloat(g('s-totalhpnl'))||0,
+    totalIL:parseFloat(g('s-totalil'))||0,
   };
-  S.set('config', c);
-  state.config = c;
-  toggleSetup();
-  refreshAll();
+  S.set('config',c);state.config=c;toggleSetup();refreshAll();
 }
 
-// ── Fetch Functions ────────────────────────────────────────────────────────────
-async function fetchBinance() {
-  try {
-    const [t24, klines] = await Promise.all([
+async function fetchBinance(){
+  try{
+    const[t24,klines]=await Promise.all([
       fetch(`${BINANCE_API}/ticker/24hr?symbol=AVAXUSDC`).then(r=>r.json()),
       fetch(`${BINANCE_API}/klines?symbol=AVAXUSDC&interval=1d&limit=8`).then(r=>r.json()),
     ]);
-    const price = parseFloat(t24.lastPrice);
-    const change24h = parseFloat(t24.priceChangePercent);
-    const closes = klines.slice(-4).map(k=>parseFloat(k[4]));
-    const high7d = Math.max(...klines.map(k=>parseFloat(k[2])));
-    const low7d = Math.min(...klines.map(k=>parseFloat(k[3])));
-    return { price, change24h, closes, high7d, low7d, fetchTime: Date.now(), ok: true };
-  } catch(e) { return { ok: false, error: e.message }; }
+    const price=parseFloat(t24.lastPrice),change24h=parseFloat(t24.priceChangePercent);
+    const closes=klines.slice(-4).map(k=>parseFloat(k[4]));
+    const high7d=Math.max(...klines.map(k=>parseFloat(k[2])));
+    const low7d=Math.min(...klines.map(k=>parseFloat(k[3])));
+    return{price,change24h,closes,high7d,low7d,fetchTime:Date.now(),ok:true};
+  }catch(e){return{ok:false,error:e.message};}
 }
 
-async function fetchHL(walletAddress) {
-  try {
-    const calls = [
-      // Always fetch market data (mark price, funding)
-      fetch(HL_API, { method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({type:'metaAndAssetCtxs'})}).then(r=>r.json()),
-    ];
-
-    if (walletAddress) {
-      // Fetch filled positions AND open (pending) orders
+async function fetchHL(walletAddress){
+  try{
+    const calls=[fetch(HL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'metaAndAssetCtxs'})}).then(r=>r.json())];
+    if(walletAddress){
       calls.push(
-        fetch(HL_API, { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({type:'clearinghouseState', user: walletAddress})}).then(r=>r.json()),
-        fetch(HL_API, { method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({type:'openOrders', user: walletAddress})}).then(r=>r.json())
+        fetch(HL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'clearinghouseState',user:walletAddress})}).then(r=>r.json()),
+        fetch(HL_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({type:'openOrders',user:walletAddress})}).then(r=>r.json())
       );
-    } else {
-      calls.push(Promise.resolve(null), Promise.resolve(null));
+    }else{calls.push(Promise.resolve(null),Promise.resolve(null));}
+    const results=await Promise.allSettled(calls);
+    const ctxData=results[0].status==='fulfilled'?results[0].value:null;
+    const posData=results[1].status==='fulfilled'?results[1].value:null;
+    const ordData=results[2].status==='fulfilled'?results[2].value:null;
+    let markPrice=null,fundingRate=null,positions=[],openOrders=[];
+    if(ctxData&&Array.isArray(ctxData)&&ctxData[0]&&ctxData[1]){
+      const meta=ctxData[0],ctxs=ctxData[1];
+      const idx=meta.universe?.findIndex(a=>a.name==='AVAX')??-1;
+      if(idx>=0&&ctxs[idx]){markPrice=parseFloat(ctxs[idx].markPx);fundingRate=parseFloat(ctxs[idx].funding);}
     }
-
-    const results = await Promise.allSettled(calls);
-    const ctxData  = results[0].status==='fulfilled' ? results[0].value : null;
-    const posData  = results[1].status==='fulfilled' ? results[1].value : null;
-    const ordData  = results[2].status==='fulfilled' ? results[2].value : null;
-
-    let markPrice = null, fundingRate = null;
-    let positions = [];   // filled/active shorts
-    let openOrders = [];  // pending limit orders (Tier 1 waiting)
-
-    // Market data
-    if (ctxData && Array.isArray(ctxData) && ctxData[0] && ctxData[1]) {
-      const meta = ctxData[0]; const ctxs = ctxData[1];
-      const idx = meta.universe?.findIndex(a=>a.name==='AVAX') ?? -1;
-      if (idx >= 0 && ctxs[idx]) {
-        markPrice = parseFloat(ctxs[idx].markPx);
-        fundingRate = parseFloat(ctxs[idx].funding);
-      }
+    if(posData?.assetPositions){
+      positions=posData.assetPositions.filter(p=>p.position?.coin==='AVAX').map(p=>({
+        szi:parseFloat(p.position.szi),entryPx:parseFloat(p.position.entryPx),
+        unrealizedPnl:parseFloat(p.position.unrealizedPnl||0),
+        liquidationPx:p.position.liquidationPx?parseFloat(p.position.liquidationPx):null,
+        marginUsed:parseFloat(p.position.marginUsed||0),leverage:p.position.leverage?.value||null,
+      }));
     }
-
-    // Filled positions (active shorts)
-    if (posData?.assetPositions) {
-      positions = posData.assetPositions
-        .filter(p => p.position?.coin === 'AVAX')
-        .map(p => ({
-          szi: parseFloat(p.position.szi),
-          entryPx: parseFloat(p.position.entryPx),
-          unrealizedPnl: parseFloat(p.position.unrealizedPnl || 0),
-          liquidationPx: p.position.liquidationPx ? parseFloat(p.position.liquidationPx) : null,
-          marginUsed: parseFloat(p.position.marginUsed || 0),
-          leverage: p.position.leverage?.value || null,
-        }));
+    if(Array.isArray(ordData)){
+      openOrders=ordData.filter(o=>o.coin==='AVAX'&&o.side==='A').map(o=>({
+        oid:o.oid,limitPx:parseFloat(o.limitPx),sz:parseFloat(o.sz),
+      })).sort((a,b)=>b.limitPx-a.limitPx);
     }
-
-    // Pending limit orders (Tier 1 / Tier 2 waiting)
-    if (Array.isArray(ordData)) {
-      openOrders = ordData
-        .filter(o => o.coin === 'AVAX' && o.side === 'A') // side A = ask = short
-        .map(o => ({
-          oid: o.oid,
-          limitPx: parseFloat(o.limitPx),
-          sz: parseFloat(o.sz),
-          origSz: parseFloat(o.origSz || o.sz),
-          orderType: o.orderType || 'Limit',
-          timestamp: o.timestamp,
-        }))
-        .sort((a, b) => b.limitPx - a.limitPx); // highest price first = T1
-    }
-
-    const hlDebug = {
-      ctxReceived: !!ctxData,
-      posReceived: !!posData,
-      ordReceived: !!ordData,
-      posDataKeys: posData ? Object.keys(posData) : [],
-      positionsCount: positions.length,
-      openOrdersCount: openOrders.length,
-      openOrdersPreview: openOrders.map(o => `SHORT ${o.sz} AVAX @ $${o.limitPx}`).join(', ') || 'none',
-      rawPosPreview: posData ? JSON.stringify(posData).slice(0, 150) : 'null',
-    };
-
-    return { markPrice, fundingRate, positions, openOrders, debug: hlDebug, fetchTime: Date.now(), ok: true };
-  } catch(e) { return { ok: false, error: e.message }; }
+    const hlDebug={ctxReceived:!!ctxData,posReceived:!!posData,ordReceived:!!ordData,
+      positionsCount:positions.length,openOrdersCount:openOrders.length,
+      openOrdersPreview:openOrders.map(o=>`SHORT ${o.sz} AVAX @ $${o.limitPx}`).join(', ')||'none',
+      rawPosPreview:posData?JSON.stringify(posData).slice(0,150):'null'};
+    return{markPrice,fundingRate,positions,openOrders,debug:hlDebug,fetchTime:Date.now(),ok:true};
+  }catch(e){return{ok:false,error:e.message};}
 }
 
-async function fetchLPChain(tokenId) {
-  if (!tokenId) return { ok: false, error: 'No token ID' };
-  const PM = POSITION_MANAGER;
-  const tid = BigInt(tokenId).toString(16).padStart(64,'0');
-  const calldata = '0x99fbab88' + tid;
-
-  // Helper to parse result from either Etherscan-format or raw JSON-RPC
-  function parseResult(hex) {
-    if (!hex || hex === '0x' || hex === '0x0' || hex.length < 386) return null;
-    const h = hex.startsWith('0x') ? hex.slice(2) : hex;
-    const slots = [];
-    for (let i = 0; i < 12; i++) slots.push(h.slice(i*64, (i+1)*64));
-    const tickLower = decodeInt24(slots[5]);
-    const tickUpper = decodeInt24(slots[6]);
-    const liquidity = BigInt('0x' + slots[7]);
-    return { tickLower, tickUpper, liquidity };
+async function fetchLPChain(tokenId){
+  if(!tokenId)return{ok:false,error:'No token ID'};
+  const PM=POSITION_MANAGER,tid=BigInt(tokenId).toString(16).padStart(64,'0'),calldata='0x99fbab88'+tid;
+  function parseResult(hex){
+    if(!hex||hex==='0x'||hex==='0x0'||hex.length<386)return null;
+    const h=hex.startsWith('0x')?hex.slice(2):hex,slots=[];
+    for(let i=0;i<12;i++)slots.push(h.slice(i*64,(i+1)*64));
+    return{tickLower:decodeInt24(slots[5]),tickUpper:decodeInt24(slots[6]),liquidity:BigInt('0x'+slots[7])};
   }
-
-  // Strategy 1: Routescan REST API (GET request — no CORS issues in browser)
-  try {
-    const url = `https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest`;
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 8000);
-    const r = await fetch(url, { signal: ctrl.signal });
-    if (r.ok) {
-      const d = await r.json();
-      if (d.result && d.status !== '0') {
-        const parsed = parseResult(d.result);
-        if (parsed) return { ...parsed, rpc: 'routescan', fetchTime: Date.now(), ok: true };
-      }
-    }
-  } catch(e) {}
-
-  // Strategy 2: Snowtrace REST API (also GET, CORS-friendly)
-  try {
-    const url = `https://api.snowtrace.io/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest&apikey=YourApiKeyToken`;
-    const ctrl = new AbortController();
-    setTimeout(() => ctrl.abort(), 8000);
-    const r = await fetch(url, { signal: ctrl.signal });
-    if (r.ok) {
-      const d = await r.json();
-      if (d.result && d.status !== '0') {
-        const parsed = parseResult(d.result);
-        if (parsed) return { ...parsed, rpc: 'snowtrace', fetchTime: Date.now(), ok: true };
-      }
-    }
-  } catch(e) {}
-
-  // Strategy 3: JSON-RPC endpoints (may be blocked by CORS in some browsers)
-  for (const rpc of AVAX_RPCS) {
-    try {
-      const ctrl = new AbortController();
-      setTimeout(() => ctrl.abort(), 6000);
-      const r = await fetch(rpc, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ jsonrpc:'2.0', id:1, method:'eth_call',
-          params:[{ to: PM, data: calldata }, 'latest'] }),
-        signal: ctrl.signal
-      });
-      if (!r.ok) continue;
-      const d = await r.json();
-      if (d.result) {
-        const parsed = parseResult(d.result);
-        if (parsed) return { ...parsed, rpc, fetchTime: Date.now(), ok: true };
-      }
-    } catch(e) { continue; }
+  try{
+    const url=`https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest`;
+    const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
+    const r=await fetch(url,{signal:ctrl.signal});
+    if(r.ok){const d=await r.json();if(d.result&&d.status!=='0'){const p=parseResult(d.result);if(p)return{...p,rpc:'routescan',fetchTime:Date.now(),ok:true};}}
+  }catch(e){}
+  try{
+    const url=`https://api.snowtrace.io/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest&apikey=YourApiKeyToken`;
+    const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
+    const r=await fetch(url,{signal:ctrl.signal});
+    if(r.ok){const d=await r.json();if(d.result&&d.status!=='0'){const p=parseResult(d.result);if(p)return{...p,rpc:'snowtrace',fetchTime:Date.now(),ok:true};}}
+  }catch(e){}
+  for(const rpc of AVAX_RPCS){
+    try{
+      const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),6000);
+      const r=await fetch(rpc,{method:'POST',headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:PM,data:calldata},'latest']}),signal:ctrl.signal});
+      if(!r.ok)continue;const d=await r.json();
+      if(d.result){const p=parseResult(d.result);if(p)return{...p,rpc,fetchTime:Date.now(),ok:true};}
+    }catch(e){continue;}
   }
-
-  return { ok: false, error: 'Chain read failed — fill LP values manually in Setup ↑' };
+  return{ok:false,error:'Chain read failed — enter LP values in Setup'};
 }
 
-async function fetchAPY() {
-  // NOTE: DeFiLlama APY is used as a fallback reference only.
-  // Always set APY Override in Setup to match what Pharaoh UI shows.
-  // DeFiLlama may return wrong pool or inflated rates.
-  try {
-    const resp = await fetch(DEFILLAMA_API);
-    const data = await resp.json();
-    // Match specifically: pharaoh exchange, AVAX-USDC, 0.05% fee tier
-    // Sort by TVL descending to get the main pool, not a minor one
-    const pools = data.data?.filter(p =>
-      p.project?.toLowerCase().includes('pharaoh') &&
-      p.symbol?.toUpperCase().includes('AVAX') &&
-      p.symbol?.toUpperCase().includes('USDC')
-    ).sort((a,b) => (b.tvlUsd||0) - (a.tvlUsd||0));
-    const pool = pools?.[0]; // highest TVL = main pool
-    if (pool) {
-      // Use apyBase (swap fees only) if total apy seems inflated vs apyBase
-      const apy = pool.apy || pool.apyBase;
-      return { apy, apyBase: pool.apyBase, apyReward: pool.apyReward,
-               tvl: pool.tvlUsd, project: pool.project, fetchTime: Date.now(), ok: true };
-    }
-    return { ok: false, error: 'Pool not found on DeFiLlama' };
-  } catch(e) { return { ok: false, error: e.message }; }
+async function fetchAPY(){
+  try{
+    const resp=await fetch(DEFILLAMA_API),data=await resp.json();
+    const pools=data.data?.filter(p=>p.project?.toLowerCase().includes('pharaoh')&&p.symbol?.toUpperCase().includes('AVAX')&&p.symbol?.toUpperCase().includes('USDC')).sort((a,b)=>(b.tvlUsd||0)-(a.tvlUsd||0));
+    const pool=pools?.[0];
+    if(pool)return{apy:pool.apy||pool.apyBase,apyBase:pool.apyBase,tvl:pool.tvlUsd,fetchTime:Date.now(),ok:true};
+    return{ok:false,error:'Pool not found'};
+  }catch(e){return{ok:false,error:e.message};}
 }
 
-// ── Compute ────────────────────────────────────────────────────────────────────
-function computeState() {
-  const c = state.config;
-  const bin = state.binance;
-  const hl = state.hl;
-  const chain = state.lpChain;
-  const price = bin?.ok ? bin.price : null;
-  if (!price) return;
+function computeState(){
+  const c=state.config,bin=state.binance,hl=state.hl,chain=state.lpChain;
+  const price=bin?.ok?bin.price:null;if(!price)return;
+  let avax=c.entryAvax||0,usdc=c.entryUsdc||0,rangeLow=c.rangeLow||null,rangeHigh=c.rangeHigh||null,source='manual';
+  if(chain?.ok&&chain.liquidity!=null&&chain.liquidity>0n){
+    const sqrtX96=priceToSqrtPriceX96(price),amounts=getAmountsFromLiquidity(chain.liquidity,sqrtX96,chain.tickLower,chain.tickUpper);
+    avax=amounts.avax;usdc=amounts.usdc;rangeLow=tickToPrice(chain.tickLower);rangeHigh=tickToPrice(chain.tickUpper);source='on-chain';
+  }else if(!chain?.ok&&(c.entryAvax||0)===0){source='rpc-failed';}
+  const lpValue=avax*price+usdc;
+  const avaxPct=lpValue>0?(avax*price/lpValue*100):50;
+  const inRange=rangeLow&&rangeHigh?(price>=rangeLow&&price<=rangeHigh):null;
+  const pctThrough=(rangeLow&&rangeHigh&&rangeHigh>rangeLow)?Math.max(0,Math.min(100,(price-rangeLow)/(rangeHigh-rangeLow)*100)):null;
+  const apySource=c.apyOverride?'manual':(state.apy?.ok?'defillama':'default');
+  const rawApy=c.apyOverride||(state.apy?.ok?state.apy.apy:null)||87;
+  const effectiveAPY=apySource==='manual'?rawApy:rawApy*0.70;
+  const dailyYield=lpValue*(effectiveAPY/100)/365;
+  const capital=c.capital||5012; // must be before IL model
+  const hasEntryData=(c.entryAvax||0)>0&&c.rangeEntry;
+  const holdValue=hasEntryData?((c.entryAvax||0)*price+(c.entryUsdc||0)):lpValue;
+  const ilNow=hasEntryData?(lpValue-holdValue):null; // snapshot at current price
 
-  // Determine LP amounts
-  let avax = c.entryAvax || 0;
-  let usdc = c.entryUsdc || 0;
-  let rangeLow = c.rangeLow || null;
-  let rangeHigh = c.rangeHigh || null;
-  let source = 'manual';
+  // ── PROPER CL IL MODEL ─────────────────────────────────────────────────────
+  // Projected IL at range boundaries — what you actually lock in at rebalance
+  let ilAtBottomExit=null, ilAtTopExit=null, lpGainAtTop=null;
+  let rebalCostDown=null, rebalCostUp=12, daysRecoverDown=null;
+  let minViableAPY1=null, minViableAPY3=null, lpValueAtPb=null;
 
-  if (chain?.ok && chain.liquidity != null && chain.liquidity > 0n) {
-    const sqrtX96 = priceToSqrtPriceX96(price);
-    const amounts = getAmountsFromLiquidity(chain.liquidity, sqrtX96, chain.tickLower, chain.tickUpper);
-    avax = amounts.avax;
-    usdc = amounts.usdc;
-    rangeLow = tickToPrice(chain.tickLower);
-    rangeHigh = tickToPrice(chain.tickUpper);
-    source = 'on-chain';
-  } else if (!chain?.ok && (c.entryAvax || 0) === 0) {
-    source = 'rpc-failed';
-  }
+  if(hasEntryData && rangeLow && rangeHigh && rangeHigh>rangeLow){
+    const Pa=rangeLow, Pb=rangeHigh;
+    const sqrtPa=Math.sqrt(Pa), sqrtPb=Math.sqrt(Pb);
+    const entryPx=c.rangeEntry, sqrtE=Math.sqrt(entryPx);
+    const eAvax=c.entryAvax||0, eUsdc=c.entryUsdc||0;
 
-  const lpValue = avax * price + usdc;
-  const avaxPct = lpValue > 0 ? (avax * price / lpValue * 100) : 50;
-  const inRange = rangeLow && rangeHigh ? (price >= rangeLow && price <= rangeHigh) : null;
-  const pctThrough = (rangeLow && rangeHigh && rangeHigh > rangeLow)
-    ? Math.max(0, Math.min(100, (price - rangeLow) / (rangeHigh - rangeLow) * 100)) : null;
-
-  // APY
-  // Manual override = what Pharaoh actually shows (use as-is)
-  // DeFiLlama = theoretical max (apply 0.70 in-range estimate)
-  const apySource = c.apyOverride ? 'manual' : (state.apy?.ok ? 'defillama' : 'default');
-  const rawApy = c.apyOverride || (state.apy?.ok ? state.apy.apy : null) || 87;
-  const apy = rawApy;
-  const effectiveAPY = apySource === 'manual' ? apy : apy * 0.70;
-  const dailyYield = lpValue * (effectiveAPY/100) / 365;
-
-  // Break-even APY: (rebalCosts + estimated IL) / lpValue * 365 * 100
-  const rebalMonth = c.rebalMonth || 0;
-  const monthlyRebalCost = rebalMonth * 10 + rebalMonth * 80; // $10 swap + ~$80 avg IL
-  const breakEvenAPY = lpValue > 0 ? (monthlyRebalCost * 12 / lpValue * 100) : 0;
-  const baeColor = apy > breakEvenAPY * 1.2 ? 'pos' : apy > breakEvenAPY ? 'warn' : 'neg';
-
-  // IL this range — compare current LP value vs hold value at range entry price
-  // entryAvax/entryUsdc must come from manual config (set at deployment)
-  // If not set, IL cannot be calculated accurately → show 0
-  const entryAvax = c.entryAvax || 0;
-  const entryUsdc = c.entryUsdc || 0;
-  const entryPrice = c.rangeEntry || price;
-  const hasEntryData = entryAvax > 0 && entryUsdc >= 0 && c.rangeEntry;
-  const holdValue = hasEntryData ? (entryAvax * price + entryUsdc) : lpValue;
-  const ilThisRange = hasEntryData ? (lpValue - holdValue) : null;
-
-  // Hedge from HL or config — Tier 1 only
-  let t1 = { entry: c.t1Entry, size: c.t1Size, lev: c.t1Lev, status: c.t1Status || 'waiting' };
-
-  if (hl?.ok) {
-    // Override with FILLED position first (active short)
-    const shorts = (hl.positions || []).filter(p => p.szi < 0);
-    if (shorts.length >= 1) {
-      t1 = { ...t1, entry: shorts[0].entryPx, size: Math.abs(shorts[0].szi),
-              lev: shorts[0].leverage, status: 'active',
-              pnl: shorts[0].unrealizedPnl, liqPx: shorts[0].liquidationPx };
+    // Derive liquidity L from entry AVAX amount
+    let L=0;
+    if(entryPx<=Pa){ L=eAvax/(1/sqrtPa-1/sqrtPb); }
+    else if(entryPx>=Pb){ L=eUsdc/(sqrtPb-sqrtPa); }
+    else{
+      const denom=(1/sqrtE-1/sqrtPb);
+      L=denom>0&&eAvax>0 ? eAvax/denom : capital/((1/sqrtE-1/sqrtPb)*entryPx+(sqrtE-sqrtPa));
     }
-    // If no filled position, check OPEN ORDERS for pending T1 limit order
-    if (shorts.length === 0 && hl.openOrders?.length > 0) {
-      const t1Order = hl.openOrders[0];
-      t1 = { ...t1, entry: t1Order.limitPx, size: t1Order.sz,
-              status: 'waiting', orderId: t1Order.oid };
+
+    if(L>0){
+      // LP value at Pa (100% AVAX)
+      const avaxAtPa=L*(1/sqrtPa-1/sqrtPb);
+      const lpValAtPa=avaxAtPa*Pa;
+      const holdAtPa=eAvax*Pa+eUsdc;
+      ilAtBottomExit=lpValAtPa-holdAtPa;
+
+      // LP value at Pb (100% USDC)
+      lpValueAtPb=L*(sqrtPb-sqrtPa);
+      const holdAtPb=eAvax*Pb+eUsdc;
+      ilAtTopExit=lpValueAtPb-holdAtPb; // negative = opportunity cost only
+      lpGainAtTop=lpValueAtPb-capital;
+
+      // Rebalance costs
+      rebalCostDown=Math.abs(ilAtBottomExit)+rebalCostUp; // IL + swap
+      daysRecoverDown=dailyYield>0?rebalCostDown/dailyYield:null;
+
+      // APY viability floor
+      minViableAPY1=capital>0?(rebalCostDown*12/capital*100):null;
+      minViableAPY3=capital>0?(rebalCostDown*36/capital*100):null;
     }
   }
+  // Legacy alias for backward compat in any existing refs
+  const ilThisRange=ilNow;
+  let t1={entry:c.t1Entry,size:c.t1Size,lev:c.t1Lev,status:c.t1Status||'waiting'};
+  if(hl?.ok){
+    const shorts=(hl.positions||[]).filter(p=>p.szi<0);
+    if(shorts.length>=1){t1={...t1,entry:shorts[0].entryPx,size:Math.abs(shorts[0].szi),lev:shorts[0].leverage,status:'active',pnl:shorts[0].unrealizedPnl,liqPx:shorts[0].liquidationPx};}
+    if(shorts.length===0&&hl.openOrders?.length>0){const o=hl.openOrders[0];t1={...t1,entry:o.limitPx,size:o.sz,status:'waiting',orderId:o.oid};}
+  }
+  const calcPnl=(entry,size,status)=>{if(!entry||!size||status==='waiting'||status==='closed')return 0;return(entry-price)*size;};
+  const t1pnl=t1.pnl!==undefined?t1.pnl:calcPnl(t1.entry,t1.size,t1.status);
+  const fundingRate=hl?.ok?(hl.fundingRate||0.0001):0.0001;
+  const hedgeDays=c.hedgeDays||0;
+  const totalNotional=t1.status==='active'?(t1.size||0)*price:0;
+  const fundingCost=totalNotional*fundingRate*24*hedgeDays;
+  const netHedgePnl=t1pnl-fundingCost;
+  const avaxExposureAtExit=rangeLow?lpValue/rangeLow:0;
+  // Coverage = actual HL position size vs AVAX exposure at range exit
+  // If HL data available: use actual size. If not: use recommended size.
+  const actualHedgeSize=(t1.size||0);
+  const coverage=avaxExposureAtExit>0&&actualHedgeSize>0
+    ?Math.min(100,actualHedgeSize/avaxExposureAtExit*100):null;
 
-  // Hedge P&L calculation
-  const calcPnl = (entry, size, status) => {
-    if (!entry || !size || status === 'waiting' || status === 'closed') return 0;
-    return (entry - price) * size;
-  };
-  const t1pnl = t1.pnl !== undefined ? t1.pnl : calcPnl(t1.entry, t1.size, t1.status);
+  const tier1Set=t1.status==='active'||t1.status==='waiting';
+  // ATR — user input or 2.5% of price (must be before t1SL and trigger calcs)
+  const atr=c.atrInput||(price*0.025);
+  const t1RecPrice=rangeLow?(rangeLow*0.994):null;
+  const avaxAtExit=rangeLow&&lpValue>0?lpValue/rangeLow:0;
+  const t1RecSize=avaxAtExit>0?Math.round(avaxAtExit*0.50):null;
+  // Coverage target and gap — computed after t1RecSize is available
+  const coverageTarget=avaxExposureAtExit>0&&t1RecSize>0
+    ?Math.min(100,t1RecSize/avaxExposureAtExit*100):null;
+  const coverageGap=coverage!=null&&coverageTarget!=null
+    ?(coverageTarget-coverage):null; // positive = under-hedged
+  const t1RecMargin=t1RecSize&&t1RecPrice?Math.round(t1RecSize*t1RecPrice/2):null;
+  // SL on the SHORT position = entry + 1× ATR (not range_low + 20% ATR)
+  // Short fires at t1RecPrice — SL must be above that entry, not above Pa
+  const t1SL=t1RecPrice?(t1RecPrice+atr):null;
+  const t1SLLoss=t1RecSize&&t1SL&&t1RecPrice?Math.round(t1RecSize*(t1SL-t1RecPrice)):null;
+  const t1SLDays=t1SLLoss&&dailyYield>0?(t1SLLoss/dailyYield).toFixed(1):null;
+  const liqPx=t1.liqPx||null;
+  const liqDistance=liqPx?((liqPx-price)/price*100):null;
+  const totalEarned=c.totalEarned||0,totalHPnl=c.totalHPnl||0,totalIL=c.totalIL||0;
+  const allTimeNet=totalEarned+totalHPnl+totalIL;
+  const origEntry=c.origEntry||c.rangeEntry||price;
+  const guardFloor=origEntry*0.70;
+  const guardStatus=price<=guardFloor?'TRIGGERED':price<=guardFloor*1.05?'NEAR':'OK';
+  const ooHours=c.ooHours||0;
+  const fourHCandles=c.fourHCandles||0;
+  const closes=bin?.closes||[];
+  const trend=closes.length>=3?(closes[closes.length-1]<closes[closes.length-2]&&closes[closes.length-2]<closes[closes.length-3]?'DOWN':closes[closes.length-1]>closes[closes.length-2]?'UP':'FLAT'):'N/A';
+  const strongDowntrend=trend==='DOWN'&&closes.length>=3&&(closes[closes.length-1]<closes[0]*0.95);
 
-  // Funding cost — T1 only
-  const fundingRate = hl?.ok ? (hl.fundingRate || 0.0001) : 0.0001;
-  const hedgeDays = c.hedgeDays || 0;
-  const totalNotional = t1.status === 'active' ? (t1.size||0) * price : 0;
-  const fundingCost = totalNotional * fundingRate * 24 * hedgeDays;
-  const netHedgePnl = t1pnl - fundingCost;
 
-  // Coverage ratio (T1 only, target 50%)
-  const avaxExposureAtExit = rangeLow ? lpValue / rangeLow : 0;
-  const coverage = avaxExposureAtExit > 0 && (t1.size||0) > 0
-    ? Math.min(100, (t1.size||0) / avaxExposureAtExit * 100) : null;
 
-  // Liquidation warning
-  let liqPx = t1.liqPx || null;
-  let liqDistance = liqPx ? ((liqPx - price) / price * 100) : null;
+  let status='IN_RANGE';
+  if(inRange===false)status=price<(rangeLow||0)?'BELOW_RANGE':'ABOVE_RANGE';
 
-  // T1 recommendation (50% coverage, 2x leverage, full margin, SL = range_low + 20% ATR)
-  const tier1Active = t1.status === 'active' || t1.status === 'waiting';
-  const t1RecPrice = rangeLow ? (rangeLow * 0.994) : null;
-  const hlMargin = c.hlMargin || 1500;
-  // Size = 50% of AVAX exposure at range exit
-  const avaxAtExit = rangeLow && lpValue > 0 ? lpValue / rangeLow : 0;
-  const t1RecSize = avaxAtExit > 0 ? Math.round(avaxAtExit * 0.50) : null;
-  const t1RecMargin = t1RecSize && t1RecPrice ? Math.round(t1RecSize * t1RecPrice / 2) : null;
-  // SL = range_low + 20% of ATR (ATR estimated as 2.5% of price daily = 14-day)
-  const atrEst = rangeLow ? rangeLow * 0.025 : 0.25;
-  const t1SL = rangeLow ? (rangeLow + atrEst * 0.20) : null;
-  const t1SLLoss = t1RecSize && t1SL && t1RecPrice ? Math.round(t1RecSize * (t1SL - t1RecPrice)) : null;
-  const t1SLDays = t1SLLoss && dailyYield > 0 ? (t1SLLoss / dailyYield).toFixed(1) : null;
+  // ── SMARTER REBALANCE TRIGGERS ────────────────────────────────────────────
+  // T1: IMMEDIATE — daily close > 2× ATR below Pa
+  const immediateThreshold=rangeLow?(rangeLow-(2*atr)):null;
+  const triggerImmediate=status!=='IN_RANGE'&&immediateThreshold!=null&&price<immediateThreshold&&guardStatus!=='TRIGGERED';
+  // T2: FAST (12h) — 3+ consecutive 4h candles below Pa
+  const triggerFast=status!=='IN_RANGE'&&!triggerImmediate&&fourHCandles>=3&&guardStatus!=='TRIGGERED';
+  // T3: STANDARD — 48h + trend DOWN
+  const triggerStandard=status!=='IN_RANGE'&&!triggerImmediate&&!triggerFast&&ooHours>=48&&trend==='DOWN'&&guardStatus!=='TRIGGERED';
 
-  // P&L
-  const capital = c.capital || 7000;
-  const todayNet = dailyYield + (t1pnl > 0 ? t1pnl / Math.max(hedgeDays,1) : 0);
-  const totalEarned = c.totalEarned || 0;
-  const totalHPnl = c.totalHPnl || 0;
-  const totalIL = c.totalIL || 0;
-  const allTimeNet = totalEarned + totalHPnl + totalIL;
-  const capitalEff = lpValue / capital * 100;
-
-  // Guard floor
-  const origEntry = c.origEntry || entryPrice;
-  const guardFloor = origEntry * 0.70;
-  const guardStatus = price <= guardFloor ? 'TRIGGERED' : price <= guardFloor * 1.1 ? 'NEAR' : 'OK';
-
-  // Status
-  let status = 'IN_RANGE';
-  if (inRange === false) {
-    status = price < rangeLow ? 'BELOW_RANGE' : 'ABOVE_RANGE';
+  let rebalTrigger=null, rebalTriggerReason='';
+  if(triggerImmediate){
+    rebalTrigger='immediate';
+    rebalTriggerReason=`Price ${(rangeLow-price).toFixed(3)} below Pa — 2× ATR structural break`;
+  } else if(triggerFast){
+    rebalTrigger='fast';
+    rebalTriggerReason=`${fourHCandles} consecutive 4h closes below $${rangeLow?.toFixed(3)} — trend confirmed`;
+  } else if(triggerStandard){
+    rebalTrigger='standard';
+    rebalTriggerReason=`${ooHours}h out of range + 3-day trend DOWN`;
   }
 
-  state.computed = {
-    price, avax, usdc, lpValue, avaxPct, inRange, pctThrough, source,
-    rangeLow, rangeHigh, apy, apySource, effectiveAPY, dailyYield, breakEvenAPY, baeColor,
-    ilThisRange, t1, t1pnl, fundingCost, netHedgePnl, coverage,
-    liqPx, liqDistance, t1RecPrice, t1RecSize, t1RecMargin, t1SL, t1SLLoss, t1SLDays,
-    tier1Active, avaxExposureAtExit,
-    todayNet, totalEarned, totalHPnl, totalIL, allTimeNet, capitalEff,
-    guardFloor, guardStatus, origEntry, capital, rebalMonth, status,
-    change24h: bin?.change24h, closes: bin?.closes, high7d: bin?.high7d, low7d: bin?.low7d,
-    fundingRate, hedgeDays, totalNotional,
+  let actionState='green';
+  if(status!=='IN_RANGE'){
+    if(guardStatus==='TRIGGERED') actionState='hold';
+    else if(rebalTrigger) actionState='red';
+    else actionState='amber';
+  }
+
+  // ── TREND-ADJUSTED RANGE CALCULATION ─────────────────────────────────────
+  // Base width: MAX(7-day range %, 15%), capped at 25%
+  const high7d=bin?.high7d||price*1.08, low7d=bin?.low7d||price*0.92;
+  const sevenDayWidth=(high7d-low7d)/price;
+  const baseWidth=Math.min(0.25, Math.max(0.15, sevenDayWidth));
+
+  // Trend shift: bias range centre lower in downtrend
+  let trendShift=0;
+  if(trend==='DOWN') trendShift=atr*0.5;
+  if(strongDowntrend) trendShift=atr*1.0;
+
+  const newCentre=price-trendShift;
+  const newRangeLow=newCentre/Math.sqrt(1+baseWidth);
+  const newRangeHigh=newCentre*Math.sqrt(1+baseWidth);
+
+  // Entry composition at current price in new range
+  const newPctThrough=Math.max(0,Math.min(100,(price-newRangeLow)/(newRangeHigh-newRangeLow)*100));
+  const newAvaxComp=Math.round(newPctThrough); // % AVAX at deployment
+  const neutralRangeLow=price/Math.sqrt(1+baseWidth);
+  const neutralRangeHigh=price*Math.sqrt(1+baseWidth);
+
+  // New T1 hedge parameters
+  const newT1Trigger=newRangeLow*0.994;
+  const newAvaxAtExit=capital/newRangeLow;
+  const newT1Size=Math.round(newAvaxAtExit*0.50);
+  const newT1Margin=Math.round(newT1Size*newT1Trigger/2);
+  // New range SL = new trigger + 1× ATR (consistent with T1 fix)
+  const newT1SL=newT1Trigger+atr;
+  const newRangeWidthPct=Math.round(baseWidth*100);
+  state.computed={
+    price,avax,usdc,lpValue,avaxPct,inRange,pctThrough,source,
+    rangeLow,rangeHigh,effectiveAPY,apySource,dailyYield,
+    ilNow,ilThisRange,hasEntryData,
+    ilAtBottomExit,ilAtTopExit,lpGainAtTop,lpValueAtPb,
+    rebalCostDown,rebalCostUp,daysRecoverDown,
+    minViableAPY1,minViableAPY3,
+    t1,t1pnl,fundingCost,netHedgePnl,coverage,coverageTarget,coverageGap,tier1Set,
+    t1RecPrice,t1RecSize,t1RecMargin,t1SL,t1SLLoss,t1SLDays,
+    liqPx,liqDistance,
+    totalEarned,totalHPnl,totalIL,allTimeNet,capital,
+    guardFloor,guardStatus,origEntry,
+    ooHours,fourHCandles,trend,strongDowntrend,status,actionState,rebalMonth:c.rebalMonth||0,
+    atr,rebalTrigger,rebalTriggerReason,
+    newRangeLow,newRangeHigh,newT1Trigger,newT1Size,newT1Margin,newT1SL,
+    newCentre,newPctThrough,newAvaxComp,trendShift,newRangeWidthPct,
+    neutralRangeLow,neutralRangeHigh,immediateThreshold,
+    change24h:bin?.change24h,high7d:bin?.high7d,low7d:bin?.low7d,
+    fundingRate,hedgeDays,
   };
 }
 
-// ── Data Verification ──────────────────────────────────────────────────────────
-function runVerification() {
-  const c = state.computed;
-  const bin = state.binance;
-  const hl = state.hl;
-  const chain = state.lpChain;
+function fmt$(v,d=2){return v==null?'—':'$'+v.toFixed(d);}
+function fmtPnl(v){if(v==null)return'—';return`<span class="${v>=0?'pos':'neg'}">${v>=0?'+':''} ${fmt$(v)}</span>`;}
 
-  // Check 1: Price consistency
-  let priceCheck = { pass: null, msg: 'No data' };
-  if (bin?.ok && hl?.ok && hl.markPrice) {
-    const spread = Math.abs(bin.price - hl.markPrice) / bin.price * 100;
-    priceCheck = spread <= 1.0
-      ? { pass: true, msg: `Binance/HL agree (${spread.toFixed(2)}% spread)` }
-      : { pass: false, msg: `Price mismatch: Binance $${bin.price?.toFixed(2)} vs HL $${hl.markPrice?.toFixed(2)} (${spread.toFixed(1)}%)` };
-  } else if (bin?.ok) {
-    priceCheck = { pass: null, msg: 'Binance only (no HL mark price)' };
-  }
-
-  // Check 2: LP plausibility
-  let lpCheck = { pass: null, msg: 'No LP data' };
-  if (c.avax > 0 && c.usdc >= 0 && c.price) {
-    if (c.source === 'on-chain') {
-      lpCheck = { pass: true, msg: `On-chain: ${c.avax.toFixed(1)} AVAX + $${c.usdc.toFixed(0)} USDC` };
-    } else {
-      lpCheck = { pass: null, msg: `Manual: ${c.avax} AVAX + $${c.usdc} USDC` };
-    }
-    // Stale check
-    if (chain?.fetchTime && Date.now() - chain.fetchTime > 600000) {
-      lpCheck = { pass: null, msg: '⚠ LP data >10min old — refresh recommended' };
-    }
-  }
-
-  // Check 3: Hedge consistency — check both filled positions AND open orders
-  let hedgeCheck = { pass: null, msg: 'No hedge set' };
-  if (hl?.ok) {
-    const hasActive = hl.positions?.some(p => p.szi < 0);
-    const hasPending = hl.openOrders?.length > 0;
-    if (hasActive) {
-      hedgeCheck = { pass: true, msg: `${hl.positions.filter(p=>p.szi<0).length} active short(s) confirmed on HL` };
-    } else if (hasPending) {
-      const orders = hl.openOrders.length > 0 ? `SHORT ${hl.openOrders[0].sz} AVAX @ $${hl.openOrders[0].limitPx}` : 'none';
-      hedgeCheck = { pass: true, msg: `T1 limit order set: ${orders}` };
-    } else {
-      hedgeCheck = { pass: null, msg: 'No hedge or pending orders found on HL' };
-    }
-  } else if (!hl?.ok) {
-    hedgeCheck = { pass: null, msg: `HL fetch failed: ${hl?.error || 'unknown error'}` };
-  }
-  const cfg = state.config;
-
-  // Check 4: APY freshness
-  let apyCheck = { pass: null, msg: 'Manual APY' };
-  if (cfg.apyOverride) {
-    apyCheck = { pass: null, msg: `Manual override: ${cfg.apyOverride}%` };
-  } else if (state.apy?.ok) {
-    const age = (Date.now() - state.apy.fetchTime) / 3600000;
-    apyCheck = age < 24
-      ? { pass: true, msg: `DeFiLlama: ${state.apy.apy?.toFixed(1)}% (${age.toFixed(0)}h ago)` }
-      : { pass: null, msg: `DeFiLlama data ${age.toFixed(0)}h old (update Thursdays)` };
-  } else {
-    apyCheck = { pass: null, msg: 'DeFiLlama unavailable — using 87% default' };
-  }
-
-  state.checks = { price: priceCheck, lp: lpCheck, hedge: hedgeCheck, apy: apyCheck };
-  renderVerification();
-}
-
-// ── Render ─────────────────────────────────────────────────────────────────────
-function icon(check) {
-  if (check?.pass === true) return '✅';
-  if (check?.pass === false) return '❌';
-  return '⚠️';
-}
-
-function renderVerification() {
-  const ch = state.checks;
-  const items = [
-    { id: 'v-price', label: 'Price', check: ch.price },
-    { id: 'v-lp', label: 'LP', check: ch.lp },
-    { id: 'v-hedge', label: 'Hedge', check: ch.hedge },
-    { id: 'v-apy', label: 'APY', check: ch.apy },
-  ];
-  items.forEach(({ id, label, check }) => {
-    const el = document.getElementById(id);
-    if (el) el.innerHTML = `${icon(check)} ${label}`;
-  });
-  const fails = Object.values(ch).filter(c=>c?.pass===false).length;
-  const el = document.getElementById('v-summary');
-  if (el) el.textContent = fails > 0 ? `${fails} issue(s) detected` : 'All checks passed';
-}
-
-function fmt$(v, decimals=2) { return v==null ? '—' : '$'+v.toFixed(decimals); }
-function fmtPnl(v) {
-  if (v==null) return '—';
-  const s = v >= 0 ? '+' : '';
-  return `<span class="${v>=0?'pos':'neg'}">${s}${fmt$(v)}</span>`;
-}
-
-function renderAll() {
-  const c = state.computed;
-  if (!c.price) return;
-
-  // Header
-  document.getElementById('price-display').textContent = '$'+c.price.toFixed(3);
-  const chg = c.change24h;
-  const chgEl = document.getElementById('price-change');
-  chgEl.innerHTML = chg!=null ? `<span class="${chg>=0?'pos':'neg'}">${chg>=0?'+':''}${chg.toFixed(2)}% 24h</span>  ·  7d: $${c.low7d?.toFixed(2)}–$${c.high7d?.toFixed(2)}` : '';
-
-  // Status badge
-  const sb = document.getElementById('status-badge');
-  if (c.status === 'IN_RANGE') sb.innerHTML = `<span class="badge bg"><span class="dot dg"></span>IN RANGE</span>`;
-  else if (c.status === 'BELOW_RANGE') sb.innerHTML = `<span class="badge br"><span class="dot dr"></span>BELOW RANGE</span>`;
-  else sb.innerHTML = `<span class="badge ba"><span class="dot da"></span>ABOVE RANGE</span>`;
-
-  // Refresh time
-  document.getElementById('refresh-time').textContent = 'Refreshed ' + new Date().toLocaleTimeString();
-
-  // LP panel
-  document.getElementById('lp-source').textContent =
-    c.source === 'on-chain' ? '⛓ On-chain' :
-    c.source === 'rpc-failed' ? '⚠ RPC failed — using manual' : '✏ Manual';
-
-  // Show RPC failure banner if on-chain read failed and no manual data
-  const rpBanner = document.getElementById('rpc-fail-banner');
-  if (rpBanner) {
-    if (c.source === 'rpc-failed') {
-      rpBanner.style.display = 'block';
-      rpBanner.innerHTML = '<b>⚠ On-chain read failed.</b> Enter your LP values manually in Setup — fill Entry AVAX, Entry USDC, Range Low, Range High, This Range Entry, then Save.';
-    } else {
-      rpBanner.style.display = 'none';
-    }
-  }
-
-  // Range bar
-  const rl = c.rangeLow, rh = c.rangeHigh, p = c.price;
-  document.getElementById('rb-low').textContent = '$'+(rl?.toFixed(3)||'—');
-  document.getElementById('rb-high').textContent = '$'+(rh?.toFixed(3)||'—');
-  document.getElementById('rb-cur').textContent = 'AVAX $'+p.toFixed(3);
-  const pct = c.pctThrough ?? 50;
-  const fill = document.getElementById('rb-fill');
-  const cursor = document.getElementById('rb-cursor');
-  fill.style.width = (c.inRange ? pct : (p < rl ? 0 : 100)) + '%';
-  fill.className = 'rb-fill' + (c.inRange ? '' : ' out');
-  cursor.style.left = Math.max(1, Math.min(99, c.inRange ? pct : (p<rl?0:100))) + '%';
-  cursor.className = 'rb-cur ' + (c.inRange ? 'in-c' : 'out-c');
-  document.getElementById('rb-pct').textContent = c.inRange
-    ? `${pct.toFixed(0)}% through range · ${(100-pct).toFixed(0)}% to top`
-    : (p < rl ? `${((rl-p)/rl*100).toFixed(1)}% below range` : `${((p-rh)/rh*100).toFixed(1)}% above range`);
-
-  document.getElementById('lp-avax').textContent = c.avax?.toFixed(2) + ' AVAX';
-  document.getElementById('lp-usdc').textContent = fmt$(c.usdc, 2);
-  const lpDiff = c.lpValue - c.capital;
-  document.getElementById('lp-value').innerHTML = `${fmt$(c.lpValue)} <span style="font-size:11px">${fmtPnl(lpDiff)}</span>`;
-  document.getElementById('lp-comp').textContent = `${c.avaxPct?.toFixed(0)}% AVAX / ${(100-c.avaxPct)?.toFixed(0)}% USDC`;
-  document.getElementById('lp-apy').textContent = c.apy?.toFixed(1) + '%';
-  const apyLblEl = document.getElementById('lp-apy-lbl');
-  if (apyLblEl) apyLblEl.textContent = c.apySource === 'manual' ? 'APY (Pharaoh)' : c.apySource === 'defillama' ? 'APY (DeFiLlama)' : 'APY (Default)';
-  const effApyEl = document.getElementById('lp-effapy');
-  if (c.apySource === 'manual') {
-    effApyEl.textContent = '= ' + c.effectiveAPY?.toFixed(1) + '%';
-    effApyEl.title = 'Pharaoh rate used directly';
-  } else {
-    effApyEl.textContent = c.effectiveAPY?.toFixed(1) + '%';
-    effApyEl.title = '70% in-range estimate applied';
-  }
-  document.getElementById('lp-daily').textContent = fmt$(c.dailyYield);
-  const beaEl = document.getElementById('lp-bea');
-  beaEl.className = 'val-sm ' + c.baeColor;
-  beaEl.textContent = c.breakEvenAPY?.toFixed(0) + '% need';
-  document.getElementById('lp-il').innerHTML = c.ilThisRange != null
-    ? `<span class="${c.ilThisRange>=0?'pos':'neg'}">${fmt$(c.ilThisRange)}</span>`
-    : `<span style="color:var(--faint)">Set entry in Setup</span>`;
-  document.getElementById('lp-rebals').textContent = (c.rebalMonth||0) + ' / 3 max';
-
-  // Tier 1 recommendation
-  const t1rec = document.getElementById('t1-rec');
-  if (!c.tier1Active && c.t1RecPrice && c.t1RecSize) {
-    t1rec.style.display = 'block';
-    document.getElementById('t1-rec-text').innerHTML =
-      `<b>LIMIT SHORT ${c.t1RecSize} AVAX @ $${c.t1RecPrice?.toFixed(3)}</b> · 2× leverage · $${c.t1RecMargin} margin` +
-      `<br><b>Stop Loss: $${c.t1SL?.toFixed(3)}</b> · Loss if triggered: <b>$${c.t1SLLoss}</b> (${c.t1SLDays} days earnings)` +
-      `<br><span style="color:var(--green);font-size:11px">Coverage: ~50% of LP downside · SL = Range low + 20% ATR</span>`;
-  } else { t1rec.style.display = 'none'; }
-
-  // Hedge panel
-  renderHedge(c);
-
-  // P&L panel
-  document.getElementById('pnl-today').innerHTML = fmtPnl(c.todayNet);
-  const monthlyEst = c.dailyYield * 30;
-  document.getElementById('pnl-month').innerHTML = fmtPnl(monthlyEst);
-  document.getElementById('pnl-alltime').innerHTML = fmtPnl(c.allTimeNet);
-  document.getElementById('pnl-capital').innerHTML = `<span class="${c.capitalEff>=100?'pos':'neg'}">${c.capitalEff?.toFixed(1)}% (${fmt$(c.lpValue)})</span>`;
-  const guardEl = document.getElementById('pnl-guard');
-  guardEl.innerHTML = `${fmt$(c.guardFloor)} <span class="${c.guardStatus==='OK'?'pos':c.guardStatus==='NEAR'?'warn':'neg'}">${c.guardStatus}</span>`;
-
+function renderAll(){
+  const c=state.computed;if(!c.price)return;
+  document.getElementById('price-display').textContent='$'+c.price.toFixed(3);
+  const chg=c.change24h;
+  document.getElementById('price-change').innerHTML=chg!=null?`<span class="${chg>=0?'pos':'neg'}">${chg>=0?'+':''}${chg.toFixed(2)}% 24h</span>`:'—';
+  document.getElementById('price-range').textContent=c.high7d&&c.low7d?`7d: $${c.low7d.toFixed(2)} – $${c.high7d.toFixed(2)}`:'7d: —';
+  document.getElementById('refresh-time').textContent='Updated '+new Date().toLocaleTimeString();
+  const sb=document.getElementById('status-badge');
+  if(c.status==='IN_RANGE')sb.innerHTML=`<span class="badge bg"><span class="dot dg"></span>IN RANGE</span>`;
+  else if(c.status==='BELOW_RANGE')sb.innerHTML=`<span class="badge br"><span class="dot dr"></span>BELOW RANGE</span>`;
+  else sb.innerHTML=`<span class="badge ba"><span class="dot da"></span>ABOVE RANGE</span>`;
+  document.getElementById('pos-source').textContent=c.source==='on-chain'?'⛓ On-chain':c.source==='rpc-failed'?'⚠ RPC failed':'✏ Manual';
+  const rpb=document.getElementById('rpc-banner');
+  if(c.source==='rpc-failed'){rpb.style.display='block';rpb.innerHTML='<div class="alert alert-a">⚠ On-chain read failed. Enter LP values manually in Setup.</div>';}else{rpb.style.display='none';}
+  const rl=c.rangeLow,rh=c.rangeHigh,p=c.price;
+  document.getElementById('rb-low').textContent='$'+(rl?.toFixed(3)||'—');
+  document.getElementById('rb-high').textContent='$'+(rh?.toFixed(3)||'—');
+  document.getElementById('rb-cur').textContent='AVAX $'+p.toFixed(3);
+  const pct=c.pctThrough??50;
+  const fill=document.getElementById('rb-fill'),cursor=document.getElementById('rb-cursor');
+  fill.style.width=(c.inRange?pct:(p<rl?0:100))+'%';
+  fill.className='rb-fill'+(c.inRange?'':' out');
+  cursor.style.left=Math.max(1,Math.min(99,c.inRange?pct:(p<rl?0:100)))+'%';
+  cursor.className='rb-cur '+(c.inRange?'in-c':'out-c');
+  document.getElementById('rb-pct').textContent=c.inRange?`${pct.toFixed(0)}% through · ${(100-pct).toFixed(0)}% to top`:(p<rl?`${((rl-p)/rl*100).toFixed(1)}% below range`:`${((p-rh)/rh*100).toFixed(1)}% above range`);
+  document.getElementById('pos-value').textContent=fmt$(c.lpValue);
+  document.getElementById('pos-daily').textContent=fmt$(c.dailyYield)+'/day';
+  document.getElementById('pos-comp').textContent=`${c.avaxPct?.toFixed(0)}% AVAX\n${(100-c.avaxPct)?.toFixed(0)}% USDC`;
+  const t1=c.t1,hedgeEl=document.getElementById('pos-hedge');
+  const covBadge=c.coverageGap!=null&&c.coverageGap>5
+    ?` <span style="color:var(--amber);font-size:10px">⚠ ${c.coverage?.toFixed(0)}% (target ${c.coverageTarget?.toFixed(0)}%)</span>`:
+    (c.coverage!=null?` <span style="color:var(--muted);font-size:10px">${c.coverage?.toFixed(0)}% cov</span>`:'');
+  if(t1.status==='active'){hedgeEl.innerHTML=`<span class="badge ba" style="font-size:10px"><span class="dot da"></span>ACTIVE</span> ${fmtPnl(c.t1pnl)}${covBadge}`;}
+  else if(t1.status==='waiting'){hedgeEl.innerHTML=`<span class="badge bb" style="font-size:10px"><span class="dot" style="background:var(--blue)"></span>WAITING</span> @ $${parseFloat(t1.entry||0).toFixed(3)}${covBadge}`;}
+  else if(!c.tier1Set&&c.t1RecPrice){hedgeEl.innerHTML=`<span style="color:var(--amber)">⚠ Not set — SHORT ${c.t1RecSize} @ $${c.t1RecPrice?.toFixed(3)}</span>`;}
+  else{hedgeEl.innerHTML=`<span style="color:var(--muted)">No hedge</span>`;}
+  const ilEl=document.getElementById('pos-il');
+  if(c.ilNow!=null){ilEl.innerHTML=`<span class="${c.ilNow>=0?'pos':'neg'}">${fmt$(c.ilNow)}</span>`;}
+  else{ilEl.innerHTML=`<span style="color:var(--faint);font-size:11px">Set entry in Setup</span>`;}
+  document.getElementById('pos-apy').textContent=`${c.effectiveAPY?.toFixed(1)}% (${c.apySource==='manual'?'Pharaoh':c.apySource==='defillama'?'DeFiLlama':'default'})`;
+  document.getElementById('pos-month').textContent=fmt$(c.dailyYield*30);
+  document.getElementById('pos-alltime').innerHTML=fmtPnl(c.allTimeNet);
+  renderViability(c);
+  renderAction(c);
+  renderHedgeDetail(c);
   renderLog();
 }
 
-function renderHedge(c) {
-  const t1 = c.t1;
+function renderViability(c){
+  // Only show content if we have IL model data
+  const hasModel = c.ilAtBottomExit != null;
 
-  // Tier 1 block
-  const t1block = document.getElementById('t1-block');
-  t1block.className = 'ht ' + (t1.status==='active' ? 'active' : 'inactive');
-  const t1badge = document.getElementById('t1-badge');
-  if (t1.status==='active') t1badge.innerHTML = '<span class="badge ba"><span class="dot da"></span>ACTIVE</span>';
-  else if (t1.status==='closed') t1badge.innerHTML = '<span class="badge" style="background:var(--surface);color:var(--muted);border:1px solid var(--border)">CLOSED</span>';
-  else t1badge.innerHTML = '<span class="badge bb"><span class="dot" style="background:var(--blue)"></span>WAITING</span>';
+  // IL Now (in viability panel — more detail than pos panel)
+  const ilNowEl = document.getElementById('viab-il-now');
+  if(c.ilNow != null){
+    const pct = c.capital > 0 ? (c.ilNow/c.capital*100).toFixed(2) : 0;
+    ilNowEl.innerHTML = `<span class="${c.ilNow>=0?'pos':'neg'}">${fmt$(c.ilNow)}</span> <span style="color:var(--faint);font-size:10px">(${pct}%)</span>`;
+  } else { ilNowEl.innerHTML = '<span style="color:var(--faint)">Set entry in Setup</span>'; }
 
-  document.getElementById('t1-entry').textContent = t1.entry ? '$'+parseFloat(t1.entry).toFixed(3) : '—';
-  document.getElementById('t1-size').textContent = t1.size ? parseFloat(t1.size).toFixed(0)+' AVAX' : '—';
-  document.getElementById('t1-lev').textContent = t1.lev ? t1.lev+'x' : '2x';
-  document.getElementById('t1-pnl').innerHTML = t1.status==='active' ? fmtPnl(c.t1pnl) : '—';
-  // SL = range_low + 20% ATR
-  const slPrice = c.t1SL;
-  const slLoss = c.t1SLLoss;
-  document.getElementById('t1-sl').innerHTML = slPrice
-    ? `$${slPrice.toFixed(3)} <span style="color:var(--muted);font-size:10px">(loss: $${slLoss||'—'})</span>`
-    : '—';
+  // IL at bottom exit
+  const ilExitEl = document.getElementById('viab-il-exit');
+  if(hasModel){
+    const pct = c.capital > 0 ? (c.ilAtBottomExit/c.capital*100).toFixed(2) : 0;
+    ilExitEl.innerHTML = `<span class="${c.ilAtBottomExit>=0?'pos':'neg'}">${fmt$(c.ilAtBottomExit)}</span> <span style="color:var(--faint);font-size:10px">(${pct}%)</span>`;
+  } else { ilExitEl.innerHTML = '<span style="color:var(--faint)">Set entry in Setup</span>'; }
 
-  // Hedge P&L and stats
-  const combined = document.getElementById('h-combined');
-  combined.innerHTML = t1.status==='active' ? fmtPnl(c.netHedgePnl) : '—';
+  // Range labels
+  document.getElementById('viab-pb').textContent = c.rangeHigh ? '$'+c.rangeHigh.toFixed(3) : '—';
+  document.getElementById('viab-pa').textContent = c.rangeLow ? '$'+c.rangeLow.toFixed(3) : '—';
 
-  const cov = document.getElementById('h-coverage');
-  cov.textContent = c.coverage!=null ? c.coverage.toFixed(0)+'%' : '—';
-  cov.className = 'val-sm' + (c.coverage>=50?' pos':c.coverage>=30?' warn':' neg');
+  // Top exit scenario
+  const topBody = document.getElementById('viab-top-body');
+  if(hasModel && c.lpGainAtTop != null){
+    topBody.innerHTML =
+      `LP grows to <b>${fmt$(c.lpValueAtPb)}</b> (<span class="pos">+${fmt$(c.lpGainAtTop)}</span> CL gain)<br>`+
+      `"IL" vs hold: ${fmt$(c.ilAtTopExit)} — <i>opportunity cost only, not a real loss</i><br>`+
+      `Rebal cost: <b>$${c.rebalCostUp} swap</b> · <span class="pos">Always profitable ✅</span>`;
+  } else {
+    topBody.innerHTML = '<span style="color:var(--muted)">Set entry data in Setup to project</span>';
+  }
 
-  document.getElementById('h-funding').textContent = c.fundingCost > 0 ? fmt$(c.fundingCost) : '—';
+  // Bottom exit scenario
+  const botBody = document.getElementById('viab-bot-body');
+  if(hasModel){
+    const hedgeCover = c.t1RecSize && c.rangeLow
+      ? Math.round(c.t1RecSize * (c.rangeLow*0.994 - (c.rangeLow - 1)) / Math.abs(c.ilAtBottomExit || 1) * 100)
+      : 50;
+    botBody.innerHTML =
+      `IL locked in: <b>${fmt$(c.ilAtBottomExit)}</b> + $${c.rebalCostUp} swap = <b>~${fmt$(c.rebalCostDown)}</b> total<br>`+
+      `Hedge covers ~50% of AVAX drop below range<br>`+
+      `Recover rebal cost in: <b>${c.daysRecoverDown?.toFixed(1) || '—'} days</b> yield`;
+  } else {
+    botBody.innerHTML = '<span style="color:var(--muted)">Set entry data in Setup to project</span>';
+  }
 
-  // Liquidation
-  const hlEl = document.getElementById('h-liq');
-  if (c.liqPx) {
-    const dist = c.liqDistance;
-    hlEl.innerHTML = `<span class="${dist>20?'pos':dist>10?'warn':'neg'}">$${c.liqPx.toFixed(2)} (${dist>0?'+':''}${dist?.toFixed(0)}%)</span>`;
-    if (dist < 15) {
-      document.getElementById('liq-warning').style.display='block';
-      document.getElementById('liq-warning').innerHTML = `<div class="alert alert-r">⚠ Liquidation price $${c.liqPx.toFixed(2)} is only ${dist.toFixed(0)}% away.</div>`;
-    } else { document.getElementById('liq-warning').style.display='none'; }
-  } else { hlEl.textContent = '—'; }
-
-  // Summary badge
-  const sbEl = document.getElementById('hedge-summary-badge');
-  if (t1.status==='active') sbEl.innerHTML = `<span class="badge ba">HEDGE ON · ${fmtPnl(c.netHedgePnl)}</span>`;
-  else if (t1.status==='waiting') sbEl.innerHTML = `<span class="badge bb">T1 WAITING @ $${parseFloat(t1.entry||0).toFixed(3)}</span>`;
-  else sbEl.innerHTML = `<span class="badge" style="background:var(--surface);color:var(--muted);border:1px solid var(--border)">NO HEDGE</span>`;
+  // APY viability
+  const apyBody = document.getElementById('viab-apy-body');
+  if(c.minViableAPY3 != null){
+    const current = c.effectiveAPY;
+    const floor3 = c.minViableAPY3;
+    const floor1 = c.minViableAPY1;
+    const margin = ((current - floor3) / floor3 * 100).toFixed(0);
+    const viable = current > floor3;
+    apyBody.innerHTML =
+      `Floor (1 rebal/month): <b>${floor1?.toFixed(1)}%</b><br>`+
+      `Floor (3 rebal/month): <b>${floor3?.toFixed(1)}%</b><br>`+
+      `Current: <b>${current?.toFixed(1)}%</b> → `+
+      `<span class="${viable?'pos':'neg'}">${viable?`${margin}% above floor ✅`:'BELOW FLOOR ⚠️'}</span>`;
+  } else {
+    apyBody.innerHTML = `Current APY: <b>${c.effectiveAPY?.toFixed(1)}%</b><br><span style="color:var(--faint)">Set entry data for floor calculation</span>`;
+  }
 }
 
-// ── Analysis ───────────────────────────────────────────────────────────────────
-function selectModel(c) {
-  if (c.status === 'IN_RANGE' && !c.tier1Active && c.rebalMonth === 0) {
-    return 'claude-haiku-4-5-20251001';
+function renderAction(c){
+  const block=document.getElementById('action-block');
+  const title=document.getElementById('action-title');
+  const body=document.getElementById('action-body');
+  const sub=document.getElementById('action-sub');
+  block.className='action-block';
+  const rebalStr=`${c.rebalMonth}/3 rebalances this month`;
+  const guardStr=c.guardStatus==='OK'?'30% guard: OK ✅':c.guardStatus==='NEAR'?'30% guard: NEAR ⚠️':'30% guard: TRIGGERED 🔴';
+  if(c.actionState==='green'){
+    block.classList.add('action-green');
+    title.innerHTML='✅ No action needed';
+    body.innerHTML=`LP in range &middot; Hedge ${c.tier1Set?'set ✅':'<b style="color:var(--amber)">not set ⚠</b>'} &middot; Earning <b>${fmt$(c.dailyYield)}/day</b><br><span style="color:var(--muted);font-size:12px">Next check: if price approaches <b>$${c.rangeLow?.toFixed(3)||'—'}</b></span>`;
+    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span>`;
+  }else if(c.actionState==='amber'){
+    block.classList.add('action-amber');
+    const hoursStr=c.ooHours>0?`${c.ooHours}h`:'recently';
+    const trendStr=c.trend==='DOWN'?'📉 DOWN':c.trend==='UP'?'📈 UP':'➡ FLAT';
+    const remaining=Math.max(0,48-c.ooHours);
+    const immThresh=c.immediateThreshold?`$${c.immediateThreshold.toFixed(3)}`:'—';
+    title.innerHTML=`⚠️ Monitor — out of range ${hoursStr}`;
+    body.innerHTML=
+      `Trend: <b>${trendStr}</b> &middot; 4h candles below Pa: <b>${c.fourHCandles||0}</b><br>`+
+      `<span style="color:var(--muted);font-size:12px">`+
+      `Triggers: immediate if close &lt; <b>${immThresh}</b> · fast if 4h candles ≥ 3 · standard at 48h+DOWN</span><br>`+
+      `${c.ooHours<48?`~${remaining}h to standard window`:'Standard window open — needs DOWN trend'}<br>`+
+      `${c.tier1Set?'Hedge running ✅':'<b style="color:var(--red)">Hedge not set ⚠</b>'}`;
+    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--faint)">Update OO hours + 4h candles in Setup</span>`;
+  }else if(c.actionState==='red'){
+    block.classList.add('action-red');
+    const triggerLabel=c.rebalTrigger==='immediate'?'🔴 Rebalance NOW':c.rebalTrigger==='fast'?'🔴 Rebalance (12h)':'🔴 Rebalance recommended';
+    const shiftNote=c.trendShift>0?`<span style="color:var(--muted);font-size:11px">Trend-adjusted: centre shifted $${c.trendShift?.toFixed(3)} lower vs neutral ($${c.neutralRangeLow?.toFixed(3)}–$${c.neutralRangeHigh?.toFixed(3)})</span><br>`:'';
+    const compNote=`Entry: ~<b>${c.newAvaxComp}% AVAX / ${100-c.newAvaxComp}% USDC</b>${c.trendShift>0?' (vs 50/50 if centred on price)':''}`;
+    title.innerHTML=triggerLabel;
+    body.innerHTML=
+      `<span style="color:var(--muted);font-size:12px">${c.rebalTriggerReason}</span><br>`+
+      `<b>New range:</b> $${c.newRangeLow?.toFixed(3)} – $${c.newRangeHigh?.toFixed(3)} <span style="color:var(--muted);font-size:11px">(${c.newRangeWidthPct}% wide)</span><br>`+
+      shiftNote+
+      compNote+`<br>`+
+      `<b>New T1:</b> SHORT <b>${c.newT1Size} AVAX @ $${c.newT1Trigger?.toFixed(3)}</b> · 2× · $${c.newT1Margin} margin · SL $${c.newT1SL?.toFixed(3)}<br>`+
+      `<span style="color:var(--muted);font-size:11px">① Withdraw LP &nbsp;② Swap to correct ratio &nbsp;③ Deploy new range &nbsp;④ Set T1 on HL immediately</span>`;
+    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--faint)">Reset OO hours + 4h candles to 0 after rebalance</span>`;
+  }else if(c.actionState==='hold'){
+    block.classList.add('action-hold');
+    title.innerHTML='🟣 Hold — do not rebalance';
+    body.innerHTML=`Price below 30% guard floor <b>(${fmt$(c.guardFloor)})</b><br>Rebalancing now locks in losses permanently. <b>Hold and wait for recovery.</b><br><span style="color:var(--muted);font-size:12px">Hedge is your protection — keep it running.</span>`;
+    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span>`;
   }
+}
+
+function renderHedgeDetail(c){
+  const t1=c.t1;
+  let statusHtml='—';
+  if(t1.status==='active')statusHtml='<span class="badge ba"><span class="dot da"></span>ACTIVE</span>';
+  else if(t1.status==='waiting')statusHtml='<span class="badge bb"><span class="dot" style="background:var(--blue)"></span>WAITING</span>';
+  else if(t1.status==='closed')statusHtml='<span style="color:var(--muted)">CLOSED</span>';
+  else statusHtml='<span style="color:var(--faint)">NOT SET</span>';
+  document.getElementById('hd-status').innerHTML=statusHtml;
+  document.getElementById('hd-entry').textContent=t1.entry?'$'+parseFloat(t1.entry).toFixed(3):'—';
+  document.getElementById('hd-size').textContent=t1.size?parseFloat(t1.size).toFixed(0)+' AVAX':'—';
+  document.getElementById('hd-lev').textContent=t1.lev?t1.lev+'x':'2x';
+  document.getElementById('hd-pnl').innerHTML=t1.status==='active'?fmtPnl(c.t1pnl):'—';
+  document.getElementById('hd-sl').innerHTML=c.t1SL?`$${c.t1SL.toFixed(3)} <span style="color:var(--muted);font-size:11px">(loss: $${c.t1SLLoss||'—'} · ${c.t1SLDays||'—'}d earnings)</span>`:'—';
+  const covEl=document.getElementById('hd-coverage');
+  if(c.coverage!=null){
+    let covText=c.coverage.toFixed(0)+'%';
+    if(c.coverageGap!=null&&c.coverageGap>5){
+      covText+=` <span style="color:var(--amber);font-size:10px">(target ${c.coverageTarget?.toFixed(0)}% — under by ${c.coverageGap.toFixed(0)}%)</span>`;
+    }
+    covEl.innerHTML=covText;
+    covEl.className='mono'+(c.coverage>=55?' pos':c.coverage>=40?' warn':' neg');
+  } else { covEl.textContent='—'; covEl.className='mono'; }
+  document.getElementById('hd-funding').textContent=c.fundingCost>0?fmt$(c.fundingCost):'—';
+  const liqEl=document.getElementById('hd-liq'),liqWarn=document.getElementById('hedge-liq-warn');
+  if(c.liqPx){
+    const dist=c.liqDistance;
+    liqEl.innerHTML=`<span class="${dist>20?'pos':dist>10?'warn':'neg'}">$${c.liqPx.toFixed(2)} (${dist>0?'+':''}${dist?.toFixed(0)}%)</span>`;
+    if(dist<15){liqWarn.style.display='block';liqWarn.innerHTML=`<div class="alert alert-r">⚠ Liquidation price $${c.liqPx.toFixed(2)} is only ${dist.toFixed(0)}% away.</div>`;}
+    else{liqWarn.style.display='none';}
+  }else{liqEl.textContent='—';liqWarn.style.display='none';}
+}
+
+function selectModel(c){
+  if(c.status==='IN_RANGE'&&c.tier1Set&&c.rebalMonth===0)return 'claude-haiku-4-5-20251001';
   return 'claude-sonnet-4-6';
 }
-
-function buildPrompt(c) {
-  const closes = c.closes?.map(v=>v.toFixed(2)).join(',') || 'N/A';
-  const trend = c.closes?.length >= 3
-    ? (c.closes[c.closes.length-1] < c.closes[c.closes.length-2] &&
-       c.closes[c.closes.length-2] < c.closes[c.closes.length-3] ? 'DOWN' :
-       c.closes[c.closes.length-1] > c.closes[c.closes.length-2] ? 'UP' : 'FLAT') : 'N/A';
-
-  return `AVAX:${c.price?.toFixed(3)}|CHG:${c.change24h?.toFixed(2)}%|RANGE:${c.rangeLow?.toFixed(3)}-${c.rangeHigh?.toFixed(3)}|STATUS:${c.status}|PCT:${c.pctThrough?.toFixed(0)}%|POS:${c.avax?.toFixed(1)}A+${c.usdc?.toFixed(0)}U|VAL:${c.lpValue?.toFixed(0)}|APY:${c.apy}%|IL:${c.ilThisRange?.toFixed(0)}|REBALS:${c.rebalMonth}/3|CLOSES:${closes}|TREND:${trend}|7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|T1:${c.t1.status}@${c.t1.entry||'N/A'}x${c.t1.size||0}|HPNL:${c.netHedgePnl?.toFixed(2)}|GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}|CAPITAL:${c.capital}|ORIG:${c.origEntry}`;
+function buildPrompt(c){
+  const closes=(state.binance?.closes||[]).map(v=>v.toFixed(2)).join(',')||'N/A';
+  return `AVAX:${c.price?.toFixed(3)}|CHG:${c.change24h?.toFixed(2)}%|RANGE:${c.rangeLow?.toFixed(3)}-${c.rangeHigh?.toFixed(3)}|STATUS:${c.status}|PCT:${c.pctThrough?.toFixed(0)}%|POS:${c.avax?.toFixed(1)}A+${c.usdc?.toFixed(0)}U|VAL:${c.lpValue?.toFixed(0)}|APY:${c.effectiveAPY?.toFixed(1)}%|IL:${c.ilNow?.toFixed(0)}|OO:${c.ooHours}h|4H:${c.fourHCandles||0}|ATR:${c.atr?.toFixed(3)}|REBALS:${c.rebalMonth}/3|CLOSES:${closes}|TREND:${c.trend}|7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|T1:${c.t1.status}@${c.t1.entry||'N/A'}x${c.t1.size||0}|HPNL:${c.netHedgePnl?.toFixed(2)}|GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}|TRIGGER:${c.rebalTrigger||'none'}`;
 }
-
-async function runAnalysis() {
-  const c = state.computed;
-  if (!c.price) { alert('Refresh data first.'); return; }
-
-  const apiKey = state.config.apiKey;
-  if (!apiKey) { alert('Enter your Claude API key in Setup first.'); return; }
-
-  // Cooldown check
-  const lastCall = S.get('lastAnalysis_time', 0);
-  const elapsed = Date.now() - lastCall;
-  if (elapsed < COOLDOWN_MS) {
-    const remaining = Math.ceil((COOLDOWN_MS - elapsed) / 60000);
-    showCooldown(remaining);
-    // Show cached if available
-    const cached = S.get('lastAnalysis_result');
-    const cachedHash = S.get('lastAnalysis_hash');
-    if (cached) showAnalysisResult(cached, true, S.get('lastAnalysis_time'));
-    return;
+async function runAnalysis(){
+  const c=state.computed;if(!c.price){alert('Refresh data first.');return;}
+  const apiKey=state.config.apiKey;if(!apiKey){alert('Enter Claude API key in Setup.');return;}
+  const lastCall=S.get('lastAnalysis_time',0),elapsed=Date.now()-lastCall;
+  if(elapsed<COOLDOWN_MS){
+    const remaining=Math.ceil((COOLDOWN_MS-elapsed)/60000);showCooldown(remaining);
+    const cached=S.get('lastAnalysis_result');if(cached)showAnalysisResult(cached,true,S.get('lastAnalysis_time'));return;
   }
-
-  // Change detection
-  const currentHash = JSON.stringify(buildPrompt(c));
-  const lastHash = S.get('lastAnalysis_hash');
-  if (currentHash === lastHash) {
-    const cached = S.get('lastAnalysis_result');
-    if (cached) { showAnalysisResult(cached, true, S.get('lastAnalysis_time')); return; }
-  }
-
-  // Run
-  const btn = document.getElementById('analyse-btn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> Analysing...';
-
-  // Show verification checks in analysis panel
-  renderAnalysisChecks();
-
-  const model = selectModel(c);
-  document.getElementById('model-badge').textContent = model.includes('haiku') ? 'haiku-4-5 (lite)' : 'sonnet-4-6';
-
-  const systemPrompt = `You are an LP strategy advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge. Strategy rules: 15% geometric range, tickspacing 10, max 3 rebalances/month, single Tier1 pre-set short at range_low×0.994 (2x leverage, 50% LP coverage, SL=range_low+20%ATR=$23 max loss), rebalance only after 48h out-of-range + 3-day trend guard passes + capital guard (no rebalance if price <70% of original entry). Respond in exactly 3 labelled sections: SITUATION (1-2 sentences on current state), ACTION (2-4 bullet points with specific numbers where applicable), RISK (1 sentence on main risk right now). Max 260 words total. Be direct and specific.`;
-
-  const userMsg = buildPrompt(c);
-
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-      body: JSON.stringify({ model, max_tokens: 400, system: systemPrompt, messages: [{ role:'user', content: userMsg }] })
+  const currentHash=JSON.stringify(buildPrompt(c));
+  if(currentHash===S.get('lastAnalysis_hash')){const cached=S.get('lastAnalysis_result');if(cached){showAnalysisResult(cached,true,S.get('lastAnalysis_time'));return;}}
+  const btn=document.getElementById('analyse-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analysing...';
+  const model=selectModel(c);
+  document.getElementById('model-badge').textContent=model.includes('haiku')?'haiku-4-5':'sonnet-4-6';
+  const systemPrompt=`You are an LP strategy advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge. Strategy: 15% geometric range, tickspacing 10, max 3 rebalances/month, single T1 pre-set short at range_low×0.994 (2x leverage, 50% LP coverage, SL=range_low+20%ATR). 3 rebalance triggers: IMMEDIATE if daily close <2×ATR below Pa, FAST if 3+ 4h closes below Pa, STANDARD after 48h+trend DOWN. Capital guard: no rebalance if price <70% original entry. Range is trend-adjusted (bias lower by 0.5×ATR if DOWN, 1×ATR if strong DOWN). Respond in exactly 3 labelled sections: SITUATION (1-2 sentences), ACTION (2-4 bullets with specific numbers), RISK (1 sentence). Max 260 words. Be direct.`;
+  try{
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model,max_tokens:400,system:systemPrompt,messages:[{role:'user',content:buildPrompt(c)}]})
     });
-    const data = await resp.json();
-    if (data.error) throw new Error(data.error.message);
-    const text = data.content?.[0]?.text || 'No response received.';
-    S.set('lastAnalysis_result', text);
-    S.set('lastAnalysis_hash', currentHash);
-    S.set('lastAnalysis_time', Date.now());
-    showAnalysisResult(text, false, Date.now());
-  } catch(e) {
+    const data=await resp.json();if(data.error)throw new Error(data.error.message);
+    const text=data.content?.[0]?.text||'No response.';
+    S.set('lastAnalysis_result',text);S.set('lastAnalysis_hash',currentHash);S.set('lastAnalysis_time',Date.now());
+    showAnalysisResult(text,false,Date.now());
+  }catch(e){
     document.getElementById('analysis-output').style.display='block';
-    document.getElementById('analysis-box').innerHTML = `<div class="alert alert-r">Analysis failed: ${e.message}</div>`;
+    document.getElementById('analysis-box').innerHTML=`<div class="alert alert-r">Analysis failed: ${e.message}</div>`;
   }
-
-  btn.disabled = false;
-  btn.innerHTML = '<span>🔍</span> Analyse Now';
+  btn.disabled=false;btn.innerHTML='<span>🔍</span> Analyse Now';
 }
-
-function renderAnalysisChecks() {
-  const ch = state.checks;
-  const fails = Object.values(ch).filter(c=>c?.pass===false);
-  const el = document.getElementById('analysis-checks');
-  if (fails.length > 0) {
-    el.style.display = 'block';
-    el.innerHTML = `<div class="alert alert-a">⚠ ${fails.length} data issue(s) detected. Analysis may be less accurate:<br>${fails.map(f=>'• '+f.msg).join('<br>')}</div>`;
-  } else {
-    el.style.display = 'none';
-  }
-}
-
-function showAnalysisResult(text, fromCache, timestamp) {
-  document.getElementById('analysis-output').style.display = 'block';
-  const box = document.getElementById('analysis-box');
-
-  // Parse sections
-  const sections = [
-    { key: 'SITUATION', label: 'SITUATION' },
-    { key: 'ACTION', label: 'ACTION' },
-    { key: 'RISK', label: 'RISK' },
-  ];
-
-  let html = '';
-  let remaining = text;
-  sections.forEach(({ key, label }, i) => {
-    const next = sections[i+1]?.key;
-    const start = remaining.search(new RegExp(key+'[:\\s*]*', 'i'));
-    if (start === -1) return;
-    const end = next ? remaining.search(new RegExp(next+'[:\\s*]*', 'i')) : remaining.length;
-    const content = remaining.slice(start + key.length + 1, end > start ? end : undefined).trim().replace(/^\*\s*/,'').replace(/\n/g,'<br>');
-    html += `<div class="asec"><h4>${label}</h4><p class="analysis-text">${content}</p></div>`;
+function showAnalysisResult(text,fromCache,timestamp){
+  document.getElementById('analysis-output').style.display='block';
+  const box=document.getElementById('analysis-box');
+  const sections=[{key:'SITUATION',label:'SITUATION'},{key:'ACTION',label:'ACTION'},{key:'RISK',label:'RISK'}];
+  let html='',remaining=text;
+  sections.forEach(({key,label},i)=>{
+    const next=sections[i+1]?.key,start=remaining.search(new RegExp(key+'[:\\s*]*','i'));
+    if(start===-1)return;
+    const end=next?remaining.search(new RegExp(next+'[:\\s*]*','i')):remaining.length;
+    const content=remaining.slice(start+key.length+1,end>start?end:undefined).trim().replace(/\n/g,'<br>');
+    html+=`<div class="asec"><h4>${label}</h4><p>${content}</p></div>`;
   });
-
-  if (!html) html = `<div class="asec"><p class="analysis-text">${text.replace(/\n/g,'<br>')}</p></div>`;
-  box.innerHTML = html;
-
-  const meta = document.getElementById('analysis-meta');
-  meta.innerHTML = fromCache ? `⏱ Cached result · ${new Date(timestamp).toLocaleTimeString()}` :
-    `✓ Fresh · ${new Date(timestamp).toLocaleTimeString()} · Cooldown: 4h`;
+  if(!html)html=`<div class="asec"><p>${text.replace(/\n/g,'<br>')}</p></div>`;
+  box.innerHTML=html;
+  document.getElementById('analysis-meta').innerHTML=fromCache?`⏱ Cached · ${new Date(timestamp).toLocaleTimeString()}`:`✓ Fresh · ${new Date(timestamp).toLocaleTimeString()} · 30min cooldown`;
+}
+function showCooldown(minutes){
+  const el=document.getElementById('cooldown-notice');el.style.display='flex';
+  el.textContent=`⏱ Next analysis in ~${minutes} min.`;
 }
 
-function showCooldown(minutes) {
-  const el = document.getElementById('cooldown-notice');
-  el.style.display = 'flex';
-  el.textContent = `⏱ Next analysis available in ~${minutes} min (4h cooldown). Showing cached result below.`;
-}
-
-// ── Rebalance Log ──────────────────────────────────────────────────────────────
-function renderLog() {
-  const entries = S.get('rebal_log', []);
-  const tbody = document.getElementById('log-tbody');
-  if (!entries.length) {
-    tbody.innerHTML = '<tr><td colspan="6" style="color:var(--faint);text-align:center;padding:16px">No rebalances logged yet</td></tr>';
-    return;
-  }
-  tbody.innerHTML = entries.map(e => {
-    const net = -(e.il||0) + (e.hpnl||0) - (e.cost||0);
-    return `<tr>
-      <td>${e.date||'—'}</td>
-      <td>${e.oldlow||'—'} → ${e.newlow||'—'}</td>
-      <td class="neg">${fmt$(-(e.il||0))}</td>
-      <td class="${(e.hpnl||0)>=0?'pos':'neg'}">${fmtPnl(e.hpnl||0)}</td>
-      <td class="neg">${fmt$(-(e.cost||0))}</td>
-      <td class="${net>=0?'pos':'neg'}">${fmtPnl(net)}</td>
-    </tr>`;
+function renderLog(){
+  const entries=S.get('rebal_log',[]),tbody=document.getElementById('log-tbody');
+  if(!entries.length){tbody.innerHTML='<tr><td colspan="6" style="color:var(--faint);text-align:center;padding:16px">No rebalances logged yet</td></tr>';return;}
+  tbody.innerHTML=entries.map(e=>{
+    const net=-(e.il||0)+(e.hpnl||0)-(e.cost||0);
+    return`<tr><td>${e.date||'—'}</td><td>${e.oldlow||'—'} → ${e.newlow||'—'}</td><td class="neg">${fmt$(-(e.il||0))}</td><td class="${(e.hpnl||0)>=0?'pos':'neg'}">${(e.hpnl||0)>=0?'+':''}${fmt$(e.hpnl||0)}</td><td class="neg">${fmt$(-(e.cost||0))}</td><td class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmt$(net)}</td></tr>`;
   }).join('');
 }
-
-function addLogEntry() {
-  const g = id => document.getElementById(id)?.value;
-  const entry = {
-    date: g('log-date'), oldlow: g('log-oldlow'), newlow: g('log-newlow'),
-    il: parseFloat(g('log-il'))||0, hpnl: parseFloat(g('log-hpnl'))||0,
-    cost: parseFloat(g('log-cost'))||0,
-  };
-  const entries = S.get('rebal_log', []);
-  entries.unshift(entry);
-  S.set('rebal_log', entries);
-  hideAddLog(); renderLog();
+function addLogEntry(){
+  const g=id=>document.getElementById(id)?.value;
+  const entry={date:g('log-date'),oldlow:g('log-oldlow'),newlow:g('log-newlow'),
+    il:parseFloat(g('log-il'))||0,hpnl:parseFloat(g('log-hpnl'))||0,cost:parseFloat(g('log-cost'))||0};
+  const entries=S.get('rebal_log',[]);entries.unshift(entry);
+  S.set('rebal_log',entries);hideAddLog();renderLog();
 }
+function clearLog(){if(confirm('Clear all log entries?\')){S.set('rebal_log',[]);renderLog();}}
 
-function clearLog() {
-  if (confirm('Clear all rebalance log entries?')) { S.set('rebal_log', []); renderLog(); }
+function toggleSetup(){const el=document.getElementById('setup-panel');el.style.display=el.style.display==='none'?'block':'none';}
+function toggleHedge(){const b=document.getElementById('hedge-body'),t=document.getElementById('hedge-toggle-txt');b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';}
+function toggleViability(){
+  const b=document.getElementById('viab-body'),t=document.getElementById('viab-toggle-txt');
+  b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';
 }
+function toggleLog(){const b=document.getElementById('log-body'),t=document.getElementById('log-toggle-txt');b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';}
+function showAddLog(){document.getElementById('add-log-form').style.display='block';}
+function hideAddLog(){document.getElementById('add-log-form').style.display='none';}
 
-// ── UI Helpers ─────────────────────────────────────────────────────────────────
-function toggleSetup() {
-  const el = document.getElementById('setup-panel');
-  el.style.display = el.style.display==='none' ? 'block' : 'none';
-}
-
-function toggleLog() {
-  const body = document.getElementById('log-body');
-  const txt = document.getElementById('log-toggle-txt');
-  body.classList.toggle('open');
-  txt.textContent = body.classList.contains('open') ? '▴ Hide' : '▾ Show';
-}
-
-function showAddLog() { document.getElementById('add-log-form').style.display='block'; }
-function hideAddLog() { document.getElementById('add-log-form').style.display='none'; }
-
-// ── Main Refresh ───────────────────────────────────────────────────────────────
-async function refreshAll() {
-  const iconEl = document.getElementById('refresh-icon');
-  iconEl.innerHTML = '<span class="spin"></span>';
-
-  const c = state.config;
-  const [bin, hl, chain, apy] = await Promise.all([
-    fetchBinance(),
-    fetchHL(c.hlWallet),
-    fetchLPChain(c.tokenId),
-    fetchAPY(),
-  ]);
-
-  state.binance = bin;
-  state.hl = hl;
-  state.lpChain = chain;  // keep full result including errors for debugging
-  state.apy = apy;
-
-  computeState();
-  runVerification();
-  renderAll();
-
-  iconEl.textContent = '↺';
-
-  // Cooldown display
-  const lastCall = S.get('lastAnalysis_time', 0);
-  const remaining = Math.ceil((COOLDOWN_MS - (Date.now()-lastCall)) / 60000);
-  if (remaining > 0 && remaining < 240) showCooldown(remaining);
-}
-
-
-// ── Debug ──────────────────────────────────────────────────────────────────────
-function showDebug() {
-  renderDebug();
-  document.getElementById('debug-panel').style.display = 'block';
-  document.getElementById('debug-panel').scrollIntoView({ behavior: 'smooth' });
-}
-
-function renderDebug() {
-  const bin = state.binance;
-  const hl = state.hl;
-  const chain = state.lpChain;
-  const apy = state.apy;
-  const cfg = state.config;
-
-  const row = (label, val, ok) => {
-    const color = ok === true ? '#16a34a' : ok === false ? '#dc2626' : '#64748b';
-    return `<div style="margin-bottom:4px"><span style="color:#94a3b8;width:160px;display:inline-block">${label}</span><span style="color:${color}">${val}</span></div>`;
-  };
-
-  let html = '<div style="margin-bottom:12px;font-weight:700;color:#0f172a">API Fetch Results</div>';
-
-  // Binance
-  html += row('Binance Price:', bin?.ok ? `$${bin.price?.toFixed(3)} ✅` : `FAILED: ${bin?.error}`, bin?.ok);
-
-  // Hyperliquid
-  html += row('HL Mark Price:', hl?.ok ? `$${hl.markPrice?.toFixed(3)} ✅` : `FAILED: ${hl?.error}`, hl?.ok);
-  const hlPosOk = hl?.ok ? (hl.positions?.length > 0 || hl.openOrders?.length > 0) : null;
-  html += row('HL Positions (filled):', hl?.ok ? `${hl.positions?.length || 0} active shorts` : '—', hl?.ok ? hl.positions?.length > 0 : null);
-  html += row('HL Limit Order (T1):', hl?.ok ? (hl.openOrders?.length > 0 ? `${hl.openOrders[0]?.sz} AVAX @ $${hl.openOrders[0]?.limitPx}` : 'None found') : '—', hl?.ok ? hl.openOrders?.length > 0 : null);
-  if (hl?.debug) {
-    html += row('  ctx received:', hl.debug.ctxReceived ? 'yes' : 'no', hl.debug.ctxReceived);
-    html += row('  pos received:', hl.debug.posReceived ? 'yes' : 'no', hl.debug.posReceived);
-    html += row('  orders received:', hl.debug.ordReceived ? 'yes' : 'no', hl.debug.ordReceived);
-    html += row('  AVAX shorts (active):', hl.debug.positionsCount, null);
-    html += row('  AVAX shorts (pending):', hl.debug.openOrdersCount, hl.debug.openOrdersCount > 0);
-    if (hl.debug.openOrdersPreview && hl.debug.openOrdersPreview !== 'none') {
-      html += `<div style="margin:2px 0 8px;padding:6px 8px;background:#fffbeb;border-radius:4px;color:#92400e;font-size:11px">📋 ${hl.debug.openOrdersPreview}</div>`;
-    }
-    if (hl.debug.rawPosPreview && hl.debug.rawPosPreview !== 'null') {
-      html += `<div style="margin:2px 0 8px;padding:6px 8px;background:#f8fafc;border-radius:4px;word-break:break-all;color:#475569;font-size:10px">${hl.debug.rawPosPreview}</div>`;
-    }
+function showDebug(){renderDebug();document.getElementById('debug-panel').style.display='block';document.getElementById('debug-panel').scrollIntoView({behavior:'smooth'});}
+function renderDebug(){
+  const bin=state.binance,hl=state.hl,chain=state.lpChain,apy=state.apy,cfg=state.config;
+  const row=(label,val,ok)=>{const color=ok===true?'#16a34a':ok===false?'#dc2626':'#64748b';return`<div style="margin-bottom:4px"><span style="color:#94a3b8;width:170px;display:inline-block">${label}</span><span style="color:${color}">${val}</span></div>`;};
+  let html='<div style="margin-bottom:10px;font-weight:700;color:#0f172a">Fetch Results</div>';
+  html+=row('Binance:',bin?.ok?`$${bin.price?.toFixed(3)} ✅`:`FAILED: ${bin?.error}`,bin?.ok);
+  html+=row('HL Mark:',hl?.ok?`$${hl.markPrice?.toFixed(3)} ✅`:`FAILED: ${hl?.error}`,hl?.ok);
+  html+=row('HL Positions:',hl?.ok?`${hl.positions?.length||0} shorts`:'—',hl?.ok?hl.positions?.length>0:null);
+  html+=row('HL T1 Order:',hl?.ok?(hl.openOrders?.length>0?`${hl.openOrders[0]?.sz} AVAX @ $${hl.openOrders[0]?.limitPx}`:'None'):'—',hl?.ok?hl.openOrders?.length>0:null);
+  if(hl?.debug&&hl.debug.openOrdersPreview!=='none')html+=`<div style="margin:2px 0 8px;padding:5px 8px;background:#fffbeb;border-radius:4px;color:#92400e;font-size:11px">${hl.debug.openOrdersPreview}</div>`;
+  html+=row('LP Chain:',chain?.ok?`✅ via ${chain.rpc}`:`FAILED: ${chain?.error}`,chain?.ok);
+  html+=row('APY:',apy?.ok?`${apy.apy?.toFixed(1)}%`:`FAILED: ${apy?.error}`,apy?.ok);
+  html+='<div style="margin:10px 0 4px;font-weight:700;color:#0f172a">Config</div>';
+  html+=row('Wallet:',cfg.hlWallet?cfg.hlWallet.slice(0,20)+'...':' NOT SET',!!cfg.hlWallet);
+  html+=row('Token ID:',cfg.tokenId||'NOT SET',!!cfg.tokenId);
+  html+=row('APY Override:',cfg.apyOverride||'NOT SET',!!cfg.apyOverride);
+  html+=row('Range:',`${cfg.rangeLow||'—'} – ${cfg.rangeHigh||'—'}`,!!(cfg.rangeLow&&cfg.rangeHigh));
+  const c=state.computed;
+  if(c.price){
+    html+='<div style="margin:10px 0 4px;font-weight:700;color:#0f172a">Computed</div>';
+    html+=row('LP Value:',fmt$(c.lpValue),c.lpValue>0);
+    html+=row('Daily Yield:',fmt$(c.dailyYield),c.dailyYield>0);
+    html+=row('Status:',c.status,c.status==='IN_RANGE');
+    html+=row('Action:',c.actionState,c.actionState==='green');
+    html+=row('Trend:',c.trend,null);
+    html+=row('OO Hours:',c.ooHours,null);
   }
-
-  // LP Chain
-  html += row('LP Chain (Token ' + (cfg.tokenId||'—') + '):', chain?.ok ? `✅ via ${chain.rpc}` : `FAILED: ${chain?.error}`, chain?.ok);
-  if (chain?.ok) {
-    html += row('  tickLower:', chain.tickLower, null);
-    html += row('  tickUpper:', chain.tickUpper, null);
-    html += row('  liquidity:', chain.liquidity?.toString(), chain.liquidity > 0n);
-  }
-
-  // APY
-  html += row('DeFiLlama APY:', apy?.ok ? `${apy.apy?.toFixed(1)}% (TVL $${(apy.tvl/1000).toFixed(0)}k)` : `FAILED: ${apy?.error}`, apy?.ok);
-
-  // Config
-  html += '<div style="margin:12px 0 4px;font-weight:700;color:#0f172a">Config State</div>';
-  html += row('Wallet:', cfg.hlWallet ? cfg.hlWallet.slice(0,20)+'...' : 'NOT SET', !!cfg.hlWallet);
-  html += row('Token ID:', cfg.tokenId || 'NOT SET', !!cfg.tokenId);
-  html += row('Entry AVAX:', cfg.entryAvax || 'NOT SET', !!cfg.entryAvax);
-  html += row('Entry USDC:', cfg.entryUsdc || 'NOT SET', !!cfg.entryUsdc);
-  html += row('Range Low:', cfg.rangeLow || 'NOT SET', !!cfg.rangeLow);
-  html += row('Range High:', cfg.rangeHigh || 'NOT SET', !!cfg.rangeHigh);
-  html += row('APY Override:', cfg.apyOverride || 'NOT SET (using auto)', !!cfg.apyOverride);
-  html += row('API Key:', cfg.apiKey ? 'SET (' + cfg.apiKey.length + ' chars)' : 'NOT SET', !!cfg.apiKey);
-
-  // Computed
-  const c = state.computed;
-  if (c.price) {
-    html += '<div style="margin:12px 0 4px;font-weight:700;color:#0f172a">Computed Values</div>';
-    html += row('Price:', '$' + c.price?.toFixed(3), null);
-    html += row('AVAX in LP:', c.avax?.toFixed(2), c.avax > 0);
-    html += row('USDC in LP:', '$' + c.usdc?.toFixed(2), c.usdc > 0);
-    html += row('LP Value:', '$' + c.lpValue?.toFixed(2), c.lpValue > 0);
-    html += row('Source:', c.source, c.source === 'on-chain');
-    html += row('In Range:', c.inRange === null ? 'unknown (no range)' : c.inRange ? 'YES' : 'NO', c.inRange);
-  }
-
-  document.getElementById('debug-content').innerHTML = html;
+  document.getElementById('debug-content').innerHTML=html;
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────────
-window.addEventListener('load', () => {
+async function refreshAll(){
+  const iconEl=document.getElementById('refresh-icon');
+  iconEl.innerHTML='<span class="spin"></span>';
+  const c=state.config;
+  const[bin,hl,chain,apy]=await Promise.all([fetchBinance(),fetchHL(c.hlWallet),fetchLPChain(c.tokenId),fetchAPY()]);
+  state.binance=bin;state.hl=hl;state.lpChain=chain;state.apy=apy;
+  computeState();renderAll();
+  iconEl.textContent='↺';
+  const lastCall=S.get('lastAnalysis_time',0),remaining=Math.ceil((COOLDOWN_MS-(Date.now()-lastCall))/60000);
+  if(remaining>0&&remaining<30)showCooldown(remaining);
+}
+
+window.addEventListener('load',()=>{
   loadConfig();
-  // Show setup if not configured
-  const c = S.get('config', {});
-  if (!c.rangeLow && !c.tokenId) {
-    document.getElementById('setup-panel').style.display = 'block';
-  }
+  const c=S.get('config',{});
+  if(!c.rangeLow&&!c.tokenId)document.getElementById('setup-panel').style.display='block';
   refreshAll();
-  // Auto-refresh every 5 minutes
-  setInterval(refreshAll, 5 * 60 * 1000);
+  setInterval(refreshAll,5*60*1000);
 });
 </script>
 </body>
