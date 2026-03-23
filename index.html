@@ -1078,22 +1078,40 @@ async function runAnalysis(){
   btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analysing...';
   const model=selectModel(c);
   document.getElementById('model-badge').textContent=model.includes('haiku')?'haiku-4-5':'sonnet-4-6';
-  const systemPrompt=`You are an LP execution advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge.
-Strategy: 15% geometric range, tickspacing 10, max 3 rebalances/month, T1 short at Pa−0.5×ATR (2× lev, 65% coverage, SL=trigger+1×ATR). Rebalance triggers: IMMEDIATE <2×ATR below Pa, FAST 3+ 4h closes below Pa, STANDARD 48h+DOWN. Capital guard: no rebalance if price <70% original entry.
+  // System prompt varies by action state — compact when green, full when red
+  const isActionNeeded=c.actionState==='red'||c.actionState==='hold';
+  const systemPrompt=isActionNeeded
+  ? `You are an LP execution advisor. Respond in this exact format:
 
-IMPORTANT RULES:
-1. When REBAL_DATA is present in the prompt, you MUST use those exact numbers in ACTION. Do not recompute.
-2. REBAL_DATA contains: hedge_action (close/cancel), hedge_pnl, lp_avax, lp_usdc, swap_dir, swap_avax/usdc amounts, new_range, new_t1 parameters.
-3. LP exits bottom = 100% AVAX (no USDC). LP exits top = 100% USDC. Swap step corrects the ratio for new range.
-4. Do NOT use markdown headers (##). Plain text only.
-5. When rebalance is triggered, ACTION must be numbered steps: ① ② ③ ④ ⑤ ⑥
+STATUS: [one emoji] [one sentence — what happened and why action is needed]
 
-Respond in exactly 3 sections labelled SITUATION, ACTION, RISK. Max 300 words. Be direct and specific.`;
+ACTION:
+① [step with exact $ numbers from REBAL_DATA]
+② [step]
+③ [step]
+④ [step]
+⑤ [step]
+⑥ [step]
+
+RISK: [one sentence]
+
+Rules: Use numbers from REBAL_DATA exactly. No markdown ##. LP exits bottom = 100% AVAX. Max 180 words.`
+  : `You are an LP position monitor. Respond in this exact format:
+
+STATUS: [one emoji] [one sentence — current state]
+
+WATCH:
+· [price level $X.XXX — what triggers if hit]
+· [second level if relevant]
+
+RISK: [one sentence — the one thing that could change the picture]
+
+Rules: No markdown ##. No numbered action steps. Max 80 words total. If healthy, be brief.`
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model,max_tokens:800,system:systemPrompt,messages:[{role:'user',content:buildPrompt(c)}]})
+      body:JSON.stringify({model,max_tokens:isActionNeeded?500:250,system:systemPrompt,messages:[{role:'user',content:buildPrompt(c)}]})
     });
     const data=await resp.json();if(data.error)throw new Error(data.error.message);
     const text=data.content?.[0]?.text||'No response.';
@@ -1108,16 +1126,53 @@ Respond in exactly 3 sections labelled SITUATION, ACTION, RISK. Max 300 words. B
 function showAnalysisResult(text,fromCache,timestamp){
   document.getElementById('analysis-output').style.display='block';
   const box=document.getElementById('analysis-box');
-  const sections=[{key:'SITUATION',label:'SITUATION'},{key:'ACTION',label:'ACTION'},{key:'RISK',label:'RISK'}];
-  let html='',remaining=text;
-  sections.forEach(({key,label},i)=>{
-    const next=sections[i+1]?.key,start=remaining.search(new RegExp(key+'[:\\s*]*','i'));
-    if(start===-1)return;
-    const end=next?remaining.search(new RegExp(next+'[:\\s*]*','i')):remaining.length;
-    const content=remaining.slice(start+key.length+1,end>start?end:undefined).trim().replace(/^#{1,3}\s*/gm,'').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').replace(/\n/g,'<br>');
-    html+=`<div class="asec"><h4>${label}</h4><p>${content}</p></div>`;
+  const clean=t=>t.replace(/^#{1,3}\s*/gm,'').replace(/\*\*(.*?)\*\*/g,'<b>$1</b>').trim();
+  const t=clean(text);
+
+  // Parse sections
+  const sec={};
+  ['STATUS','ACTION','WATCH','RISK'].forEach(key=>{
+    const rx=new RegExp(key+'\\s*:?\\s*','i');
+    const si=t.search(rx);
+    if(si===-1)return;
+    const body=t.slice(si).replace(rx,'');
+    let end=body.length;
+    ['STATUS','ACTION','WATCH','RISK'].filter(k=>k!==key).forEach(k=>{
+      const m=body.search(new RegExp('\\n'+k+'\\s*:?\\s*','i'));
+      if(m>-1&&m<end)end=m;
+    });
+    sec[key]=body.slice(0,end).trim();
   });
-  if(!html)html=`<div class="asec"><p>${text.replace(/\n/g,'<br>')}</p></div>`;
+
+  let html='';
+
+  if(sec.STATUS){
+    html+=`<div style="font-size:14px;font-weight:600;line-height:1.5;margin-bottom:10px">${sec.STATUS.replace(/\n/g,' ')}</div>`;
+  }
+  if(sec.ACTION){
+    const steps=sec.ACTION.split('\n').filter(l=>l.trim());
+    html+=`<div style="margin-bottom:10px">`;
+    steps.forEach(s=>{
+      const trimmed=s.trim();if(!trimmed)return;
+      const fmt=trimmed.replace(/^([①②③④⑤⑥])\s*/,'<span style="color:var(--red);font-weight:700;margin-right:4px">$1</span>');
+      html+=`<div style="font-size:13px;line-height:1.75;padding:1px 0">${fmt}</div>`;
+    });
+    html+=`</div>`;
+  }
+  if(sec.WATCH){
+    const bullets=sec.WATCH.split('\n').filter(l=>l.trim());
+    html+=`<div style="margin-bottom:10px"><div style="font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin-bottom:5px">Watch</div>`;
+    bullets.forEach(b=>{
+      const s=b.replace(/^[·•\-]\s*/,'').trim();if(!s)return;
+      html+=`<div style="font-size:13px;line-height:1.65;color:var(--text);padding:1px 0">· ${s}</div>`;
+    });
+    html+=`</div>`;
+  }
+  if(sec.RISK){
+    html+=`<div style="font-size:12px;color:var(--muted);border-top:1px solid var(--border);padding-top:8px">`+
+          `<span style="font-weight:700;color:var(--amber)">Risk: </span>${sec.RISK.replace(/\n/g,' ')}</div>`;
+  }
+  if(!html)html=`<div style="font-size:13px">${t.replace(/\n/g,'<br>')}</div>`;
   box.innerHTML=html;
   document.getElementById('analysis-meta').innerHTML=fromCache?`⏱ Cached · ${new Date(timestamp).toLocaleTimeString()}`:`✓ Fresh · ${new Date(timestamp).toLocaleTimeString()} · 30min cooldown`;
 }
