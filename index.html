@@ -161,7 +161,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   </div>
   <div class="g2">
     <div class="ig"><label>ATR 14-day ($)</label><input id="s-atr" placeholder="0.235"><div class="hint">Update weekly · default 2.5% of price</div></div>
-    <div class="ig"><label>4h Candles Below Range</label><input id="s-fourh" placeholder="0"><div class="hint">Consecutive 4h closes below Pa</div></div>
+    <div class="ig"><label>4h Candles Override</label><input id="s-fourh" placeholder="auto"><div class="hint">Auto-computed · override only</div></div>
   </div>
   <hr>
   <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Cumulative P&amp;L tracking</div>
@@ -205,6 +205,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     <span><span style="color:var(--muted)">APY </span><b id="pos-apy" class="mono">—</b></span>
     <span><span style="color:var(--muted)">Month est. </span><b id="pos-month" class="mono pos">—</b></span>
     <span><span style="color:var(--muted)">All-time </span><b id="pos-alltime" class="mono">—</b></span>
+    <span id="pos-fourh" class="mono" style="font-size:11px"></span>
   </div>
 </div>
 
@@ -404,15 +405,28 @@ function saveConfig(){
 
 async function fetchBinance(){
   try{
-    const[t24,klines]=await Promise.all([
+    const rangeLow=state.config.rangeLow||null;
+    const[t24,klines,klines4h]=await Promise.all([
       fetch(`${BINANCE_API}/ticker/24hr?symbol=AVAXUSDC`).then(r=>r.json()),
       fetch(`${BINANCE_API}/klines?symbol=AVAXUSDC&interval=1d&limit=8`).then(r=>r.json()),
+      fetch(`${BINANCE_API}/klines?symbol=AVAXUSDC&interval=4h&limit=7`).then(r=>r.json()),
     ]);
     const price=parseFloat(t24.lastPrice),change24h=parseFloat(t24.priceChangePercent);
     const closes=klines.slice(-4).map(k=>parseFloat(k[4]));
     const high7d=Math.max(...klines.map(k=>parseFloat(k[2])));
     const low7d=Math.min(...klines.map(k=>parseFloat(k[3])));
-    return{price,change24h,closes,high7d,low7d,fetchTime:Date.now(),ok:true};
+    // Count consecutive CLOSED 4h candles below rangeLow (exclude current open candle)
+    // klines4h[-1] is the current still-open candle — skip it
+    let fourHCandles=0;
+    if(rangeLow){
+      const closed4h=klines4h.slice(0,-1); // all closed candles
+      // Count from most recent backward
+      for(let i=closed4h.length-1;i>=0;i--){
+        if(parseFloat(closed4h[i][4])<rangeLow) fourHCandles++;
+        else break; // streak broken
+      }
+    }
+    return{price,change24h,closes,high7d,low7d,fourHCandles,fetchTime:Date.now(),ok:true};
   }catch(e){return{ok:false,error:e.message};}
 }
 
@@ -588,9 +602,9 @@ function computeState(){
   const tier1Set=t1.status==='active'||t1.status==='waiting';
   // ATR — user input or 2.5% of price (must be before t1SL and trigger calcs)
   const atr=c.atrInput||(price*0.025);
-  const t1RecPrice=rangeLow?(rangeLow*0.994):null;
+  const t1RecPrice=rangeLow?(rangeLow-atr*0.5):null; // Pa - 0.5× ATR (professional standard)
   const avaxAtExit=rangeLow&&lpValue>0?lpValue/rangeLow:0;
-  const t1RecSize=avaxAtExit>0?Math.round(avaxAtExit*0.50):null;
+  const t1RecSize=avaxAtExit>0?Math.round(avaxAtExit*0.65):null; // 65% coverage
   // Coverage target and gap — computed after t1RecSize is available
   const coverageTarget=avaxExposureAtExit>0&&t1RecSize>0
     ?Math.min(100,t1RecSize/avaxExposureAtExit*100):null;
@@ -610,7 +624,8 @@ function computeState(){
   const guardFloor=origEntry*0.70;
   const guardStatus=price<=guardFloor?'TRIGGERED':price<=guardFloor*1.05?'NEAR':'OK';
   const ooHours=c.ooHours||0;
-  const fourHCandles=c.fourHCandles||0;
+  // 4H candles: auto-computed from Binance takes priority over manual Setup field
+  const fourHCandles=state.binance?.fourHCandles??c.fourHCandles??0;
   const closes=bin?.closes||[];
   const trend=closes.length>=3?(closes[closes.length-1]<closes[closes.length-2]&&closes[closes.length-2]<closes[closes.length-3]?'DOWN':closes[closes.length-1]>closes[closes.length-2]?'UP':'FLAT'):'N/A';
   const strongDowntrend=trend==='DOWN'&&closes.length>=3&&(closes[closes.length-1]<closes[0]*0.95);
@@ -670,13 +685,76 @@ function computeState(){
   const neutralRangeHigh=price*Math.sqrt(1+baseWidth);
 
   // New T1 hedge parameters
-  const newT1Trigger=newRangeLow*0.994;
+  const newT1Trigger=newRangeLow-atr*0.5; // Pa - 0.5× ATR
   const newAvaxAtExit=capital/newRangeLow;
-  const newT1Size=Math.round(newAvaxAtExit*0.50);
+  const newT1Size=Math.round(newAvaxAtExit*0.65); // 65% coverage
   const newT1Margin=Math.round(newT1Size*newT1Trigger/2);
   // New range SL = new trigger + 1× ATR (consistent with T1 fix)
   const newT1SL=newT1Trigger+atr;
   const newRangeWidthPct=Math.round(baseWidth*100);
+
+  // ── REBALANCE INSTRUCTIONS ────────────────────────────────────────────────
+  // Direction: did price exit bottom (BELOW_RANGE) or top (ABOVE_RANGE)?
+  const exitedBottom = status==='BELOW_RANGE';
+  const exitedTop    = status==='ABOVE_RANGE';
+
+  // What LP holds right now (at current price, out of range):
+  // Below range → 100% AVAX; Above range → 100% USDC
+  const lpAvaxNow  = exitedBottom ? (lpValue/price) : (exitedTop ? 0 : avax);
+  const lpUsdcNow  = exitedTop    ? lpValue          : (exitedBottom ? 0 : usdc);
+
+  // Hedge P&L at current price (what you receive when closing)
+  // If active: realised profit. If waiting (not fired): 0 — just cancel the order.
+  const hedgeClosePnl = t1.status==='active' ? t1pnl : 0;
+  const hedgeAction   = t1.status==='active'  ? 'close' :
+                        t1.status==='waiting' ? 'cancel' : 'none';
+
+  // Total funds available after: withdraw LP + close/cancel hedge
+  const totalAvaxAfter = lpAvaxNow;  // AVAX from LP
+  const totalUsdcAfter = lpUsdcNow + (hedgeClosePnl>0 ? hedgeClosePnl : 0); // USDC from LP + hedge profit
+  const totalValueAfter = totalAvaxAfter*price + totalUsdcAfter;
+
+  // New range target composition at current price
+  // Using CL formula: fraction in AVAX = (1/sqrt(P) - 1/sqrt(Pb)) * P / total_value_per_unit
+  let newAvaxPct=50, newUsdcPct=50, avaxToSwap=0, usdcToSwap=0, swapDirection='none';
+  if(newRangeLow>0 && newRangeHigh>0 && price>newRangeLow && price<newRangeHigh){
+    const sqrtP=Math.sqrt(price), sqrtPa=Math.sqrt(newRangeLow), sqrtPb=Math.sqrt(newRangeHigh);
+    const avaxPart=(1/sqrtP - 1/sqrtPb)*price;
+    const usdcPart=(sqrtP - sqrtPa);
+    const total=avaxPart+usdcPart;
+    newAvaxPct=total>0?(avaxPart/total*100):50;
+    newUsdcPct=100-newAvaxPct;
+
+    const targetAvax = totalValueAfter*(newAvaxPct/100)/price;
+    const targetUsdc = totalValueAfter*(newUsdcPct/100);
+
+    if(totalAvaxAfter > targetAvax){
+      // Have too much AVAX → sell some AVAX for USDC
+      avaxToSwap = totalAvaxAfter - targetAvax;
+      swapDirection = 'sell_avax';
+    } else {
+      // Have too much USDC → buy AVAX
+      usdcToSwap = totalUsdcAfter - targetUsdc;
+      swapDirection = 'buy_avax';
+    }
+  } else if(price<=newRangeLow){
+    // Deploying below new range — would be 100% AVAX
+    newAvaxPct=100; newUsdcPct=0;
+    swapDirection='sell_avax';
+    avaxToSwap = totalAvaxAfter - totalValueAfter/price;
+  } else if(price>=newRangeHigh){
+    // Deploying above new range — would be 100% USDC
+    newAvaxPct=0; newUsdcPct=100;
+    swapDirection='buy_avax';
+    usdcToSwap = totalUsdcAfter;
+  }
+
+  const swapAvaxAmt  = Math.max(0, avaxToSwap);
+  const swapUsdcAmt  = Math.max(0, usdcToSwap);
+  const swapFee      = swapDirection==='sell_avax'
+    ? swapAvaxAmt*price*0.0005
+    : swapUsdcAmt*0.0005;
+
   state.computed={
     price,avax,usdc,lpValue,avaxPct,inRange,pctThrough,source,
     rangeLow,rangeHigh,effectiveAPY,apySource,dailyYield,
@@ -694,6 +772,10 @@ function computeState(){
     newRangeLow,newRangeHigh,newT1Trigger,newT1Size,newT1Margin,newT1SL,
     newCentre,newPctThrough,newAvaxComp,trendShift,newRangeWidthPct,
     neutralRangeLow,neutralRangeHigh,immediateThreshold,
+    exitedBottom,exitedTop,lpAvaxNow,lpUsdcNow,
+    hedgeClosePnl,hedgeAction,
+    totalAvaxAfter,totalUsdcAfter,totalValueAfter,
+    newAvaxPct,newUsdcPct,swapDirection,swapAvaxAmt,swapUsdcAmt,swapFee,
     change24h:bin?.change24h,high7d:bin?.high7d,low7d:bin?.low7d,
     fundingRate,hedgeDays,
   };
@@ -742,6 +824,13 @@ function renderAll(){
   if(c.ilNow!=null){ilEl.innerHTML=`<span class="${c.ilNow>=0?'pos':'neg'}">${fmt$(c.ilNow)}</span>`;}
   else{ilEl.innerHTML=`<span style="color:var(--faint);font-size:11px">Set entry in Setup</span>`;}
   document.getElementById('pos-apy').textContent=`${c.effectiveAPY?.toFixed(1)}% (${c.apySource==='manual'?'Pharaoh':c.apySource==='defillama'?'DeFiLlama':'default'})`;
+  // Show live 4H candle count as a small indicator
+  const fourHEl=document.getElementById('pos-fourh');
+  if(fourHEl){
+    const fh=c.fourHCandles||0;
+    fourHEl.textContent=fh>0?`4H below Pa: ${fh}`:'';
+    fourHEl.style.color=fh>=3?'var(--red)':fh>=1?'var(--amber)':'var(--faint)';
+  }
   document.getElementById('pos-month').textContent=fmt$(c.dailyYield*30);
   document.getElementById('pos-alltime').innerHTML=fmtPnl(c.allTimeNet);
   renderViability(c);
@@ -787,7 +876,7 @@ function renderViability(c){
   const botBody = document.getElementById('viab-bot-body');
   if(hasModel){
     const hedgeCover = c.t1RecSize && c.rangeLow
-      ? Math.round(c.t1RecSize * (c.rangeLow*0.994 - (c.rangeLow - 1)) / Math.abs(c.ilAtBottomExit || 1) * 100)
+      ? Math.round(c.t1RecSize * (c.t1RecPrice - (c.rangeLow - 1)) / Math.abs(c.ilAtBottomExit || 1) * 100)
       : 50;
     botBody.innerHTML =
       `IL locked in: <b>${fmt$(c.ilAtBottomExit)}</b> + $${c.rebalCostUp} swap = <b>~${fmt$(c.rebalCostDown)}</b> total<br>`+
@@ -845,17 +934,53 @@ function renderAction(c){
   }else if(c.actionState==='red'){
     block.classList.add('action-red');
     const triggerLabel=c.rebalTrigger==='immediate'?'🔴 Rebalance NOW':c.rebalTrigger==='fast'?'🔴 Rebalance (12h)':'🔴 Rebalance recommended';
-    const shiftNote=c.trendShift>0?`<span style="color:var(--muted);font-size:11px">Trend-adjusted: centre shifted $${c.trendShift?.toFixed(3)} lower vs neutral ($${c.neutralRangeLow?.toFixed(3)}–$${c.neutralRangeHigh?.toFixed(3)})</span><br>`:'';
-    const compNote=`Entry: ~<b>${c.newAvaxComp}% AVAX / ${100-c.newAvaxComp}% USDC</b>${c.trendShift>0?' (vs 50/50 if centred on price)':''}`;
+
+    // Hedge step
+    const hedgeStep = c.hedgeAction==='close'
+      ? `① <b>Close T1 short on HL</b> → take profit <span class="pos">+${fmt$(c.hedgeClosePnl)}</span>`
+      : c.hedgeAction==='cancel'
+      ? `① <b>Cancel T1 limit order on HL</b> (never fired — no P&L)`
+      : `① No hedge to close`;
+
+    // LP withdrawal step
+    const lpStep = c.exitedBottom
+      ? `② <b>Withdraw LP</b> → receive <b>${c.lpAvaxNow?.toFixed(1)} AVAX</b> + $0 USDC`
+      : c.exitedTop
+      ? `② <b>Withdraw LP</b> → receive <b>${fmt$(c.lpUsdcNow)}</b> + 0 AVAX (+${fmt$(c.lpGainAtTop)} CL gain)`
+      : `② <b>Withdraw LP</b> → receive ${c.avax?.toFixed(1)} AVAX + ${fmt$(c.usdc)} USDC`;
+
+    // Swap step
+    let swapStep='';
+    if(c.swapDirection==='sell_avax'&&c.swapAvaxAmt>0.5){
+      swapStep=`③ <b>SELL ${c.swapAvaxAmt?.toFixed(1)} AVAX → USDC</b> on Pharaoh <span style="color:var(--muted);font-size:11px">(fee ~${fmt$(c.swapFee,1)})</span><br>`+
+               `&nbsp;&nbsp;&nbsp;Target: <b>${c.newAvaxPct?.toFixed(0)}% AVAX / ${c.newUsdcPct?.toFixed(0)}% USDC</b> for new range`;
+    } else if(c.swapDirection==='buy_avax'&&c.swapUsdcAmt>1){
+      swapStep=`③ <b>BUY AVAX with ${fmt$(c.swapUsdcAmt)} USDC</b> on Pharaoh <span style="color:var(--muted);font-size:11px">(fee ~${fmt$(c.swapFee,1)})</span><br>`+
+               `&nbsp;&nbsp;&nbsp;Target: <b>${c.newAvaxPct?.toFixed(0)}% AVAX / ${c.newUsdcPct?.toFixed(0)}% USDC</b> for new range`;
+    } else {
+      swapStep=`③ No swap needed — composition already matches new range`;
+    }
+
+    // Range step
+    const shiftNote=c.trendShift>0?` <span style="color:var(--muted);font-size:11px">(trend-biased ${c.trendShift?.toFixed(3)} lower)</span>`:'';
+    const rangeStep=`④ <b>Deploy LP:</b> $${c.newRangeLow?.toFixed(3)} – $${c.newRangeHigh?.toFixed(3)}${shiftNote}`;
+
+    // Hedge step
+    const newHedgeStep=`⑤ <b style="color:var(--red)">SET NEW T1 ON HL IMMEDIATELY:</b><br>`+
+      `&nbsp;&nbsp;&nbsp;SHORT <b>${c.newT1Size} AVAX @ $${c.newT1Trigger?.toFixed(3)}</b> · 2× · $${c.newT1Margin} margin · SL $${c.newT1SL?.toFixed(3)}`;
+
+    const setupStep=`⑥ Update Setup: Range Low/High · reset OO hours to 0`;
+
     title.innerHTML=triggerLabel;
     body.innerHTML=
-      `<span style="color:var(--muted);font-size:12px">${c.rebalTriggerReason}</span><br>`+
-      `<b>New range:</b> $${c.newRangeLow?.toFixed(3)} – $${c.newRangeHigh?.toFixed(3)} <span style="color:var(--muted);font-size:11px">(${c.newRangeWidthPct}% wide)</span><br>`+
-      shiftNote+
-      compNote+`<br>`+
-      `<b>New T1:</b> SHORT <b>${c.newT1Size} AVAX @ $${c.newT1Trigger?.toFixed(3)}</b> · 2× · $${c.newT1Margin} margin · SL $${c.newT1SL?.toFixed(3)}<br>`+
-      `<span style="color:var(--muted);font-size:11px">① Withdraw LP &nbsp;② Swap to correct ratio &nbsp;③ Deploy new range &nbsp;④ Set T1 on HL immediately</span>`;
-    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--faint)">Reset OO hours + 4h candles to 0 after rebalance</span>`;
+      `<span style="color:var(--muted);font-size:12px">${c.rebalTriggerReason}</span><br><br>`+
+      `${hedgeStep}<br>`+
+      `${lpStep}<br>`+
+      `${swapStep}<br>`+
+      `${rangeStep}<br>`+
+      `${newHedgeStep}<br>`+
+      `<span style="color:var(--muted);font-size:12px">${setupStep}</span>`;
+    sub.innerHTML=`<span>${rebalStr}</span><span>${guardStr}</span><span style="color:var(--faint)">Total available: ~${fmt$(c.totalValueAfter)}</span>`;
   }else if(c.actionState==='hold'){
     block.classList.add('action-hold');
     title.innerHTML='🟣 Hold — do not rebalance';
@@ -918,7 +1043,7 @@ async function runAnalysis(){
   btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analysing...';
   const model=selectModel(c);
   document.getElementById('model-badge').textContent=model.includes('haiku')?'haiku-4-5':'sonnet-4-6';
-  const systemPrompt=`You are an LP strategy advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge. Strategy: 15% geometric range, tickspacing 10, max 3 rebalances/month, single T1 pre-set short at range_low×0.994 (2x leverage, 50% LP coverage, SL=range_low+20%ATR). 3 rebalance triggers: IMMEDIATE if daily close <2×ATR below Pa, FAST if 3+ 4h closes below Pa, STANDARD after 48h+trend DOWN. Capital guard: no rebalance if price <70% original entry. Range is trend-adjusted (bias lower by 0.5×ATR if DOWN, 1×ATR if strong DOWN). Respond in exactly 3 labelled sections: SITUATION (1-2 sentences), ACTION (2-4 bullets with specific numbers), RISK (1 sentence). Max 260 words. Be direct.`;
+  const systemPrompt=`You are an LP strategy advisor for a Pharaoh AVAX/USDC concentrated liquidity position with Hyperliquid hedge. Strategy: 15% geometric range, tickspacing 10, max 3 rebalances/month, single T1 pre-set short at range_low−0.5×ATR (2x leverage, 65% LP coverage, SL=trigger+1×ATR). 3 rebalance triggers: IMMEDIATE if daily close <2×ATR below Pa, FAST if 3+ 4h closes below Pa, STANDARD after 48h+trend DOWN. Capital guard: no rebalance if price <70% original entry. Range is trend-adjusted (bias lower by 0.5×ATR if DOWN, 1×ATR if strong DOWN). Respond in exactly 3 labelled sections: SITUATION (1-2 sentences), ACTION (2-4 bullets with specific numbers), RISK (1 sentence). Max 260 words. Be direct.`;
   try{
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
@@ -1000,6 +1125,8 @@ function renderDebug(){
   html+=row('Token ID:',cfg.tokenId||'NOT SET',!!cfg.tokenId);
   html+=row('APY Override:',cfg.apyOverride||'NOT SET',!!cfg.apyOverride);
   html+=row('Range:',`${cfg.rangeLow||'—'} – ${cfg.rangeHigh||'—'}`,!!(cfg.rangeLow&&cfg.rangeHigh));
+  html+=row('4H Candles (auto):',state.binance?.fourHCandles??'—',null);
+  html+=row('Notifications:',('Notification' in window)?Notification.permission:'not supported',Notification.permission==='granted');
   const c=state.computed;
   if(c.price){
     html+='<div style="margin:10px 0 4px;font-weight:700;color:#0f172a">Computed</div>';
@@ -1013,13 +1140,94 @@ function renderDebug(){
   document.getElementById('debug-content').innerHTML=html;
 }
 
+// ── Alerts ────────────────────────────────────────────────────────────────────
+let alertPermission='default'; // track notification permission state
+
+function initAlerts(){
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission().then(p=>{ alertPermission=p; });
+  } else if('Notification' in window){
+    alertPermission=Notification.permission;
+  }
+}
+
+function playBeep(){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const osc=ctx.createOscillator();
+    const gain=ctx.createGain();
+    osc.connect(gain);gain.connect(ctx.destination);
+    osc.type='sine';osc.frequency.value=880;
+    gain.gain.setValueAtTime(0.4,ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.6);
+    osc.start(ctx.currentTime);osc.stop(ctx.currentTime+0.6);
+  }catch(e){}
+}
+
+function checkAlerts(){
+  const c=state.computed;
+  if(!c.price||!c.actionState) return;
+
+  const prevState=S.get('lastActionState','green');
+  const prevPrice=S.get('lastAlertPrice',null);
+  const now=c.actionState;
+
+  // Determine if we should alert
+  const wasOk = prevState==='green'||prevState==='amber';
+  const isAlert = now==='red'||now==='hold';
+  // Also alert if rebalTrigger escalated (amber→red or trigger type changed)
+  const triggerChanged = S.get('lastRebalTrigger',null) !== c.rebalTrigger && c.rebalTrigger!=null;
+  const shouldAlert = (wasOk&&isAlert) || (now==='red'&&triggerChanged);
+
+  if(shouldAlert){
+    // Build alert message
+    let title='🔴 AVAX LP — Action Required';
+    let msg='';
+    if(c.rebalTrigger==='immediate'){
+      title='🚨 AVAX LP — Rebalance NOW';
+      msg=`Price $${c.price?.toFixed(3)} broke 2×ATR below range. Immediate rebalance needed.`;
+    } else if(c.rebalTrigger==='fast'){
+      title='🔴 AVAX LP — Rebalance (fast)';
+      msg=`${c.fourHCandles} consecutive 4H closes below $${c.rangeLow?.toFixed(3)}. Rebalance within 12h.`;
+    } else if(c.rebalTrigger==='standard'){
+      title='🔴 AVAX LP — Rebalance';
+      msg=`Out of range ${c.ooHours}h + trend DOWN. Consider rebalancing now.`;
+    } else if(now==='hold'){
+      title='🟣 AVAX LP — Hold Position';
+      msg=`Price below 30% guard floor ($${c.guardFloor?.toFixed(2)}). Do not rebalance.`;
+    }
+
+    // 1. Browser push notification
+    if('Notification' in window && Notification.permission==='granted'){
+      try{ new Notification(title,{body:msg,icon:'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="%23dc2626"/><text x="16" y="22" text-anchor="middle" fill="white" font-size="18">⚠</text></svg>'}); }catch(e){}
+    }
+
+    // 2. Audio beep (2 beeps for immediate, 1 for others)
+    playBeep();
+    if(c.rebalTrigger==='immediate') setTimeout(playBeep, 700);
+  }
+
+  // 3. Page title badge (always update)
+  const baseTitle='AVAX LP — Pharaoh × HL';
+  if(now==='red'&&c.rebalTrigger==='immediate') document.title='🚨 Rebalance NOW — '+baseTitle;
+  else if(now==='red') document.title='🔴 Rebalance — '+baseTitle;
+  else if(now==='amber') document.title='⚠️ Monitor — '+baseTitle;
+  else if(now==='hold') document.title='🟣 Hold — '+baseTitle;
+  else document.title=baseTitle;
+
+  // Save state for next comparison
+  S.set('lastActionState', now);
+  S.set('lastRebalTrigger', c.rebalTrigger||null);
+  S.set('lastAlertPrice', c.price);
+}
+
 async function refreshAll(){
   const iconEl=document.getElementById('refresh-icon');
   iconEl.innerHTML='<span class="spin"></span>';
   const c=state.config;
   const[bin,hl,chain,apy]=await Promise.all([fetchBinance(),fetchHL(c.hlWallet),fetchLPChain(c.tokenId),fetchAPY()]);
   state.binance=bin;state.hl=hl;state.lpChain=chain;state.apy=apy;
-  computeState();renderAll();
+  computeState();renderAll();checkAlerts();
   iconEl.textContent='↺';
   const lastCall=S.get('lastAnalysis_time',0),remaining=Math.ceil((COOLDOWN_MS-(Date.now()-lastCall))/60000);
   if(remaining>0&&remaining<30)showCooldown(remaining);
@@ -1027,6 +1235,7 @@ async function refreshAll(){
 
 window.addEventListener('load',()=>{
   loadConfig();
+  initAlerts();
   const c=S.get('config',{});
   if(!c.rangeLow&&!c.tokenId)document.getElementById('setup-panel').style.display='block';
   refreshAll();
