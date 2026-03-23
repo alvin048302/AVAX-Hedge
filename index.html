@@ -971,7 +971,7 @@ function addLogEntry(){
   const entries=S.get('rebal_log',[]);entries.unshift(entry);
   S.set('rebal_log',entries);hideAddLog();renderLog();
 }
-function clearLog(){if(confirm('Clear all log entries?\')){S.set('rebal_log',[]);renderLog();}}
+function clearLog(){if(confirm('Clear all log entries?')){S.set('rebal_log',[]);renderLog();}}
 
 function toggleSetup(){const el=document.getElementById('setup-panel');el.style.display=el.style.display==='none'?'block':'none';}
 function toggleHedge(){const b=document.getElementById('hedge-body'),t=document.getElementById('hedge-toggle-txt');b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';}
