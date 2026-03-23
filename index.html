@@ -296,6 +296,15 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
       <div class="hd-row"><span style="color:var(--muted)">Coverage</span><span id="hd-coverage" class="mono">—</span></div>
       <div class="hd-row"><span style="color:var(--muted)">Funding Cost</span><span id="hd-funding" class="mono">—</span></div>
       <div class="hd-row"><span style="color:var(--muted)">Liq. Price</span><span id="hd-liq" class="mono">—</span></div>
+      <!-- Recommended T1 — always visible so user knows what to set on HL -->
+      <div id="hd-rec-block" style="margin-top:10px;padding:10px 12px;background:var(--blue-bg);border:1px solid var(--blue-b);border-radius:8px;display:none">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px">Recommended T1 (based on current range)</div>
+        <div class="hd-row" style="border-color:var(--blue-b)"><span style="color:var(--muted)">Trigger</span><span id="hd-rec-entry" class="mono" style="color:var(--blue)">—</span></div>
+        <div class="hd-row" style="border-color:var(--blue-b)"><span style="color:var(--muted)">Size</span><span id="hd-rec-size" class="mono" style="color:var(--blue)">—</span></div>
+        <div class="hd-row" style="border-color:var(--blue-b)"><span style="color:var(--muted)">Leverage</span><span id="hd-rec-lev" class="mono" style="color:var(--blue)">—</span></div>
+        <div class="hd-row" style="border-color:var(--blue-b)"><span style="color:var(--muted)">Stop Loss</span><span id="hd-rec-sl" class="mono" style="color:var(--blue)">—</span></div>
+        <div class="hd-row" style="border-color:var(--blue-b);border-bottom:none"><span style="color:var(--muted)">Margin</span><span id="hd-rec-margin" class="mono" style="color:var(--blue)">—</span></div>
+      </div>
     </div>
   </div>
 </div>
@@ -626,7 +635,9 @@ function computeState(){
   const guardStatus=price<=guardFloor?'TRIGGERED':price<=guardFloor*1.05?'NEAR':'OK';
   const ooHours=c.ooHours||0;
   // 4H candles: auto-computed from Binance takes priority over manual Setup field
-  const fourHCandles=state.binance?.fourHCandles??c.fourHCandles??0;
+  // When in range, zero it out — stale counts from when we were below Pa are irrelevant
+  const rawFourH=state.binance?.fourHCandles??c.fourHCandles??0;
+  const fourHCandles=(inRange===true)?0:rawFourH;
   const closes=bin?.closes||[];
   const trend=closes.length>=3?(closes[closes.length-1]<closes[closes.length-2]&&closes[closes.length-2]<closes[closes.length-3]?'DOWN':closes[closes.length-1]>closes[closes.length-2]?'UP':'FLAT'):'N/A';
   const strongDowntrend=trend==='DOWN'&&closes.length>=3&&(closes[closes.length-1]<closes[0]*0.95);
@@ -1014,6 +1025,19 @@ function renderHedgeDetail(c){
     if(dist<15){liqWarn.style.display='block';liqWarn.innerHTML=`<div class="alert alert-r">⚠ Liquidation price $${c.liqPx.toFixed(2)} is only ${dist.toFixed(0)}% away.</div>`;}
     else{liqWarn.style.display='none';}
   }else{liqEl.textContent='—';liqWarn.style.display='none';}
+  // ── Recommended T1 block — always show when range is set ──────────────────
+  const recBlock=document.getElementById('hd-rec-block');
+  if(c.t1RecPrice&&c.t1RecSize){
+    recBlock.style.display='block';
+    document.getElementById('hd-rec-entry').textContent='$'+c.t1RecPrice.toFixed(3);
+    document.getElementById('hd-rec-size').textContent=c.t1RecSize+' AVAX';
+    document.getElementById('hd-rec-lev').textContent='2×';
+    document.getElementById('hd-rec-sl').textContent='$'+c.t1SL.toFixed(3)+
+      ' (loss: $'+(c.t1SLLoss||'—')+' · '+(c.t1SLDays||'—')+'d)';
+    document.getElementById('hd-rec-margin').textContent='$'+(c.t1RecMargin||'—');
+  } else {
+    recBlock.style.display='none';
+  }
 }
 
 function selectModel(c){
@@ -1069,7 +1093,7 @@ Respond in exactly 3 sections labelled SITUATION, ACTION, RISK. Max 300 words. B
     const resp=await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
       headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model,max_tokens:400,system:systemPrompt,messages:[{role:'user',content:buildPrompt(c)}]})
+      body:JSON.stringify({model,max_tokens:800,system:systemPrompt,messages:[{role:'user',content:buildPrompt(c)}]})
     });
     const data=await resp.json();if(data.error)throw new Error(data.error.message);
     const text=data.content?.[0]?.text||'No response.';
