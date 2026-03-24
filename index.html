@@ -360,7 +360,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
         <button class="btn btn-out btn-sm" onclick="hideAddLog()">Cancel</button>
       </div>
     </div>
-    <table class="lt"><thead><tr><th>Date</th><th>Range</th><th>IL</th><th>Hedge P&L</th><th>Cost</th><th>Net</th></tr></thead>
+    <table class="lt"><thead><tr><th>Date</th><th>Range</th><th>IL</th><th>Hedge P&L</th><th>Cost</th><th>Net</th><th></th></tr></thead>
     <tbody id="log-tbody"></tbody></table>
   </div>
 </div>
@@ -398,10 +398,27 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
       <!-- Table -->
       <table class="lt">
         <thead><tr>
-          <th>Date</th><th>Type</th><th>Amount</th><th>Note</th><th>Running</th>
+          <th>Date</th><th>Type</th><th>Amount</th><th>Note</th><th>Running</th><th></th>
         </tr></thead>
         <tbody id="cf-tbody"></tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- REBALANCE AUTO-PROMPT MODAL -->
+<div id="rebal-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;padding:20px;box-sizing:border-box">
+  <div style="background:var(--bg);border-radius:12px;padding:20px;max-width:380px;margin:60px auto">
+    <div style="font-size:15px;font-weight:700;margin-bottom:4px">🔄 Range change detected</div>
+    <div id="rebal-modal-sub" style="font-size:12px;color:var(--muted);margin-bottom:14px"></div>
+    <div class="g2">
+      <div class="ig"><label>Hedge P&L ($)</label><input id="rm-hpnl" placeholder="70.94"><div class="hint">Profit from closing T1</div></div>
+      <div class="ig"><label>Swap Cost ($)</label><input id="rm-cost" placeholder="12"><div class="hint">Swap fee paid</div></div>
+    </div>
+    <div style="font-size:11px;color:var(--faint);margin-bottom:12px">IL at rebalance is computed from LP value change — no entry needed.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-dark btn-sm" onclick="confirmRebalanceLog()" style="flex:1">✓ Log Rebalance</button>
+      <button class="btn btn-out btn-sm" onclick="dismissRebalanceModal()">Skip</button>
     </div>
   </div>
 </div>
@@ -475,7 +492,17 @@ function saveConfig(){
     totalHPnl:parseFloat(g('s-totalhpnl'))||0,
     totalIL:parseFloat(g('s-totalil'))||0,
   };
+  // ── AUTO-DETECT REBALANCE ──────────────────────────────────────────────
+  const prevCfg=S.get('config',{});
+  const prevLow=prevCfg.rangeLow, prevHigh=prevCfg.rangeHigh;
+  const newLow=c.rangeLow, newHigh=c.rangeHigh;
+  const rangeChanged=(prevLow&&newLow&&Math.abs(prevLow-newLow)>0.001)||
+                     (prevHigh&&newHigh&&Math.abs(prevHigh-newHigh)>0.001);
   S.set('config',c);state.config=c;toggleSetup();refreshAll();
+  // Prompt rebalance log AFTER setup closes, only if range actually changed
+  if(rangeChanged&&prevLow&&prevHigh){
+    setTimeout(()=>promptRebalanceLog(prevLow,prevHigh,newLow,newHigh),400);
+  }
 }
 
 async function fetchBinance(){
@@ -1277,11 +1304,24 @@ function showCooldown(minutes){
 
 function renderLog(){
   const entries=S.get('rebal_log',[]),tbody=document.getElementById('log-tbody');
-  if(!entries.length){tbody.innerHTML='<tr><td colspan="6" style="color:var(--faint);text-align:center;padding:16px">No rebalances logged yet</td></tr>';return;}
-  tbody.innerHTML=entries.map(e=>{
+  if(!entries.length){tbody.innerHTML='<tr><td colspan="7" style="color:var(--faint);text-align:center;padding:16px">No rebalances logged yet</td></tr>';return;}
+  tbody.innerHTML=entries.map((e,i)=>{
     const net=-(e.il||0)+(e.hpnl||0)-(e.cost||0);
-    return`<tr><td>${e.date||'—'}</td><td>${e.oldlow||'—'} → ${e.newlow||'—'}</td><td class="neg">${fmt$(-(e.il||0))}</td><td class="${(e.hpnl||0)>=0?'pos':'neg'}">${(e.hpnl||0)>=0?'+':''}${fmt$(e.hpnl||0)}</td><td class="neg">${fmt$(-(e.cost||0))}</td><td class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmt$(net)}</td></tr>`;
+    return`<tr>
+      <td>${e.date||'—'}</td>
+      <td>${e.oldlow||'—'} → ${e.newlow||'—'}</td>
+      <td class="neg">${fmt$(-(e.il||0))}</td>
+      <td class="${(e.hpnl||0)>=0?'pos':'neg'}">${(e.hpnl||0)>=0?'+':''}${fmt$(e.hpnl||0)}</td>
+      <td class="neg">${fmt$(-(e.cost||0))}</td>
+      <td class="${net>=0?'pos':'neg'}">${net>=0?'+':''}${fmt$(net)}</td>
+      <td><button onclick="deleteLogEntry(${i})" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:14px;padding:0 4px" title="Delete">✕</button></td>
+    </tr>`;
   }).join('');
+}
+function deleteLogEntry(i){
+  const entries=S.get('rebal_log',[]);
+  entries.splice(i,1);
+  S.set('rebal_log',entries);renderLog();
 }
 function addLogEntry(){
   const g=id=>document.getElementById(id)?.value;
@@ -1295,6 +1335,40 @@ function clearLog(){if(confirm('Clear all log entries?')){S.set('rebal_log',[]);
 // ── CASH FLOW LEDGER ───────────────────────────────────────────────────────────
 const CF_KEY='cf_ledger';
 let _cfType='harvest';
+
+// ── REBALANCE AUTO-PROMPT ──────────────────────────────────────────────────────
+let _rebalPrev={};
+function promptRebalanceLog(prevLow,prevHigh,newLow,newHigh){
+  _rebalPrev={prevLow,prevHigh,newLow,newHigh};
+  const sub=`Was: $${prevLow?.toFixed(3)}–$${prevHigh?.toFixed(3)} → Now: $${newLow?.toFixed(3)}–$${newHigh?.toFixed(3)}`;
+  document.getElementById('rebal-modal-sub').textContent=sub;
+  document.getElementById('rm-hpnl').value='';
+  document.getElementById('rm-cost').value='12';
+  document.getElementById('rebal-modal').style.display='block';
+}
+function dismissRebalanceModal(){
+  document.getElementById('rebal-modal').style.display='none';
+}
+function confirmRebalanceLog(){
+  const hpnl=parseFloat(document.getElementById('rm-hpnl').value)||0;
+  const cost=parseFloat(document.getElementById('rm-cost').value)||12;
+  const today=new Date().toISOString().slice(0,10);
+  const entry={
+    date:today,
+    oldlow:_rebalPrev.prevLow?.toFixed(3),
+    newlow:_rebalPrev.newLow?.toFixed(3),
+    il:0, // IL not separately tracked — captured in LP value P&L
+    hpnl,cost
+  };
+  const entries=S.get('rebal_log',[]);
+  entries.unshift(entry);
+  S.set('rebal_log',entries);
+  dismissRebalanceModal();
+  // Open rebalance log panel to confirm
+  const lb=document.getElementById('log-body'),lt=document.getElementById('log-toggle-txt');
+  if(!lb.classList.contains('open')){lb.classList.add('open');lt.textContent='▴ Hide';}
+  renderLog();
+}
 
 function toggleCashFlow(){
   const b=document.getElementById('cf-body'),t=document.getElementById('cf-toggle-txt');
@@ -1338,6 +1412,11 @@ function addCfEntry(){
 function clearCashFlow(){
   if(confirm('Clear all cash flow entries?')){S.set(CF_KEY,[]);renderCashFlow();}
 }
+function deleteCfEntry(i){
+  const ledger=S.get(CF_KEY,[]);
+  ledger.splice(i,1);
+  S.set(CF_KEY,ledger);renderCashFlow();
+}
 
 function renderCashFlow(){
   const ledger=S.get(CF_KEY,[]);
@@ -1372,6 +1451,8 @@ function renderCashFlow(){
   runningArr.reverse();
 
   const typeLabel={harvest:'🌾 Harvest',hedge_loss:'💸 Hedge SL',other:'📝 Other'};
+  // Map display index back to original ledger index (reversed for display, need original for delete)
+  const originalIdx=rows.map((_,i)=>ledger.length-1-i);
   tbody.innerHTML=rows.map((e,i)=>{
     const amt=e.amount;
     const amtClass=amt>=0?'pos':'neg';
@@ -1383,6 +1464,7 @@ function renderCashFlow(){
       <td class="${amtClass}">${amt>=0?'+':''}${fmt$(amt)}</td>
       <td style="color:var(--muted);font-size:11px">${e.note||'—'}</td>
       <td class="${rtClass}">${rt>=0?'+':''}${fmt$(rt)}</td>
+      <td><button onclick="deleteCfEntry(${originalIdx[i]})" style="background:none;border:none;color:var(--faint);cursor:pointer;font-size:14px;padding:0 4px" title="Delete">✕</button></td>
     </tr>`;
   }).join('');
 }
