@@ -127,6 +127,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   </div>
   <div class="g2">
     <div class="ig"><label>Total Capital ($)</label><input id="s-capital" placeholder="5012"></div>
+    <div class="ig"><label>Initial LP Value ($)</label><input id="s-initlp" placeholder="5012"><div class="hint">Set once at deployment · never changes</div></div>
     <div class="ig"><label>APY Override (%)</label><input id="s-apy" placeholder="98.69"><div class="hint">⚡ Use Pharaoh UI rate</div></div>
   </div>
   <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Manual LP inputs (when no Token ID or RPC fails)</div>
@@ -200,7 +201,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   </div>
   <div class="g2">
     <div class="dc"><span class="lbl">Hedge</span><span class="val-sm" id="pos-hedge">—</span></div>
-    <div class="dc"><span class="lbl">IL This Range</span><span class="val-sm" id="pos-il">—</span></div>
+    <div class="dc"><span class="lbl">LP P&L</span><span class="val-sm" id="pos-il">—</span></div>
   </div>
   <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;padding-top:10px;border-top:1px solid var(--border);font-size:12px">
     <span><span style="color:var(--muted)">APY </span><b id="pos-apy" class="mono">—</b></span>
@@ -222,14 +223,14 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
       <!-- IL Now + IL at exit -->
       <div class="g2" style="margin-bottom:10px">
         <div class="dc">
-          <span class="lbl">IL Now</span>
+          <span class="lbl">LP P&amp;L</span>
           <span id="viab-il-now" class="val-sm">—</span>
-          <div style="font-size:10px;color:var(--faint);margin-top:2px">vs holding entry amounts</div>
+          <div style="font-size:10px;color:var(--faint);margin-top:2px">vs initial deployment value</div>
         </div>
         <div class="dc">
-          <span class="lbl">IL at Range Low</span>
+          <span class="lbl">LP Value at Pa</span>
           <span id="viab-il-exit" class="val-sm">—</span>
-          <div style="font-size:10px;color:var(--faint);margin-top:2px">locked in at rebalance</div>
+          <div style="font-size:10px;color:var(--faint);margin-top:2px">projected if exits bottom</div>
         </div>
       </div>
 
@@ -251,6 +252,29 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
         <div id="viab-apy-body" style="line-height:1.8">—</div>
       </div>
 
+    </div>
+  </div>
+</div>
+
+<!-- PERFORMANCE PANEL (collapsible) -->
+<div class="panel" id="perf-panel">
+  <div class="col-hdr ph" onclick="togglePerf()" style="margin-bottom:0;border-bottom:none">
+    <span class="pt">Performance</span>
+    <span style="font-size:12px;color:var(--muted)" id="perf-toggle-txt">▾ Show</span>
+  </div>
+  <div class="col-body" id="perf-body">
+    <div style="margin-top:12px">
+      <!-- Stats row -->
+      <div id="perf-stats" style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border)"></div>
+      <!-- SVG Chart -->
+      <div id="perf-chart-wrap" style="position:relative">
+        <svg id="perf-svg" width="100%" height="140" style="display:block;overflow:visible"></svg>
+        <div id="perf-tooltip" style="display:none;position:absolute;background:var(--text);color:#fff;padding:5px 9px;border-radius:6px;font-size:11px;font-family:var(--mono);pointer-events:none;white-space:nowrap;z-index:10"></div>
+      </div>
+      <!-- No data message -->
+      <div id="perf-nodata" style="text-align:center;padding:24px 0;color:var(--faint);font-size:13px;display:none">
+        Collecting data — check back after the next refresh.
+      </div>
     </div>
   </div>
 </div>
@@ -341,6 +365,47 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   </div>
 </div>
 
+<!-- CASH FLOW PANEL (collapsible) -->
+<div class="panel">
+  <div class="col-hdr ph" onclick="toggleCashFlow()" style="margin-bottom:0;border-bottom:none">
+    <span class="pt">Cash Flow</span>
+    <span style="font-size:12px;color:var(--muted)" id="cf-toggle-txt">▾ Show</span>
+  </div>
+  <div class="col-body" id="cf-body">
+    <div style="margin-top:12px">
+      <!-- Quick-add buttons -->
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+        <button class="btn btn-out btn-sm" onclick="showCfForm('harvest')" style="color:var(--green)">+ Yield Harvest</button>
+        <button class="btn btn-out btn-sm" onclick="showCfForm('hedge_loss')" style="color:var(--red)">+ Hedge Loss</button>
+        <button class="btn btn-out btn-sm" onclick="showCfForm('other')">+ Other</button>
+        <button class="btn btn-out btn-sm" onclick="clearCashFlow()" style="color:var(--faint);margin-left:auto">Clear</button>
+      </div>
+      <!-- Add form -->
+      <div id="cf-form" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:10px">
+        <div style="font-size:11px;font-weight:700;color:var(--muted);margin-bottom:8px;letter-spacing:.05em;text-transform:uppercase" id="cf-form-title">Add Entry</div>
+        <div class="g3">
+          <div class="ig"><label>Date</label><input type="date" id="cf-date"></div>
+          <div class="ig"><label>Amount ($)</label><input id="cf-amount" placeholder="45.20"><div class="hint">Positive = income · Negative = loss</div></div>
+          <div class="ig"><label>Note (optional)</label><input id="cf-note" placeholder="Week 3 harvest"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-dark btn-sm" onclick="addCfEntry()">Save</button>
+          <button class="btn btn-out btn-sm" onclick="hideCfForm()">Cancel</button>
+        </div>
+      </div>
+      <!-- Summary strip -->
+      <div id="cf-summary" style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;padding:10px 12px;background:var(--surface);border-radius:8px;margin-bottom:10px"></div>
+      <!-- Table -->
+      <table class="lt">
+        <thead><tr>
+          <th>Date</th><th>Type</th><th>Amount</th><th>Note</th><th>Running</th>
+        </tr></thead>
+        <tbody id="cf-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- DEBUG PANEL -->
 <div id="debug-panel" class="panel" style="display:none">
   <div class="ph"><span class="pt">🔧 Debug</span>
@@ -381,7 +446,7 @@ function loadConfig(){
   const c=state.config;
   const f=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
   f('s-apikey',c.apiKey);f('s-hlwallet',c.hlWallet);f('s-tokenid',c.tokenId);
-  f('s-origentry',c.origEntry);f('s-capital',c.capital||'5012');
+  f('s-origentry',c.origEntry);f('s-capital',c.capital||'5012');f('s-initlp',c.initLpValue||'');
   f('s-apy',c.apyOverride);f('s-eavax',c.entryAvax);f('s-eusdc',c.entryUsdc);
   f('s-rlow',c.rangeLow);f('s-rhigh',c.rangeHigh);f('s-rangeprice',c.rangeEntry);
   f('s-rebals',c.rebalMonth||'0');
@@ -396,7 +461,7 @@ function saveConfig(){
   const g=id=>document.getElementById(id)?.value?.trim()||'';
   const c={
     apiKey:g('s-apikey'),hlWallet:g('s-hlwallet'),tokenId:g('s-tokenid'),
-    origEntry:parseFloat(g('s-origentry'))||null,capital:parseFloat(g('s-capital'))||5012,
+    origEntry:parseFloat(g('s-origentry'))||null,capital:parseFloat(g('s-capital'))||5012,initLpValue:parseFloat(g('s-initlp'))||null,
     apyOverride:parseFloat(g('s-apy'))||null,
     entryAvax:parseFloat(g('s-eavax'))||null,entryUsdc:parseFloat(g('s-eusdc'))||null,
     rangeLow:parseFloat(g('s-rlow'))||null,rangeHigh:parseFloat(g('s-rhigh'))||null,
@@ -540,55 +605,67 @@ function computeState(){
   const effectiveAPY=apySource==='manual'?rawApy:rawApy*0.70;
   const dailyYield=lpValue*(effectiveAPY/100)/365;
   const capital=c.capital||5012; // must be before IL model
-  const hasEntryData=(c.entryAvax||0)>0&&c.rangeEntry;
-  const holdValue=hasEntryData?((c.entryAvax||0)*price+(c.entryUsdc||0)):lpValue;
-  const ilNow=hasEntryData?(lpValue-holdValue):null; // snapshot at current price
+  // ── LP VALUE-BASED P&L MODEL ──────────────────────────────────────────────
+  // Uses initLpValue as the baseline — no entry AVAX/USDC/price needed
+  const initLpValue = c.initLpValue || capital; // fallback to capital if not set
+  const hasInitLp = !!c.initLpValue;
 
-  // ── PROPER CL IL MODEL ─────────────────────────────────────────────────────
-  // Projected IL at range boundaries — what you actually lock in at rebalance
-  let ilAtBottomExit=null, ilAtTopExit=null, lpGainAtTop=null;
-  let rebalCostDown=null, rebalCostUp=12, daysRecoverDown=null;
-  let minViableAPY1=null, minViableAPY3=null, lpValueAtPb=null;
+  // Current P&L vs initial deployment
+  const lpPnl = lpValue - initLpValue;
+  const lpPnlPct = initLpValue > 0 ? (lpPnl / initLpValue * 100) : null;
 
-  if(hasEntryData && rangeLow && rangeHigh && rangeHigh>rangeLow){
+  // IL Now (kept as alias — now = P&L vs initial)
+  const ilNow = lpPnl;
+  const ilThisRange = ilNow; // legacy alias
+
+  // Projected LP values at range boundaries using CL math from current L
+  // Derive L from current LP value and current composition
+  let lpValueAtPb=null, lpValueAtPa=null;
+  let lpGainAtTop=null, lpLossAtBottom=null;
+  let rebalCostUp=12, rebalCostDown=null, daysRecoverDown=null;
+  let minViableAPY1=null, minViableAPY3=null;
+  // Legacy fields — set to null (no longer computed from entry data)
+  let ilAtBottomExit=null, ilAtTopExit=null;
+  let hasEntryData=false; // no longer used for IL model
+
+  if(rangeLow && rangeHigh && rangeHigh>rangeLow && lpValue>0){
     const Pa=rangeLow, Pb=rangeHigh;
-    const sqrtPa=Math.sqrt(Pa), sqrtPb=Math.sqrt(Pb);
-    const entryPx=c.rangeEntry, sqrtE=Math.sqrt(entryPx);
-    const eAvax=c.entryAvax||0, eUsdc=c.entryUsdc||0;
+    const sqrtP=Math.sqrt(price), sqrtPa=Math.sqrt(Pa), sqrtPb=Math.sqrt(Pb);
 
-    // Derive liquidity L from entry AVAX amount
-    let L=0;
-    if(entryPx<=Pa){ L=eAvax/(1/sqrtPa-1/sqrtPb); }
-    else if(entryPx>=Pb){ L=eUsdc/(sqrtPb-sqrtPa); }
-    else{
-      const denom=(1/sqrtE-1/sqrtPb);
-      L=denom>0&&eAvax>0 ? eAvax/denom : capital/((1/sqrtE-1/sqrtPb)*entryPx+(sqrtE-sqrtPa));
+    if(price>Pa && price<Pb){
+      // Derive L from current LP value and price
+      const avaxPart=(1/sqrtP-1/sqrtPb)*price;
+      const usdcPart=(sqrtP-sqrtPa);
+      const totalParts=avaxPart+usdcPart;
+      const L = totalParts>0 ? lpValue/totalParts : 0;
+
+      if(L>0){
+        // LP value at Pa (100% AVAX)
+        lpValueAtPa = L*(1/sqrtPa-1/sqrtPb)*Pa;
+        // LP value at Pb (100% USDC)
+        lpValueAtPb = L*(sqrtPb-sqrtPa);
+      }
+    } else if(price<=Pa){
+      // Already 100% AVAX — use current value as Pa proxy
+      lpValueAtPa = lpValue;
+      lpValueAtPb = lpValue * Math.sqrt(Pb/Pa); // approximate
+    } else {
+      // Already 100% USDC — use current value as Pb proxy
+      lpValueAtPb = lpValue;
+      lpValueAtPa = lpValue * Math.sqrt(Pa/Pb); // approximate
     }
 
-    if(L>0){
-      // LP value at Pa (100% AVAX)
-      const avaxAtPa=L*(1/sqrtPa-1/sqrtPb);
-      const lpValAtPa=avaxAtPa*Pa;
-      const holdAtPa=eAvax*Pa+eUsdc;
-      ilAtBottomExit=lpValAtPa-holdAtPa;
+    if(lpValueAtPa!=null) lpLossAtBottom = lpValueAtPa - initLpValue;
+    if(lpValueAtPb!=null) lpGainAtTop    = lpValueAtPb - initLpValue;
 
-      // LP value at Pb (100% USDC)
-      lpValueAtPb=L*(sqrtPb-sqrtPa);
-      const holdAtPb=eAvax*Pb+eUsdc;
-      ilAtTopExit=lpValueAtPb-holdAtPb; // negative = opportunity cost only
-      lpGainAtTop=lpValueAtPb-capital;
+    // Rebalance cost = swap fee only (IL vs HODL is not a rebalance cost)
+    rebalCostDown = rebalCostUp; // $12 swap
+    daysRecoverDown = dailyYield>0 ? rebalCostDown/dailyYield : null;
 
-      // Rebalance costs
-      rebalCostDown=Math.abs(ilAtBottomExit)+rebalCostUp; // IL + swap
-      daysRecoverDown=dailyYield>0?rebalCostDown/dailyYield:null;
-
-      // APY viability floor
-      minViableAPY1=capital>0?(rebalCostDown*12/capital*100):null;
-      minViableAPY3=capital>0?(rebalCostDown*36/capital*100):null;
-    }
+    // APY viability floor — based on swap cost only (correct formula)
+    minViableAPY1 = initLpValue>0 ? (rebalCostUp*12/initLpValue*100) : null;
+    minViableAPY3 = initLpValue>0 ? (rebalCostUp*36/initLpValue*100) : null;
   }
-  // Legacy alias for backward compat in any existing refs
-  const ilThisRange=ilNow;
   let t1={entry:c.t1Entry,size:c.t1Size,lev:c.t1Lev,status:c.t1Status||'waiting'};
   if(hl?.ok){
     const shorts=(hl.positions||[]).filter(p=>p.szi<0);
@@ -787,8 +864,8 @@ function computeState(){
   state.computed={
     price,avax,usdc,lpValue,avaxPct,inRange,pctThrough,source,
     rangeLow,rangeHigh,effectiveAPY,apySource,dailyYield,
-    ilNow,ilThisRange,hasEntryData,
-    ilAtBottomExit,ilAtTopExit,lpGainAtTop,lpValueAtPb,
+    ilNow,ilThisRange,lpPnl,lpPnlPct,initLpValue,hasInitLp,
+    ilAtBottomExit,ilAtTopExit,lpGainAtTop,lpLossAtBottom,lpValueAtPb,lpValueAtPa,
     rebalCostDown,rebalCostUp,daysRecoverDown,
     minViableAPY1,minViableAPY3,
     t1,t1pnl,fundingCost,netHedgePnl,coverage,coverageTarget,coverageGap,tier1Set,
@@ -850,8 +927,12 @@ function renderAll(){
   else if(!c.tier1Set&&c.t1RecPrice){hedgeEl.innerHTML=`<span style="color:var(--amber)">⚠ Not set — SHORT ${c.t1RecSize} @ $${c.t1RecPrice?.toFixed(3)}</span>`;}
   else{hedgeEl.innerHTML=`<span style="color:var(--muted)">No hedge</span>`;}
   const ilEl=document.getElementById('pos-il');
-  if(c.ilNow!=null){ilEl.innerHTML=`<span class="${c.ilNow>=0?'pos':'neg'}">${fmt$(c.ilNow)}</span>`;}
-  else{ilEl.innerHTML=`<span style="color:var(--faint);font-size:11px">Set entry in Setup</span>`;}
+  if(c.hasInitLp){
+    const pct=c.lpPnlPct!=null?` <span style="color:var(--faint);font-size:10px">(${c.lpPnlPct>=0?'+':''}${c.lpPnlPct.toFixed(1)}%)</span>`:'';
+    ilEl.innerHTML=`<span class="${c.lpPnl>=0?'pos':'neg'}">${fmt$(c.lpPnl)}</span>${pct}`;
+  } else {
+    ilEl.innerHTML=`<span style="color:var(--faint);font-size:11px">Set initial LP value</span>`;
+  }
   document.getElementById('pos-apy').textContent=`${c.effectiveAPY?.toFixed(1)}% (${c.apySource==='manual'?'Pharaoh':c.apySource==='defillama'?'DeFiLlama':'default'})`;
   // Show live 4H candle count as a small indicator
   const fourHEl=document.getElementById('pos-fourh');
@@ -861,75 +942,88 @@ function renderAll(){
     fourHEl.style.color=fh>=3?'var(--red)':fh>=1?'var(--amber)':'var(--faint)';
   }
   document.getElementById('pos-month').textContent=fmt$(c.dailyYield*30);
-  document.getElementById('pos-alltime').innerHTML=fmtPnl(c.allTimeNet);
+  // All-time = rebalance log net + cash flow net
+  const cfLedger=S.get(CF_KEY,[]);
+  const cfNet=cfLedger.reduce((sum,e)=>sum+e.amount,0);
+  const totalNet=c.allTimeNet+cfNet;
+  document.getElementById('pos-alltime').innerHTML=fmtPnl(totalNet);
   renderViability(c);
   renderAction(c);
   renderHedgeDetail(c);
   renderLog();
+  if(document.getElementById('perf-body')?.classList.contains('open'))renderPerformance();
 }
 
 function renderViability(c){
-  // Only show content if we have IL model data
-  const hasModel = c.ilAtBottomExit != null;
+  const hasRange = c.rangeLow && c.rangeHigh;
 
-  // IL Now (in viability panel — more detail than pos panel)
+  // ── LP P&L (top row) ────────────────────────────────────────────────────
   const ilNowEl = document.getElementById('viab-il-now');
-  if(c.ilNow != null){
-    const pct = c.capital > 0 ? (c.ilNow/c.capital*100).toFixed(2) : 0;
-    ilNowEl.innerHTML = `<span class="${c.ilNow>=0?'pos':'neg'}">${fmt$(c.ilNow)}</span> <span style="color:var(--faint);font-size:10px">(${pct}%)</span>`;
-  } else { ilNowEl.innerHTML = '<span style="color:var(--faint)">Set entry in Setup</span>'; }
+  if(c.hasInitLp){
+    const pct = c.lpPnlPct!=null ? ` (${c.lpPnlPct>=0?'+':''}${c.lpPnlPct.toFixed(1)}%)` : '';
+    ilNowEl.innerHTML = `<span class="${c.lpPnl>=0?'pos':'neg'}">${fmt$(c.lpPnl)}</span>`+
+      `<span style="color:var(--faint);font-size:10px">${pct}</span><br>`+
+      `<span style="color:var(--faint);font-size:10px">vs initial ${fmt$(c.initLpValue,0)}</span>`;
+  } else {
+    ilNowEl.innerHTML = '<span style="color:var(--amber);font-size:11px">Set Initial LP Value in Setup</span>';
+  }
 
-  // IL at bottom exit
+  // ── At range low (bottom exit) ──────────────────────────────────────────
   const ilExitEl = document.getElementById('viab-il-exit');
-  if(hasModel){
-    const pct = c.capital > 0 ? (c.ilAtBottomExit/c.capital*100).toFixed(2) : 0;
-    ilExitEl.innerHTML = `<span class="${c.ilAtBottomExit>=0?'pos':'neg'}">${fmt$(c.ilAtBottomExit)}</span> <span style="color:var(--faint);font-size:10px">(${pct}%)</span>`;
-  } else { ilExitEl.innerHTML = '<span style="color:var(--faint)">Set entry in Setup</span>'; }
+  if(c.lpValueAtPa!=null){
+    const diff = c.lpLossAtBottom;
+    const pct  = c.initLpValue>0 ? (diff/c.initLpValue*100).toFixed(1) : 0;
+    ilExitEl.innerHTML = `<span class="${diff>=0?'pos':'neg'}">${fmt$(c.lpValueAtPa,0)}</span>`+
+      `<span style="color:var(--faint);font-size:10px"> (${diff>=0?'+':''}${fmt$(diff,0)} / ${pct}%)</span>`;
+  } else {
+    ilExitEl.innerHTML = '<span style="color:var(--faint)">Set range in Setup</span>';
+  }
 
   // Range labels
   document.getElementById('viab-pb').textContent = c.rangeHigh ? '$'+c.rangeHigh.toFixed(3) : '—';
-  document.getElementById('viab-pa').textContent = c.rangeLow ? '$'+c.rangeLow.toFixed(3) : '—';
+  document.getElementById('viab-pa').textContent = c.rangeLow  ? '$'+c.rangeLow.toFixed(3)  : '—';
 
-  // Top exit scenario
+  // ── Top exit scenario ───────────────────────────────────────────────────
   const topBody = document.getElementById('viab-top-body');
-  if(hasModel && c.lpGainAtTop != null){
+  if(c.lpValueAtPb!=null){
+    const gain = c.lpGainAtTop;
+    const pct  = c.initLpValue>0 ? (gain/c.initLpValue*100).toFixed(1) : 0;
     topBody.innerHTML =
-      `LP grows to <b>${fmt$(c.lpValueAtPb)}</b> (<span class="pos">+${fmt$(c.lpGainAtTop)}</span> CL gain)<br>`+
-      `"IL" vs hold: ${fmt$(c.ilAtTopExit)} — <i>opportunity cost only, not a real loss</i><br>`+
-      `Rebal cost: <b>$${c.rebalCostUp} swap</b> · <span class="pos">Always profitable ✅</span>`;
+      `LP value at exit: <b>${fmt$(c.lpValueAtPb,0)}</b> `+
+      `<span class="${gain>=0?'pos':'neg'}"> (${gain>=0?'+':''}${fmt$(gain,0)} / ${gain>=0?'+':''}${pct}% vs initial)</span><br>`+
+      `Rebalance cost: <b>$${c.rebalCostUp} swap</b> · recover in <b>${(c.rebalCostUp/c.dailyYield).toFixed(1)} days</b>`;
   } else {
-    topBody.innerHTML = '<span style="color:var(--muted)">Set entry data in Setup to project</span>';
+    topBody.innerHTML = '<span style="color:var(--muted)">Set range in Setup</span>';
   }
 
-  // Bottom exit scenario
+  // ── Bottom exit scenario ────────────────────────────────────────────────
   const botBody = document.getElementById('viab-bot-body');
-  if(hasModel){
-    const hedgeCover = c.t1RecSize && c.rangeLow
-      ? Math.round(c.t1RecSize * (c.t1RecPrice - (c.rangeLow - 1)) / Math.abs(c.ilAtBottomExit || 1) * 100)
-      : 50;
+  if(c.lpValueAtPa!=null){
+    const loss = c.lpLossAtBottom;
+    const pct  = c.initLpValue>0 ? (loss/c.initLpValue*100).toFixed(1) : 0;
     botBody.innerHTML =
-      `IL locked in: <b>${fmt$(c.ilAtBottomExit)}</b> + $${c.rebalCostUp} swap = <b>~${fmt$(c.rebalCostDown)}</b> total<br>`+
-      `Hedge covers ~50% of AVAX drop below range<br>`+
-      `Recover rebal cost in: <b>${c.daysRecoverDown?.toFixed(1) || '—'} days</b> yield`;
+      `LP value at exit: <b>${fmt$(c.lpValueAtPa,0)}</b> `+
+      `<span class="${loss>=0?'pos':'neg'}"> (${loss>=0?'+':''}${fmt$(loss,0)} / ${loss>=0?'+':''}${pct}% vs initial)</span><br>`+
+      `Hedge covers ~${c.coverage?.toFixed(0)||65}% of AVAX drop below range<br>`+
+      `Rebalance cost: <b>$${c.rebalCostUp} swap</b> · recover in <b>${c.daysRecoverDown?.toFixed(1)||'—'} days</b>`;
   } else {
-    botBody.innerHTML = '<span style="color:var(--muted)">Set entry data in Setup to project</span>';
+    botBody.innerHTML = '<span style="color:var(--muted)">Set range in Setup</span>';
   }
 
-  // APY viability
+  // ── APY viability ───────────────────────────────────────────────────────
   const apyBody = document.getElementById('viab-apy-body');
-  if(c.minViableAPY3 != null){
-    const current = c.effectiveAPY;
-    const floor3 = c.minViableAPY3;
-    const floor1 = c.minViableAPY1;
-    const margin = ((current - floor3) / floor3 * 100).toFixed(0);
+  const floor1 = c.minViableAPY1, floor3 = c.minViableAPY3;
+  const current = c.effectiveAPY;
+  if(floor3!=null){
     const viable = current > floor3;
+    const margin = viable ? ((current-floor3)/floor3*100).toFixed(0) : null;
     apyBody.innerHTML =
-      `Floor (1 rebal/month): <b>${floor1?.toFixed(1)}%</b><br>`+
+      `Floor (1 rebal/month): <b>${floor1?.toFixed(1)}%</b> &nbsp;`+
       `Floor (3 rebal/month): <b>${floor3?.toFixed(1)}%</b><br>`+
       `Current: <b>${current?.toFixed(1)}%</b> → `+
       `<span class="${viable?'pos':'neg'}">${viable?`${margin}% above floor ✅`:'BELOW FLOOR ⚠️'}</span>`;
   } else {
-    apyBody.innerHTML = `Current APY: <b>${c.effectiveAPY?.toFixed(1)}%</b><br><span style="color:var(--faint)">Set entry data for floor calculation</span>`;
+    apyBody.innerHTML = `Current APY: <b>${current?.toFixed(1)}%</b>`;
   }
 }
 
@@ -1198,12 +1292,241 @@ function addLogEntry(){
 }
 function clearLog(){if(confirm('Clear all log entries?')){S.set('rebal_log',[]);renderLog();}}
 
+// ── CASH FLOW LEDGER ───────────────────────────────────────────────────────────
+const CF_KEY='cf_ledger';
+let _cfType='harvest';
+
+function toggleCashFlow(){
+  const b=document.getElementById('cf-body'),t=document.getElementById('cf-toggle-txt');
+  b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';
+  if(b.classList.contains('open'))renderCashFlow();
+}
+
+function showCfForm(type){
+  _cfType=type;
+  const labels={harvest:'Yield Harvest',hedge_loss:'Hedge Loss / SL Hit',other:'Other'};
+  document.getElementById('cf-form-title').textContent='+ '+labels[type];
+  document.getElementById('cf-date').value=new Date().toISOString().slice(0,10);
+  document.getElementById('cf-amount').value='';
+  document.getElementById('cf-note').value='';
+  // Pre-set sign: losses negative
+  if(type==='hedge_loss')document.getElementById('cf-amount').placeholder='-81.00';
+  else if(type==='harvest')document.getElementById('cf-amount').placeholder='45.20';
+  document.getElementById('cf-form').style.display='block';
+}
+
+function hideCfForm(){ document.getElementById('cf-form').style.display='none'; }
+
+function addCfEntry(){
+  const date=document.getElementById('cf-date').value;
+  const rawAmt=document.getElementById('cf-amount').value;
+  const note=document.getElementById('cf-note').value.trim();
+  if(!date||rawAmt===''){alert('Enter date and amount.');return;}
+  let amount=parseFloat(rawAmt);
+  if(isNaN(amount)){alert('Invalid amount.');return;}
+  // Hedge losses should always be negative
+  if(_cfType==='hedge_loss'&&amount>0)amount=-amount;
+  const entry={ts:Date.now(),date,type:_cfType,amount,note};
+  const ledger=S.get(CF_KEY,[]);
+  // Insert in date order
+  ledger.push(entry);
+  ledger.sort((a,b)=>a.date.localeCompare(b.date));
+  S.set(CF_KEY,ledger);
+  hideCfForm();renderCashFlow();
+}
+
+function clearCashFlow(){
+  if(confirm('Clear all cash flow entries?')){S.set(CF_KEY,[]);renderCashFlow();}
+}
+
+function renderCashFlow(){
+  const ledger=S.get(CF_KEY,[]);
+  const tbody=document.getElementById('cf-tbody');
+  const summaryEl=document.getElementById('cf-summary');
+
+  // Compute totals
+  const totals={harvest:0,hedge_loss:0,other:0};
+  let running=0;
+  ledger.forEach(e=>{if(totals[e.type]!==undefined)totals[e.type]+=e.amount;else totals.other+=e.amount;});
+  const grandTotal=Object.values(totals).reduce((a,b)=>a+b,0);
+
+  // Summary strip
+  const harvTotal=totals.harvest, lossTotal=totals.hedge_loss, otherTotal=totals.other;
+  const netColor=grandTotal>=0?'pos':'neg';
+  summaryEl.innerHTML=
+    `<span><span style="color:var(--muted)">Yield </span><b class="pos">${fmt$(harvTotal)}</b></span>`+
+    `<span><span style="color:var(--muted)">Hedge losses </span><b class="neg">${fmt$(lossTotal)}</b></span>`+
+    (otherTotal!==0?`<span><span style="color:var(--muted)">Other </span><b>${fmt$(otherTotal)}</b></span>`:'')+ 
+    `<span style="margin-left:auto"><span style="color:var(--muted)">Net </span><b class="${netColor}">${fmt$(grandTotal)}</b></span>`;
+  summaryEl.style.display=ledger.length?'flex':'none';
+
+  // Table rows (newest first for display)
+  if(!ledger.length){
+    tbody.innerHTML='<tr><td colspan="5" style="color:var(--faint);text-align:center;padding:16px">No entries yet — add yield harvests and hedge losses</td></tr>';
+    return;
+  }
+  const rows=[...ledger].reverse();
+  // Compute running total from oldest to newest first
+  const runningArr=[];let rt=0;
+  ledger.forEach(e=>{rt+=e.amount;runningArr.push(rt);});
+  runningArr.reverse();
+
+  const typeLabel={harvest:'🌾 Harvest',hedge_loss:'💸 Hedge SL',other:'📝 Other'};
+  tbody.innerHTML=rows.map((e,i)=>{
+    const amt=e.amount;
+    const amtClass=amt>=0?'pos':'neg';
+    const rt=runningArr[i];
+    const rtClass=rt>=0?'pos':'neg';
+    return`<tr>
+      <td>${e.date}</td>
+      <td style="white-space:nowrap">${typeLabel[e.type]||e.type}</td>
+      <td class="${amtClass}">${amt>=0?'+':''}${fmt$(amt)}</td>
+      <td style="color:var(--muted);font-size:11px">${e.note||'—'}</td>
+      <td class="${rtClass}">${rt>=0?'+':''}${fmt$(rt)}</td>
+    </tr>`;
+  }).join('');
+}
+
 function toggleSetup(){const el=document.getElementById('setup-panel');el.style.display=el.style.display==='none'?'block':'none';}
 function toggleHedge(){const b=document.getElementById('hedge-body'),t=document.getElementById('hedge-toggle-txt');b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';}
 function toggleViability(){
   const b=document.getElementById('viab-body'),t=document.getElementById('viab-toggle-txt');
   b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';
 }
+// ── PERFORMANCE HISTORY ───────────────────────────────────────────────────────
+const HIST_KEY='lp_history', HIST_MAX=90, HIST_INTERVAL=4*60*60*1000; // 4h
+
+function recordHistory(c){
+  if(!c||!c.price||!c.lpValue)return;
+  const now=Date.now();
+  const hist=S.get(HIST_KEY,[]);
+  // Deduplicate: skip if last entry was <4h ago
+  if(hist.length>0&&now-hist[hist.length-1].ts<HIST_INTERVAL)return;
+  const entry={ts:now,lpv:parseFloat(c.lpValue.toFixed(2)),px:parseFloat(c.price.toFixed(3)),
+    apy:parseFloat((c.effectiveAPY||0).toFixed(1)),ir:c.inRange===true?1:0};
+  hist.push(entry);
+  if(hist.length>HIST_MAX)hist.splice(0,hist.length-HIST_MAX);
+  S.set(HIST_KEY,hist);
+}
+
+function renderPerformance(){
+  const hist=S.get(HIST_KEY,[]);
+  const statsEl=document.getElementById('perf-stats');
+  const nodataEl=document.getElementById('perf-nodata');
+  const svgEl=document.getElementById('perf-svg');
+  const wrapEl=document.getElementById('perf-chart-wrap');
+
+  if(hist.length<2){
+    statsEl.innerHTML='';
+    nodataEl.style.display='block';
+    wrapEl.style.display='none';
+    return;
+  }
+  nodataEl.style.display='none';
+  wrapEl.style.display='block';
+
+  // ── Stats ────────────────────────────────────────────────────────────────
+  const vals=hist.map(h=>h.lpv);
+  const peak=Math.max(...vals), trough=Math.min(...vals);
+  const first=hist[0], last=hist[hist.length-1];
+  const daysTracked=((last.ts-first.ts)/(86400000)).toFixed(1);
+  const daysIn=hist.filter(h=>h.ir).length, daysOut=hist.length-daysIn;
+  const initLp=S.get('config',{}).initLpValue||null;
+  const pnlVsInit=initLp?fmt$(last.lpv-initLp):'—';
+  const pnlClass=initLp?(last.lpv>=initLp?'pos':'neg'):'';
+  const cfLedgerH=S.get(CF_KEY,[]);
+  const cfNet=cfLedgerH.reduce((sum,e)=>sum+e.amount,0);
+
+  statsEl.innerHTML=
+    `<span><span style="color:var(--muted)">Days </span><b>${daysTracked}</b></span>`+
+    `<span><span style="color:var(--muted)">Peak </span><b class="pos">${fmt$(peak,0)}</b></span>`+
+    `<span><span style="color:var(--muted)">Low </span><b class="neg">${fmt$(trough,0)}</b></span>`+
+    `<span><span style="color:var(--muted)">In range </span><b>${daysIn}/${hist.length} checks</b></span>`+
+    (initLp?`<span><span style="color:var(--muted)">LP P&L </span><b class="${pnlClass}">${pnlVsInit}</b></span>`:'')+ 
+    (cfNet!==0?`<span><span style="color:var(--muted)">Cash </span><b class="${cfNet>=0?'pos':'neg'}">${cfNet>=0?'+':''}${fmt$(cfNet,0)}</b></span>`:'');
+
+  // ── SVG Chart ─────────────────────────────────────────────────────────────
+  const W=svgEl.parentElement.clientWidth||340, H=140;
+  const padL=44,padR=10,padT=10,padB=28;
+  const cW=W-padL-padR, cH=H-padT-padB;
+
+  const minV=Math.min(...vals)*0.995, maxV=Math.max(...vals)*1.005;
+  const minT=first.ts, maxT=last.ts||minT+1;
+
+  const xScale=t=>padL+((t-minT)/(maxT-minT||1))*cW;
+  const yScale=v=>padT+cH-((v-minV)/(maxV-minV||1))*cH;
+
+  // Build polyline points
+  const pts=hist.map(h=>`${xScale(h.ts).toFixed(1)},${yScale(h.lpv).toFixed(1)}`).join(' ');
+
+  // Y-axis labels (3 levels)
+  const yLabels=[minV,minV+(maxV-minV)/2,maxV].map(v=>{
+    const y=yScale(v);
+    return`<text x="${padL-4}" y="${y+4}" font-size="10" fill="#94a3b8" text-anchor="end" font-family="monospace">$${v>=1000?(v/1000).toFixed(1)+'k':v.toFixed(0)}</text>`;
+  }).join('');
+
+  // X-axis labels (first and last date)
+  const fmtDate=ts=>{const d=new Date(ts);return`${d.getDate()}/${d.getMonth()+1}`;};
+  const xLabels=
+    `<text x="${padL}" y="${H-6}" font-size="10" fill="#94a3b8" font-family="monospace">${fmtDate(minT)}</text>`+
+    `<text x="${W-padR}" y="${H-6}" font-size="10" fill="#94a3b8" text-anchor="end" font-family="monospace">${fmtDate(maxT)}</text>`;
+
+  // Initial LP reference line
+  const initLine=initLp&&initLp>=minV&&initLp<=maxV
+    ?`<line x1="${padL}" x2="${W-padR}" y1="${yScale(initLp).toFixed(1)}" y2="${yScale(initLp).toFixed(1)}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="${padL+2}" y="${(yScale(initLp)-3).toFixed(1)}" font-size="9" fill="#94a3b8" font-family="monospace">initial</text>`:'';
+
+  // Colour LP line: green if above initial, red if below
+  const lineColor=initLp?(last.lpv>=initLp?'#16a34a':'#dc2626'):'#2563eb';
+
+  // Out-of-range shading (amber bands)
+  let rangeBands='';
+  let bandStart=null;
+  hist.forEach((h,i)=>{
+    if(!h.ir&&bandStart===null) bandStart=h.ts;
+    if((h.ir||i===hist.length-1)&&bandStart!==null){
+      const x1=xScale(bandStart), x2=xScale(h.ts);
+      if(x2-x1>1)rangeBands+=`<rect x="${x1.toFixed(1)}" y="${padT}" width="${(x2-x1).toFixed(1)}" height="${cH}" fill="#fde68a" opacity="0.35"/>`;
+      bandStart=null;
+    }
+  });
+
+  svgEl.setAttribute('viewBox',`0 0 ${W} ${H}`);
+  svgEl.innerHTML=
+    `<rect x="${padL}" y="${padT}" width="${cW}" height="${cH}" fill="#f8fafc" rx="4"/>`+
+    rangeBands+
+    initLine+
+    `<polyline points="${pts}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`+
+    yLabels+xLabels+
+    // Dots for each data point (hover targets)
+    hist.map((h,i)=>`<circle cx="${xScale(h.ts).toFixed(1)}" cy="${yScale(h.lpv).toFixed(1)}" r="3" fill="${lineColor}" opacity="0.7" data-i="${i}" class="perf-dot"/>`).join('');
+
+  // Attach hover events
+  const tooltip=document.getElementById('perf-tooltip');
+  svgEl.querySelectorAll('.perf-dot').forEach(dot=>{
+    dot.addEventListener('mouseenter',e=>{
+      const i=parseInt(dot.getAttribute('data-i'));
+      const h=hist[i];
+      const d=new Date(h.ts);
+      tooltip.textContent=`${d.getDate()}/${d.getMonth()+1} ${d.getHours()}:00  ${fmt$(h.lpv)}  ${h.px}  ${h.apy}% APY`;
+      tooltip.style.display='block';
+    });
+    dot.addEventListener('mousemove',e=>{
+      const rect=svgEl.getBoundingClientRect();
+      tooltip.style.left=(e.clientX-rect.left+10)+'px';
+      tooltip.style.top=(e.clientY-rect.top-30)+'px';
+    });
+    dot.addEventListener('mouseleave',()=>{tooltip.style.display='none';});
+  });
+}
+
+function togglePerf(){
+  const b=document.getElementById('perf-body'),t=document.getElementById('perf-toggle-txt');
+  b.classList.toggle('open');
+  t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';
+  if(b.classList.contains('open'))renderPerformance();
+}
+
 function toggleLog(){const b=document.getElementById('log-body'),t=document.getElementById('log-toggle-txt');b.classList.toggle('open');t.textContent=b.classList.contains('open')?'▴ Hide':'▾ Show';}
 function showAddLog(){document.getElementById('add-log-form').style.display='block';}
 function hideAddLog(){document.getElementById('add-log-form').style.display='none';}
@@ -1336,7 +1659,7 @@ async function refreshAll(){
   const c=state.config;
   const[bin,hl,chain,apy]=await Promise.all([fetchBinance(),fetchHL(c.hlWallet),fetchLPChain(c.tokenId),fetchAPY()]);
   state.binance=bin;state.hl=hl;state.lpChain=chain;state.apy=apy;
-  computeState();renderAll();checkAlerts();
+  computeState();renderAll();checkAlerts();recordHistory(state.computed);
   iconEl.textContent='↺';
   const lastCall=S.get('lastAnalysis_time',0),remaining=Math.ceil((COOLDOWN_MS-(Date.now()-lastCall))/60000);
   if(remaining>0&&remaining<30)showCooldown(remaining);
