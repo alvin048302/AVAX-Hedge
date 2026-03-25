@@ -581,54 +581,86 @@ async function fetchLPChain(tokenId,gaugeAddr){
   const tid=BigInt(tokenId).toString(16).padStart(64,'0');
   const calldata='0x99fbab88'+tid; // positions(uint256) selector
 
+  // Store raw debug info for the debug panel
+  state.chainDebug={tokenId,calldata,attempts:[]};
+
+  // Try multiple slot offsets — Ramses/Pharaoh may differ from Uniswap V3 standard
+  // Standard Uniswap V3: tickLower=slot[4], tickUpper=slot[5], liquidity=slot[6]
+  // Some forks:          tickLower=slot[5], tickUpper=slot[6], liquidity=slot[7]
+  function tryParseSlots(h){
+    const slots=[];
+    for(let i=0;i<14;i++)slots.push(h.slice(i*64,(i+1)*64));
+    // Try both known slot layouts
+    const layouts=[
+      {tl:4,tu:5,lq:6,name:'UniV3-standard'},
+      {tl:5,tu:6,lq:7,name:'Ramses-fork'},
+    ];
+    for(const L of layouts){
+      try{
+        const liq=BigInt('0x'+slots[L.lq]);
+        if(liq===0n)continue;
+        const tl=decodeInt24(slots[L.tl]),tu=decodeInt24(slots[L.tu]);
+        // Sanity: ticks should be in plausible range (-887272 to 887272) and tl<tu
+        if(tl>=-887272&&tu<=887272&&tl<tu){
+          return{tickLower:tl,tickUpper:tu,liquidity:liq,layout:L.name};
+        }
+      }catch(e){}
+    }
+    return null;
+  }
+
   function parseResult(hex,src){
-    if(!hex||hex==='0x'||hex==='0x0'||hex.length<386)return null;
-    const h=hex.startsWith('0x')?hex.slice(2):hex,slots=[];
-    for(let i=0;i<12;i++)slots.push(h.slice(i*64,(i+1)*64));
-    const liquidity=BigInt('0x'+slots[7]);
-    if(liquidity===0n)return null; // burned or not staked here
-    return{tickLower:decodeInt24(slots[5]),tickUpper:decodeInt24(slots[6]),liquidity,source:src};
+    if(!hex||hex==='0x'||hex==='0x0')return null;
+    const h=hex.startsWith('0x')?hex.slice(2):hex;
+    if(h.length<64*6)return null; // need at least 6 slots
+    state.chainDebug.rawHex=hex.slice(0,200)+'...'; // store for debug panel
+    const parsed=tryParseSlots(h);
+    if(parsed)return{...parsed,source:src};
+    // If no layout matched, store raw slots for diagnosis
+    state.chainDebug.rawSlots=Array.from({length:Math.min(10,h.length/64)},(_,i)=>h.slice(i*64,(i+1)*64));
+    return null;
   }
 
   async function tryCall(contractAddr,label){
+    const attempt={contract:contractAddr.slice(0,10)+'...',label,results:[]};
     // 1. Routescan API
     try{
       const url=`https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api?module=proxy&action=eth_call&to=${contractAddr}&data=${calldata}&tag=latest`;
       const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
       const r=await fetch(url,{signal:ctrl.signal});
-      if(r.ok){const d=await r.json();if(d.result&&d.status!=='0'){const p=parseResult(d.result,label+'/routescan');if(p)return p;}}
-    }catch(e){}
-    // 2. Snowtrace API
-    try{
-      const url=`https://api.snowtrace.io/api?module=proxy&action=eth_call&to=${contractAddr}&data=${calldata}&tag=latest&apikey=YourApiKeyToken`;
-      const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
-      const r=await fetch(url,{signal:ctrl.signal});
-      if(r.ok){const d=await r.json();if(d.result&&d.status!=='0'){const p=parseResult(d.result,label+'/snowtrace');if(p)return p;}}
-    }catch(e){}
-    // 3. Direct RPC
+      if(r.ok){
+        const d=await r.json();
+        attempt.results.push({rpc:'routescan',status:d.status,len:d.result?.length||0,err:d.message});
+        if(d.result&&d.status!=='0'){const p=parseResult(d.result,label+'/routescan');if(p){state.chainDebug.attempts.push(attempt);return p;}}
+      }
+    }catch(e){attempt.results.push({rpc:'routescan',err:e.message});}
+    // 2. Direct RPC nodes
     for(const rpc of AVAX_RPCS){
       try{
         const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),6000);
         const r=await fetch(rpc,{method:'POST',headers:{'Content-Type':'application/json'},
           body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:contractAddr,data:calldata},'latest']}),signal:ctrl.signal});
-        if(!r.ok)continue;const d=await r.json();
-        if(d.result){const p=parseResult(d.result,label+'/'+rpc.split('/')[2]);if(p)return p;}
-      }catch(e){continue;}
+        if(!r.ok){attempt.results.push({rpc,err:'HTTP '+r.status});continue;}
+        const d=await r.json();
+        attempt.results.push({rpc:rpc.split('/')[2],len:d.result?.length||0});
+        if(d.result&&d.result!=='0x'){const p=parseResult(d.result,label+'/'+rpc.split('/')[2]);if(p){state.chainDebug.attempts.push(attempt);return p;}}
+      }catch(e){attempt.results.push({rpc,err:e.message});continue;}
     }
+    state.chainDebug.attempts.push(attempt);
     return null;
   }
 
-  // Step 1: Try PositionManager (works if NFT not staked in gauge)
-  const pmResult=await tryCall(POSITION_MANAGER,'PositionManager');
+  // Step 1: Try PositionManager directly
+  const pmResult=await tryCall(POSITION_MANAGER,'PM');
   if(pmResult)return{...pmResult,rpc:'PM:'+pmResult.source,fetchTime:Date.now(),ok:true};
 
-  // Step 2: Try Gauge (works if NFT is staked — Ramses/Pharaoh gauge has same ABI)
+  // Step 2: Try Gauge fallback
   if(gauge){
     const gaugeResult=await tryCall(gauge,'Gauge');
     if(gaugeResult)return{...gaugeResult,rpc:'Gauge:'+gaugeResult.source,fetchTime:Date.now(),ok:true};
   }
 
-  return{ok:false,error:'Chain read failed — update Token ID in Setup or enter LP values manually'};
+  return{ok:false,error:'Chain read failed — open 🔧 debug for raw data'};
 }
 
 async function fetchAPY(){
@@ -1650,6 +1682,17 @@ function renderDebug(){
   html+=row('HL T1 Order:',hl?.ok?(hl.openOrders?.length>0?`${hl.openOrders[0]?.sz} AVAX @ $${hl.openOrders[0]?.limitPx}`:'None'):'—',hl?.ok?hl.openOrders?.length>0:null);
   if(hl?.debug&&hl.debug.openOrdersPreview!=='none')html+=`<div style="margin:2px 0 8px;padding:5px 8px;background:#fffbeb;border-radius:4px;color:#92400e;font-size:11px">${hl.debug.openOrdersPreview}</div>`;
   html+=row('LP Chain:',chain?.ok?`✅ via ${chain.rpc}`:`FAILED: ${chain?.error||'no token ID'}`,chain?.ok);
+  if(state.chainDebug){
+    const cd=state.chainDebug;
+    html+=`<div style="margin:4px 0 8px;font-size:11px;font-family:monospace;background:#f1f5f9;padding:6px 8px;border-radius:4px;word-break:break-all">`;
+    html+=`<b>tokenId:</b> ${cd.tokenId} &nbsp; <b>calldata:</b> ${cd.calldata?.slice(0,14)}...<br>`;
+    if(cd.rawHex)html+=`<b>rawHex:</b> ${cd.rawHex}<br>`;
+    if(cd.rawSlots)html+=`<b>slots:</b> ${cd.rawSlots.slice(0,8).map((s,i)=>`[${i}]${s.slice(0,12)}`).join(' ')}<br>`;
+    (cd.attempts||[]).forEach(a=>{
+      html+=`<b>${a.label}:</b> `+a.results.map(r=>`${r.rpc}:len=${r.len||0}${r.err?'/err='+r.err:''}`).join(' ')+'<br>';
+    });
+    html+=`</div>`;
+  }
   html+=row('APY:',apy?.ok?`${apy.apy?.toFixed(1)}%`:`FAILED: ${apy?.error}`,apy?.ok);
   html+='<div style="margin:10px 0 4px;font-weight:700;color:#0f172a">Config</div>';
   html+=row('Wallet:',cfg.hlWallet?cfg.hlWallet.slice(0,20)+'...':' NOT SET',!!cfg.hlWallet);
