@@ -122,11 +122,13 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     <div class="ig"><label>HL Wallet Address</label><input id="s-hlwallet" placeholder="0x..."><div class="hint">Auto-fetches hedge</div></div>
   </div>
   <div class="g2">
-    <div class="ig"><label>NFT Token ID (optional)</label><input id="s-tokenid" placeholder="169390"><div class="hint">Auto-reads LP from chain</div></div>
+    <div class="ig"><label>NFT Token ID</label><input id="s-tokenid" placeholder="172933"><div class="hint">Auto-reads LP from chain</div></div>
+    <div class="ig"><label>Wallet Address</label><input id="s-wallet" placeholder="0x..."><div class="hint">Your Avalanche wallet</div></div>
     <div class="ig"><label>Original Entry Price ($)</label><input id="s-origentry" placeholder="9.882"><div class="hint">All-time, never resets</div></div>
   </div>
   <div class="g2">
     <div class="ig"><label>Total Capital ($)</label><input id="s-capital" placeholder="5012"></div>
+    <div class="ig"><label>Gauge Address (optional)</label><input id="s-gauge" placeholder="0x74B4B2..."><div class="hint">Auto-set · override if pool changes</div></div>
     <div class="ig"><label>Initial LP Value ($)</label><input id="s-initlp" placeholder="5012"><div class="hint">Set once at deployment · never changes</div></div>
     <div class="ig"><label>APY Override (%)</label><input id="s-apy" placeholder="98.69"><div class="hint">⚡ Use Pharaoh UI rate</div></div>
   </div>
@@ -433,6 +435,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
 </div>
 <script>
 const POSITION_MANAGER = '0x0B4478e810D48B5882D4019D435A2f864Bab4F39';
+const GAUGE_DEFAULT     = '0x74B4B2cC5BCCFB3804bE6fcC9942AC5D6fc10164'; // AVAX/USDC 0.05% gauge
 const AVAX_RPCS = ['https://avalanche-c-chain-rpc.publicnode.com','https://rpc.ankr.com/avalanche','https://1rpc.io/avax/c','https://api.avax.network/ext/bc/C/rpc'];
 const HL_API = 'https://api.hyperliquid.xyz/info';
 const BINANCE_API = 'https://api.binance.com/api/v3';
@@ -462,7 +465,7 @@ function loadConfig(){
   state.config=S.get('config',{});
   const c=state.config;
   const f=(id,v)=>{const el=document.getElementById(id);if(el&&v!=null)el.value=v;};
-  f('s-apikey',c.apiKey);f('s-hlwallet',c.hlWallet);f('s-tokenid',c.tokenId);
+  f('s-apikey',c.apiKey);f('s-hlwallet',c.hlWallet);f('s-tokenid',c.tokenId);f('s-wallet',c.walletAddr||'');f('s-gauge',c.gaugeAddr||'');
   f('s-origentry',c.origEntry);f('s-capital',c.capital||'5012');f('s-initlp',c.initLpValue||'');
   f('s-apy',c.apyOverride);f('s-eavax',c.entryAvax);f('s-eusdc',c.entryUsdc);
   f('s-rlow',c.rangeLow);f('s-rhigh',c.rangeHigh);f('s-rangeprice',c.rangeEntry);
@@ -477,7 +480,7 @@ function loadConfig(){
 function saveConfig(){
   const g=id=>document.getElementById(id)?.value?.trim()||'';
   const c={
-    apiKey:g('s-apikey'),hlWallet:g('s-hlwallet'),tokenId:g('s-tokenid'),
+    apiKey:g('s-apikey'),hlWallet:g('s-hlwallet'),tokenId:g('s-tokenid'),walletAddr:g('s-wallet')||null,gaugeAddr:g('s-gauge')||null,
     origEntry:parseFloat(g('s-origentry'))||null,capital:parseFloat(g('s-capital'))||5012,initLpValue:parseFloat(g('s-initlp'))||null,
     apyOverride:parseFloat(g('s-apy'))||null,
     entryAvax:parseFloat(g('s-eavax'))||null,entryUsdc:parseFloat(g('s-eusdc'))||null,
@@ -572,37 +575,60 @@ async function fetchHL(walletAddress){
   }catch(e){return{ok:false,error:e.message};}
 }
 
-async function fetchLPChain(tokenId){
+async function fetchLPChain(tokenId,gaugeAddr){
   if(!tokenId)return{ok:false,error:'No token ID'};
-  const PM=POSITION_MANAGER,tid=BigInt(tokenId).toString(16).padStart(64,'0'),calldata='0x99fbab88'+tid;
-  function parseResult(hex){
+  const gauge=gaugeAddr||state.config?.gaugeAddr||GAUGE_DEFAULT;
+  const tid=BigInt(tokenId).toString(16).padStart(64,'0');
+  const calldata='0x99fbab88'+tid; // positions(uint256) selector
+
+  function parseResult(hex,src){
     if(!hex||hex==='0x'||hex==='0x0'||hex.length<386)return null;
     const h=hex.startsWith('0x')?hex.slice(2):hex,slots=[];
     for(let i=0;i<12;i++)slots.push(h.slice(i*64,(i+1)*64));
-    return{tickLower:decodeInt24(slots[5]),tickUpper:decodeInt24(slots[6]),liquidity:BigInt('0x'+slots[7])};
+    const liquidity=BigInt('0x'+slots[7]);
+    if(liquidity===0n)return null; // burned or not staked here
+    return{tickLower:decodeInt24(slots[5]),tickUpper:decodeInt24(slots[6]),liquidity,source:src};
   }
-  try{
-    const url=`https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest`;
-    const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
-    const r=await fetch(url,{signal:ctrl.signal});
-    if(r.ok){const d=await r.json();if(d.result&&d.status!=='0'){const p=parseResult(d.result);if(p)return{...p,rpc:'routescan',fetchTime:Date.now(),ok:true};}}
-  }catch(e){}
-  try{
-    const url=`https://api.snowtrace.io/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest&apikey=YourApiKeyToken`;
-    const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
-    const r=await fetch(url,{signal:ctrl.signal});
-    if(r.ok){const d=await r.json();if(d.result&&d.status!=='0'){const p=parseResult(d.result);if(p)return{...p,rpc:'snowtrace',fetchTime:Date.now(),ok:true};}}
-  }catch(e){}
-  for(const rpc of AVAX_RPCS){
+
+  async function tryCall(contractAddr,label){
+    // 1. Routescan API
     try{
-      const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),6000);
-      const r=await fetch(rpc,{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:PM,data:calldata},'latest']}),signal:ctrl.signal});
-      if(!r.ok)continue;const d=await r.json();
-      if(d.result){const p=parseResult(d.result);if(p)return{...p,rpc,fetchTime:Date.now(),ok:true};}
-    }catch(e){continue;}
+      const url=`https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api?module=proxy&action=eth_call&to=${contractAddr}&data=${calldata}&tag=latest`;
+      const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
+      const r=await fetch(url,{signal:ctrl.signal});
+      if(r.ok){const d=await r.json();if(d.result&&d.status!=='0'){const p=parseResult(d.result,label+'/routescan');if(p)return p;}}
+    }catch(e){}
+    // 2. Snowtrace API
+    try{
+      const url=`https://api.snowtrace.io/api?module=proxy&action=eth_call&to=${contractAddr}&data=${calldata}&tag=latest&apikey=YourApiKeyToken`;
+      const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
+      const r=await fetch(url,{signal:ctrl.signal});
+      if(r.ok){const d=await r.json();if(d.result&&d.status!=='0'){const p=parseResult(d.result,label+'/snowtrace');if(p)return p;}}
+    }catch(e){}
+    // 3. Direct RPC
+    for(const rpc of AVAX_RPCS){
+      try{
+        const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),6000);
+        const r=await fetch(rpc,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:contractAddr,data:calldata},'latest']}),signal:ctrl.signal});
+        if(!r.ok)continue;const d=await r.json();
+        if(d.result){const p=parseResult(d.result,label+'/'+rpc.split('/')[2]);if(p)return p;}
+      }catch(e){continue;}
+    }
+    return null;
   }
-  return{ok:false,error:'Chain read failed — enter LP values in Setup'};
+
+  // Step 1: Try PositionManager (works if NFT not staked in gauge)
+  const pmResult=await tryCall(POSITION_MANAGER,'PositionManager');
+  if(pmResult)return{...pmResult,rpc:'PM:'+pmResult.source,fetchTime:Date.now(),ok:true};
+
+  // Step 2: Try Gauge (works if NFT is staked — Ramses/Pharaoh gauge has same ABI)
+  if(gauge){
+    const gaugeResult=await tryCall(gauge,'Gauge');
+    if(gaugeResult)return{...gaugeResult,rpc:'Gauge:'+gaugeResult.source,fetchTime:Date.now(),ok:true};
+  }
+
+  return{ok:false,error:'Chain read failed — update Token ID in Setup or enter LP values manually'};
 }
 
 async function fetchAPY(){
@@ -1623,7 +1649,7 @@ function renderDebug(){
   html+=row('HL Positions:',hl?.ok?`${hl.positions?.length||0} shorts`:'—',hl?.ok?hl.positions?.length>0:null);
   html+=row('HL T1 Order:',hl?.ok?(hl.openOrders?.length>0?`${hl.openOrders[0]?.sz} AVAX @ $${hl.openOrders[0]?.limitPx}`:'None'):'—',hl?.ok?hl.openOrders?.length>0:null);
   if(hl?.debug&&hl.debug.openOrdersPreview!=='none')html+=`<div style="margin:2px 0 8px;padding:5px 8px;background:#fffbeb;border-radius:4px;color:#92400e;font-size:11px">${hl.debug.openOrdersPreview}</div>`;
-  html+=row('LP Chain:',chain?.ok?`✅ via ${chain.rpc}`:`FAILED: ${chain?.error}`,chain?.ok);
+  html+=row('LP Chain:',chain?.ok?`✅ via ${chain.rpc}`:`FAILED: ${chain?.error||'no token ID'}`,chain?.ok);
   html+=row('APY:',apy?.ok?`${apy.apy?.toFixed(1)}%`:`FAILED: ${apy?.error}`,apy?.ok);
   html+='<div style="margin:10px 0 4px;font-weight:700;color:#0f172a">Config</div>';
   html+=row('Wallet:',cfg.hlWallet?cfg.hlWallet.slice(0,20)+'...':' NOT SET',!!cfg.hlWallet);
@@ -1739,7 +1765,7 @@ async function refreshAll(){
   const iconEl=document.getElementById('refresh-icon');
   iconEl.innerHTML='<span class="spin"></span>';
   const c=state.config;
-  const[bin,hl,chain,apy]=await Promise.all([fetchBinance(),fetchHL(c.hlWallet),fetchLPChain(c.tokenId),fetchAPY()]);
+  const[bin,hl,chain,apy]=await Promise.all([fetchBinance(),fetchHL(c.hlWallet),fetchLPChain(c.tokenId,c.gaugeAddr),fetchAPY()]);
   state.binance=bin;state.hl=hl;state.lpChain=chain;state.apy=apy;
   computeState();renderAll();checkAlerts();recordHistory(state.computed);
   iconEl.textContent='↺';
