@@ -429,6 +429,11 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
 <div id="debug-panel" class="panel" style="display:none">
   <div class="ph"><span class="pt">🔧 Debug</span>
     <button class="btn btn-out btn-sm" onclick="document.getElementById('debug-panel').style.display='none'">✕</button></div>
+  <div style="display:flex;gap:8px;margin-bottom:10px">
+    <button class="btn btn-out btn-sm" onclick="testChainRead()">⛓ Test Chain Read</button>
+    <button class="btn btn-out btn-sm" onclick="renderDebug()">↺ Refresh</button>
+  </div>
+  <div id="chain-test-result" style="font-family:monospace;font-size:11px;background:#f1f5f9;padding:8px;border-radius:6px;margin-bottom:10px;display:none;word-break:break-all;line-height:1.7"></div>
   <div id="debug-content" style="font-family:monospace;font-size:11px;line-height:1.8;color:#334155"></div>
 </div>
 
@@ -1672,6 +1677,75 @@ function showAddLog(){document.getElementById('add-log-form').style.display='blo
 function hideAddLog(){document.getElementById('add-log-form').style.display='none';}
 
 function showDebug(){renderDebug();document.getElementById('debug-panel').style.display='block';document.getElementById('debug-panel').scrollIntoView({behavior:'smooth'});}
+
+async function testChainRead(){
+  const out=document.getElementById('chain-test-result');
+  out.style.display='block';
+  out.innerHTML='⏳ Testing chain read...';
+
+  const cfg=state.config;
+  const tokenId=cfg.tokenId||'172933';
+  const PM=POSITION_MANAGER;
+  const gauge=cfg.gaugeAddr||GAUGE_DEFAULT;
+  const tid=BigInt(tokenId).toString(16).padStart(64,'0');
+  const calldata='0x99fbab88'+tid;
+
+  let log=`<b>Token ID:</b> ${tokenId}<br>`;
+  log+=`<b>Calldata:</b> ${calldata}<br>`;
+  log+=`<b>PM:</b> ${PM}<br>`;
+  log+=`<b>Gauge:</b> ${gauge}<br><br>`;
+
+  async function testOne(contractAddr,label,rpcOrUrl,usePost){
+    try{
+      let result,status;
+      if(usePost){
+        const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
+        const r=await fetch(rpcOrUrl,{method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_call',params:[{to:contractAddr,data:calldata},'latest']}),signal:ctrl.signal});
+        const d=await r.json();result=d.result;status=r.status;
+      }else{
+        const ctrl=new AbortController();setTimeout(()=>ctrl.abort(),8000);
+        const r=await fetch(rpcOrUrl,{signal:ctrl.signal});
+        const d=await r.json();result=d.result;status=r.status;
+      }
+      const len=result?.length||0;
+      log+=`[${label}] HTTP:${status} len:${len} hex:${(result||'').slice(0,40)}<br>`;
+      out.innerHTML=log;
+      return{result,len};
+    }catch(e){
+      log+=`[${label}] ERROR: ${e.message}<br>`;
+      out.innerHTML=log;
+      return{result:null,len:0};
+    }
+  }
+
+  // Test PM via routescan
+  log+='--- PositionManager ---<br>';out.innerHTML=log;
+  await testOne(PM,'PM/routescan',
+    `https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api?module=proxy&action=eth_call&to=${PM}&data=${calldata}&tag=latest`,false);
+
+  // Test PM via direct RPC
+  for(const rpc of AVAX_RPCS){
+    const label='PM/'+rpc.split('/')[2];
+    const r=await testOne(PM,label,rpc,true);
+    if(r.len>10)break; // got data, stop trying
+  }
+
+  // Test Gauge via routescan
+  log+='<br>--- Gauge ---<br>';out.innerHTML=log;
+  await testOne(gauge,'Gauge/routescan',
+    `https://api.routescan.io/v2/network/mainnet/evm/43114/etherscan/api?module=proxy&action=eth_call&to=${gauge}&data=${calldata}&tag=latest`,false);
+
+  // Test Gauge via direct RPC
+  for(const rpc of AVAX_RPCS){
+    const label='Gauge/'+rpc.split('/')[2];
+    const r=await testOne(gauge,label,rpc,true);
+    if(r.len>10)break;
+  }
+
+  log+='<br><b>Done. Screenshot this and share.</b>';
+  out.innerHTML=log;
+}
 function renderDebug(){
   const bin=state.binance,hl=state.hl,chain=state.lpChain,apy=state.apy,cfg=state.config;
   const row=(label,val,ok)=>{const color=ok===true?'#16a34a':ok===false?'#dc2626':'#64748b';return`<div style="margin-bottom:4px"><span style="color:#94a3b8;width:170px;display:inline-block">${label}</span><span style="color:${color}">${val}</span></div>`;};
