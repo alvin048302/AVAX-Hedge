@@ -132,15 +132,9 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     <div class="ig"><label>Initial LP Value ($)</label><input id="s-initlp" placeholder="5012"><div class="hint">Set once at deployment · never changes</div></div>
     <div class="ig"><label>APY Override (%)</label><input id="s-apy" placeholder="98.69"><div class="hint">⚡ Use Pharaoh UI rate</div></div>
   </div>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Manual LP inputs (when no Token ID or RPC fails)</div>
   <div class="g3">
-    <div class="ig"><label>Entry AVAX</label><input id="s-eavax" placeholder="412.5"></div>
-    <div class="ig"><label>Entry USDC ($)</label><input id="s-eusdc" placeholder="2847"></div>
-    <div class="ig"><label>Range Low ($)</label><input id="s-rlow" placeholder="9.331"></div>
-  </div>
-  <div class="g3">
+    <div class="ig"><label>Range Low ($)</label><input id="s-rlow" placeholder="9.109"></div>
     <div class="ig"><label>Range High ($)</label><input id="s-rhigh" placeholder="10.500"></div>
-    <div class="ig"><label>Range Entry ($)</label><input id="s-rangeprice" placeholder="9.60"></div>
     <div class="ig"><label>Rebalances / Month</label><input id="s-rebals" placeholder="0"></div>
   </div>
   <hr>
@@ -164,16 +158,10 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   </div>
   <div class="g2">
     <div class="ig"><label>ATR 14-day ($)</label><input id="s-atr" placeholder="0.235"><div class="hint">Update weekly · default 2.5% of price</div></div>
-    <div class="ig"><label>4h Candles Override</label><input id="s-fourh" placeholder="auto"><div class="hint">Auto-computed · override only</div></div>
+
     <div class="ig"><label>Confirm Candles</label><input id="s-confirmcandles" placeholder="0"><div class="hint">4H candles since trigger fired · must be ≥ 1 to act</div></div>
   </div>
-  <hr>
-  <div style="font-size:11px;color:var(--muted);margin-bottom:8px">Cumulative P&amp;L tracking</div>
-  <div class="g3">
-    <div class="ig"><label>Total LP Earned ($)</label><input id="s-totalearned" placeholder="0"></div>
-    <div class="ig"><label>Total Hedge P&amp;L ($)</label><input id="s-totalhpnl" placeholder="0"></div>
-    <div class="ig"><label>Total IL Realised ($)</label><input id="s-totalil" placeholder="0"></div>
-  </div>
+
   <button class="btn btn-dark btn-full" onclick="saveConfig()">✓ Save Configuration</button>
 </div>
 
@@ -413,13 +401,22 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   <div style="background:var(--bg);border-radius:12px;padding:20px;max-width:380px;margin:60px auto">
     <div style="font-size:15px;font-weight:700;margin-bottom:4px">🔄 Range change detected</div>
     <div id="rebal-modal-sub" style="font-size:12px;color:var(--muted);margin-bottom:14px"></div>
-    <div class="g2">
-      <div class="ig"><label>Hedge P&L ($)</label><input id="rm-hpnl" placeholder="70.94"><div class="hint">Profit from closing T1</div></div>
+    <div class="g2" style="margin-bottom:8px">
+      <div class="ig"><label>Hedge P&L ($)</label><input id="rm-hpnl" placeholder="70.94"><div class="hint" id="rm-hpnl-hint">Profit from closing T1</div></div>
       <div class="ig"><label>Swap Cost ($)</label><input id="rm-cost" placeholder="12"><div class="hint">Swap fee paid</div></div>
     </div>
-    <div style="font-size:11px;color:var(--faint);margin-bottom:12px">IL at rebalance is computed from LP value change — no entry needed.</div>
+    <div class="ig" style="margin-bottom:8px">
+      <label>New Range</label>
+      <input id="rm-newrange" readonly style="background:var(--surface);color:var(--muted)">
+    </div>
+    <div class="ig" style="margin-bottom:12px">
+      <label>New T1 to set on HL</label>
+      <input id="rm-newt1" readonly style="background:var(--blue-bg);color:var(--blue);font-size:11px">
+      <div class="hint">Set this on Hyperliquid after LP is deployed</div>
+    </div>
+    <div style="font-size:11px;color:var(--faint);margin-bottom:12px">IL is tracked via LP value change — no extra entry needed.</div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-dark btn-sm" onclick="confirmRebalanceLog()" style="flex:1">✓ Log Rebalance</button>
+      <button class="btn btn-dark btn-sm" onclick="confirmRebalanceLog()" style="flex:1">✓ Log & Close</button>
       <button class="btn btn-out btn-sm" onclick="dismissRebalanceModal()">Skip</button>
     </div>
   </div>
@@ -430,10 +427,8 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
   <div class="ph"><span class="pt">🔧 Debug</span>
     <button class="btn btn-out btn-sm" onclick="document.getElementById('debug-panel').style.display='none'">✕</button></div>
   <div style="display:flex;gap:8px;margin-bottom:10px">
-    <button class="btn btn-out btn-sm" onclick="testChainRead()">⛓ Test Chain Read</button>
     <button class="btn btn-out btn-sm" onclick="renderDebug()">↺ Refresh</button>
   </div>
-  <div id="chain-test-result" style="font-family:monospace;font-size:11px;background:#f1f5f9;padding:8px;border-radius:6px;margin-bottom:10px;display:none;word-break:break-all;line-height:1.7"></div>
   <div id="debug-content" style="font-family:monospace;font-size:11px;line-height:1.8;color:#334155"></div>
 </div>
 
@@ -479,8 +474,8 @@ function loadConfig(){
   f('s-t1status',c.t1Status||'waiting');
   f('s-margin',c.hlMargin||'1500');f('s-hedgedays',c.hedgeDays||'0');
   f('s-oohours',c.ooHours||'0');
-  f('s-atr',c.atrInput||'');f('s-fourh',c.fourHCandles||'0');f('s-confirmcandles',c.confirmCandles||'0');
-  f('s-totalearned',c.totalEarned||'0');f('s-totalhpnl',c.totalHPnl||'0');f('s-totalil',c.totalIL||'0');
+  f('s-atr',c.atrInput||'');f('s-confirmcandles',c.confirmCandles||'0');
+
 }
 function saveConfig(){
   const g=id=>document.getElementById(id)?.value?.trim()||'';
@@ -495,10 +490,8 @@ function saveConfig(){
     t1Lev:g('s-t1lev'),t1Status:g('s-t1status'),
     hlMargin:parseFloat(g('s-margin'))||1500,hedgeDays:parseInt(g('s-hedgedays'))||0,
     ooHours:parseInt(g('s-oohours'))||0,
-    atrInput:parseFloat(g('s-atr'))||null,fourHCandles:parseInt(g('s-fourh'))||0,confirmCandles:parseInt(g('s-confirmcandles'))||0,
-    totalEarned:parseFloat(g('s-totalearned'))||0,
-    totalHPnl:parseFloat(g('s-totalhpnl'))||0,
-    totalIL:parseFloat(g('s-totalil'))||0,
+    atrInput:parseFloat(g('s-atr'))||null,confirmCandles:parseInt(g('s-confirmcandles'))||0,
+
   };
   // ── AUTO-DETECT REBALANCE ──────────────────────────────────────────────
   const prevCfg=S.get('config',{});
@@ -686,6 +679,32 @@ function computeState(){
     const sqrtX96=priceToSqrtPriceX96(price),amounts=getAmountsFromLiquidity(chain.liquidity,sqrtX96,chain.tickLower,chain.tickUpper);
     avax=amounts.avax;usdc=amounts.usdc;rangeLow=tickToPrice(chain.tickLower);rangeHigh=tickToPrice(chain.tickUpper);source='on-chain';
   }else if(!chain?.ok&&(c.entryAvax||0)===0){source='rpc-failed';}
+
+  // ── DERIVED COMPOSITION (always-on) ─────────────────────────────────────────
+  // When capital is set and price is in range: back-calculate AVAX/USDC from CL math
+  // This is mathematically exact — LP value = AVAX*price + USDC by definition
+  // Requires: capital (known), rangeLow, rangeHigh (known), price (live from Binance)
+  const deployedCapital = c.capital || 5012;
+  if(source!=='on-chain' && rangeLow && rangeHigh && price>rangeLow && price<rangeHigh){
+    const sqrtP=Math.sqrt(price), sqrtPa=Math.sqrt(rangeLow), sqrtPb=Math.sqrt(rangeHigh);
+    const avaxPart=(1/sqrtP-1/sqrtPb)*price;
+    const usdcPart=(sqrtP-sqrtPa);
+    const denom=avaxPart+usdcPart;
+    if(denom>0){
+      // Back-calculate L from capital, then derive amounts
+      const L=deployedCapital/denom;
+      avax=L*(1/sqrtP-1/sqrtPb);
+      usdc=L*(sqrtP-sqrtPa);
+      source='derived';
+    }
+  } else if(source!=='on-chain' && rangeLow && price<=rangeLow){
+    // Below range: 100% AVAX
+    avax=deployedCapital/price;usdc=0;source='derived';
+  } else if(source!=='on-chain' && rangeHigh && price>=rangeHigh){
+    // Above range: 100% USDC
+    avax=0;usdc=deployedCapital;source='derived';
+  }
+
   const lpValue=avax*price+usdc;
   const avaxPct=lpValue>0?(avax*price/lpValue*100):50;
   const inRange=rangeLow&&rangeHigh?(price>=rangeLow&&price<=rangeHigh):null;
@@ -795,7 +814,7 @@ function computeState(){
   const t1SLDays=t1SLLoss&&dailyYield>0?(t1SLLoss/dailyYield).toFixed(1):null;
   const liqPx=t1.liqPx||null;
   const liqDistance=liqPx?((liqPx-price)/price*100):null;
-  const totalEarned=c.totalEarned||0,totalHPnl=c.totalHPnl||0,totalIL=c.totalIL||0;
+  const totalEarned=0,totalHPnl=0,totalIL=0; // now tracked in Cash Flow ledger
   const allTimeNet=totalEarned+totalHPnl+totalIL;
   const origEntry=c.origEntry||c.rangeEntry||price;
   const guardFloor=origEntry*0.70;
@@ -991,9 +1010,9 @@ function renderAll(){
   if(c.status==='IN_RANGE')sb.innerHTML=`<span class="badge bg"><span class="dot dg"></span>IN RANGE</span>`;
   else if(c.status==='BELOW_RANGE')sb.innerHTML=`<span class="badge br"><span class="dot dr"></span>BELOW RANGE</span>`;
   else sb.innerHTML=`<span class="badge ba"><span class="dot da"></span>ABOVE RANGE</span>`;
-  document.getElementById('pos-source').textContent=c.source==='on-chain'?'⛓ On-chain':c.source==='rpc-failed'?'⚠ RPC failed':'✏ Manual';
+  document.getElementById('pos-source').textContent=c.source==='on-chain'?'⛓ On-chain':c.source==='derived'?'∫ Derived':c.source==='rpc-failed'?'⚠ RPC failed':'✏ Manual';
   const rpb=document.getElementById('rpc-banner');
-  if(c.source==='rpc-failed'){rpb.style.display='block';rpb.innerHTML='<div class="alert alert-a">⚠ On-chain read failed. Enter LP values manually in Setup.</div>';}else{rpb.style.display='none';}
+  if(c.source==='rpc-failed'&&!c.rangeLow){rpb.style.display='block';rpb.innerHTML='<div class="alert alert-a">⚠ On-chain read failed. Set Range Low/High in Setup for auto composition.</div>';}else{rpb.style.display='none';}
   const rl=c.rangeLow,rh=c.rangeHigh,p=c.price;
   document.getElementById('rb-low').textContent='$'+(rl?.toFixed(3)||'—');
   document.getElementById('rb-high').textContent='$'+(rh?.toFixed(3)||'—');
@@ -1405,8 +1424,18 @@ function promptRebalanceLog(prevLow,prevHigh,newLow,newHigh){
   _rebalPrev={prevLow,prevHigh,newLow,newHigh};
   const sub=`Was: $${prevLow?.toFixed(3)}–$${prevHigh?.toFixed(3)} → Now: $${newLow?.toFixed(3)}–$${newHigh?.toFixed(3)}`;
   document.getElementById('rebal-modal-sub').textContent=sub;
-  document.getElementById('rm-hpnl').value='';
+  // Pre-fill hedge P&L from live computed state
+  const c=state.computed;
+  const hedgePnl=c.hedgeClosePnl!=null&&c.hedgeClosePnl!==0 ? c.hedgeClosePnl.toFixed(2) : '';
+  const hedgeAction=c.hedgeAction||'none';
+  document.getElementById('rm-hpnl').value=hedgePnl;
+  document.getElementById('rm-hpnl-hint').textContent=
+    hedgeAction==='close'?`Auto: +$${hedgePnl} (close T1 profit)`:
+    hedgeAction==='cancel'?'Limit order cancelled — $0':
+    'Enter hedge P&L from HL';
   document.getElementById('rm-cost').value='12';
+  document.getElementById('rm-newrange').value=`$${newLow?.toFixed(3)} – $${newHigh?.toFixed(3)}`;
+  document.getElementById('rm-newt1').value=c.newT1Trigger?`$${c.newT1Trigger.toFixed(3)} · ${c.newT1Size||'—'} AVAX · 2× · $${c.newT1Margin||'—'} margin`:'Set after range update';
   document.getElementById('rebal-modal').style.display='block';
 }
 function dismissRebalanceModal(){
@@ -1416,21 +1445,45 @@ function confirmRebalanceLog(){
   const hpnl=parseFloat(document.getElementById('rm-hpnl').value)||0;
   const cost=parseFloat(document.getElementById('rm-cost').value)||12;
   const today=new Date().toISOString().slice(0,10);
+
+  // 1. Log to Rebalance Log
   const entry={
     date:today,
     oldlow:_rebalPrev.prevLow?.toFixed(3),
     newlow:_rebalPrev.newLow?.toFixed(3),
-    il:0, // IL not separately tracked — captured in LP value P&L
-    hpnl,cost
+    il:0, hpnl, cost
   };
   const entries=S.get('rebal_log',[]);
   entries.unshift(entry);
   S.set('rebal_log',entries);
+
+  // 2. Auto-log to Cash Flow — hedge profit as income, swap as expense
+  const cfEntries=S.get(CF_KEY,[]);
+  if(hpnl!==0){
+    cfEntries.push({ts:Date.now(),date:today,type:hpnl>0?'harvest':'hedge_loss',
+      amount:hpnl,note:`Hedge P&L on rebal ${_rebalPrev.prevLow?.toFixed(3)}→${_rebalPrev.newLow?.toFixed(3)}`});
+  }
+  if(cost>0){
+    cfEntries.push({ts:Date.now()+1,date:today,type:'other',
+      amount:-cost,note:`Swap cost rebal ${_rebalPrev.newLow?.toFixed(3)}`});
+  }
+  cfEntries.sort((a,b)=>a.date.localeCompare(b.date));
+  S.set(CF_KEY,cfEntries);
+
   dismissRebalanceModal();
-  // Open rebalance log panel to confirm
+
+  // 3. Reset confirm candles + OO hours in config
+  const cfg=S.get('config',{});
+  cfg.confirmCandles=0;cfg.ooHours=0;
+  S.set('config',cfg);state.config=cfg;
+  const ccEl=document.getElementById('s-confirmcandles');if(ccEl)ccEl.value='0';
+  const ooEl=document.getElementById('s-oohours');if(ooEl)ooEl.value='0';
+
+  // 4. Open rebalance log to confirm entry
   const lb=document.getElementById('log-body'),lt=document.getElementById('log-toggle-txt');
   if(!lb.classList.contains('open')){lb.classList.add('open');lt.textContent='▴ Hide';}
   renderLog();
+  renderCashFlow();
 }
 
 function toggleCashFlow(){
@@ -1755,7 +1808,8 @@ function renderDebug(){
   html+=row('HL Positions:',hl?.ok?`${hl.positions?.length||0} shorts`:'—',hl?.ok?hl.positions?.length>0:null);
   html+=row('HL T1 Order:',hl?.ok?(hl.openOrders?.length>0?`${hl.openOrders[0]?.sz} AVAX @ $${hl.openOrders[0]?.limitPx}`:'None'):'—',hl?.ok?hl.openOrders?.length>0:null);
   if(hl?.debug&&hl.debug.openOrdersPreview!=='none')html+=`<div style="margin:2px 0 8px;padding:5px 8px;background:#fffbeb;border-radius:4px;color:#92400e;font-size:11px">${hl.debug.openOrdersPreview}</div>`;
-  html+=row('LP Chain:',chain?.ok?`✅ via ${chain.rpc}`:`FAILED: ${chain?.error||'no token ID'}`,chain?.ok);
+  html+=row('LP Chain:',chain?.ok?`✅ via ${chain.rpc}`:`not used (derived mode)`,chain?.ok);
+  html+=row('Composition source:',state.computed?.source||'—',state.computed?.source==='derived'||state.computed?.source==='on-chain');
   if(state.chainDebug){
     const cd=state.chainDebug;
     html+=`<div style="margin:4px 0 8px;font-size:11px;font-family:monospace;background:#f1f5f9;padding:6px 8px;border-radius:4px;word-break:break-all">`;
