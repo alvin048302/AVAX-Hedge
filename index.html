@@ -101,6 +101,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
       <div style="display:flex;gap:6px;margin-top:8px;justify-content:flex-end">
         <button class="btn btn-out btn-sm" onclick="refreshAll()"><span id="refresh-icon">↺</span> Refresh</button>
         <button class="btn btn-out btn-sm" onclick="toggleSetup()">⚙</button>
+        <button class="btn btn-out btn-sm" onclick="resetAll()" style="color:var(--red)" title="Reset all data">🗑</button>
         <button class="btn btn-out btn-sm" onclick="showDebug()" style="color:var(--faint)">🔧</button>
       </div>
       <div style="font-size:10px;color:var(--faint);margin-top:5px" id="refresh-time">—</div>
@@ -894,15 +895,38 @@ async function runAnalysis() {
   document.getElementById('model-badge').textContent = model.includes('haiku') ? 'haiku-4-5' : 'sonnet-4-6';
 
   try {
-    const resp = await fetch(CLAUDE_WORKER, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model, max_tokens: maxTokens,
-        system: SYS[c.actionState] || SYS.EARNING,
-        messages: [{ role: 'user', content: hash }]
-      })
-    });
+    let resp;
+    try {
+      resp = await fetch(CLAUDE_WORKER, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model, max_tokens: maxTokens,
+          system: SYS[c.actionState] || SYS.EARNING,
+          messages: [{ role: 'user', content: hash }]
+        })
+      });
+    } catch(netErr) {
+      // Network-level failure (CORS preflight blocked, worker offline, no internet)
+      document.getElementById('analysis-output').style.display = 'block';
+      document.getElementById('analysis-box').innerHTML =
+        `<div class="alert-r">
+          <b>Network error — worker unreachable</b><br>
+          <span style="font-size:12px">${netErr.message}</span><br><br>
+          <span style="font-size:11px;color:var(--muted)">
+            Possible causes:<br>
+            1. Cloudflare worker offline — check dashboard at dash.cloudflare.com<br>
+            2. Worker missing CORS header — add <code>Access-Control-Allow-Origin: *</code><br>
+            3. No internet connection
+          </span>
+        </div>`;
+      btn.disabled = false; btn.innerHTML = '🔍 Analyse Now';
+      return;
+    }
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      throw new Error(`HTTP ${resp.status}: ${errText.slice(0, 200)}`);
+    }
     const data = await resp.json();
     if (data.error) throw new Error(data.error.message || JSON.stringify(data.error));
     const text = data.content?.[0]?.text || 'No response.';
@@ -912,7 +936,7 @@ async function runAnalysis() {
     showAnalysisResult(text, false, Date.now());
   } catch(e) {
     document.getElementById('analysis-output').style.display = 'block';
-    document.getElementById('analysis-box').innerHTML = `<div class="alert-r">Analysis failed: ${e.message}</div>`;
+    document.getElementById('analysis-box').innerHTML = `<div class="alert-r"><b>Analysis failed</b><br><span style="font-size:12px">${e.message}</span></div>`;
   }
   btn.disabled = false; btn.innerHTML = '🔍 Analyse Now';
 }
@@ -1253,6 +1277,22 @@ function hideAddLog() { document.getElementById('add-log-form').style.display = 
 
 function initAlerts() {
   if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();
+}
+
+function resetAll() {
+  if (!confirm('Reset ALL data?\n\nThis clears config, rebalance log, cash flow, history, and analysis cache. Cannot be undone.')) return;
+  const keys = ['config','rebal_log',CF_KEY,HIST_KEY,'lastAnalysis_result','lastAnalysis_hash','lastAnalysis_time','lastActionState','lastRebalTrigger','lastAlertPrice','range_exit_ts'];
+  keys.forEach(k => localStorage.removeItem('lpc_' + k));
+  state.config = {}; state.computed = {};
+  // Clear all form fields
+  ['s-eavax','s-eusdc','s-eprice','s-rlow','s-rhigh','s-apy','s-minapy'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('setup-computed').style.display = 'none';
+  document.getElementById('analysis-output').style.display = 'none';
+  renderLog(); renderCashFlow();
+  document.getElementById('setup-panel').style.display = 'block';
+  document.getElementById('status-badge').innerHTML = '<span class="badge bb"><span class="dot" style="background:var(--blue)"></span>RESET</span>';
+  document.getElementById('price-display').textContent = '—';
+  alert('Reset complete. Enter your Setup fields to begin.');
 }
 
 // ── MAIN ───────────────────────────────────────────────────────────────────────
