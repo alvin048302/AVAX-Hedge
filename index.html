@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AVAX LP — Pharaoh</title>
+<title>AVAX LP — Pharaoh v2.1</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -90,7 +90,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
 <div class="app-header">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div>
-      <div style="font-size:12px;font-weight:600;color:var(--muted);margin-bottom:4px">AVAX/USDC · Pharaoh CL</div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:12px;font-weight:600;color:var(--muted)">AVAX/USDC · Pharaoh CL</span><span style="font-size:10px;font-weight:700;color:var(--faint);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:1px 6px;border-radius:4px">v2.1</span></div>
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="price-big" id="price-display">—</div>
         <div id="price-change" style="font-size:13px;color:var(--muted)">—</div>
@@ -122,9 +122,6 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
     <div class="ig"><label>Range Low ($)</label><input id="s-rlow" placeholder="9.109"><div class="hint">Update after rebalance</div></div>
     <div class="ig"><label>Range High ($)</label><input id="s-rhigh" placeholder="10.500"><div class="hint">Update after rebalance</div></div>
     <div class="ig"><label>APY Override (%)</label><input id="s-apy" placeholder="113"><div class="hint">From Pharaoh UI weekly</div></div>
-  </div>
-  <div style="max-width:220px">
-    <div class="ig"><label>Min Acceptable APY (%)</label><input id="s-minapy" placeholder="80"><div class="hint">Sets range suggestion cap</div></div>
   </div>
   <div id="setup-computed" style="display:none;font-size:12px;color:var(--green);padding:8px 12px;background:var(--green-bg);border:1px solid var(--green-b);border-radius:6px;margin-bottom:10px"></div>
   <button class="btn btn-dark btn-full" onclick="saveConfig()">✓ Save</button>
@@ -172,7 +169,6 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
       <div class="hd-row"><span style="color:var(--muted)">LP P&amp;L vs initial</span><span id="rh-pnl">—</span></div>
       <div class="hd-row"><span style="color:var(--muted)" id="rh-pa-label">Value at Pa</span><span id="rh-at-pa">—</span></div>
       <div class="hd-row" style="border-bottom:none"><span style="color:var(--muted)" id="rh-pb-label">Value at Pb</span><span id="rh-at-pb">—</span></div>
-      <div style="padding:8px 0 2px;font-size:12px;border-top:1px solid var(--border);margin-top:2px" id="rh-apy-check">—</div>
     </div>
   </div>
 </div>
@@ -345,7 +341,6 @@ function loadConfig() {
   f('s-rlow',   c.rangeLow);
   f('s-rhigh',  c.rangeHigh);
   f('s-apy',    c.apyOverride);
-  f('s-minapy', c.minApy || 80);
   updateSetupPreview();
 }
 
@@ -357,8 +352,6 @@ function saveConfig() {
   const rangeLow    = parseFloat(g('s-rlow'))   || null;
   const rangeHigh   = parseFloat(g('s-rhigh'))  || null;
   const apyOverride = parseFloat(g('s-apy'))    || null;
-  const minApy      = parseFloat(g('s-minapy')) || 80;
-
   // Auto-compute capital + initialLpValue on first save or entry field change
   const prev         = S.get('config', {});
   const entryChanged = entryAvax !== prev.entryAvax || entryUsdc !== prev.entryUsdc || entryPrice !== prev.entryPrice;
@@ -369,7 +362,7 @@ function saveConfig() {
     initialLpValue = capital;
   }
 
-  const c = { entryAvax, entryUsdc, entryPrice, rangeLow, rangeHigh, apyOverride, minApy, capital, initialLpValue };
+  const c = { entryAvax, entryUsdc, entryPrice, rangeLow, rangeHigh, apyOverride, capital, initialLpValue };
 
   // Detect range change → trigger modal
   const prevLow    = prev.rangeLow, prevHigh = prev.rangeHigh;
@@ -424,7 +417,9 @@ async function fetchBinance() {
         else break;
       }
     }
-    return { price, change24h, closes, high7d, low7d, swing_high_14d, swing_low_14d, fourHCandles, fetchTime: Date.now(), ok: true };
+    // Store closed 14d candles as objects for pivot detection
+    const candles14d = closed14.map(k => ({ high: parseFloat(k[2]), low: parseFloat(k[3]), close: parseFloat(k[4]) }));
+    return { price, change24h, closes, high7d, low7d, swing_high_14d, swing_low_14d, fourHCandles, candles14d, fetchTime: Date.now(), ok: true };
   } catch(e) { return { ok: false, error: e.message }; }
 }
 
@@ -449,32 +444,82 @@ function computeBaseAPY(rangeLow, rangeHigh, effectiveAPY) {
   return Math.max(1, effectiveAPY / mult);
 }
 
-function computeSuggestedRange(price, swing_low, swing_high, base_APY, minApy) {
-  const ATR = price * 0.025;
-  const Pa  = Math.max(swing_low - ATR, price * 0.55); // floor at 55% of price
-  if (Pa <= 0) return null;
-
-  // Max Pb from APY constraint: solve sqrt(Pb/Pa)/(sqrt(Pb/Pa)-1) = req_mult
-  let Pb_max_apy = price * 2.5; // default: very wide, no constraint
-  if (base_APY > 0 && minApy > 0) {
-    const req = minApy / base_APY;
-    if (req > 1.1) { // meaningful constraint only when minApy is at least 10% above base
-      const k = req / (req - 1);
-      Pb_max_apy = Pa * (k * k);
-    }
+// ── TREND CLASSIFICATION (V2 adjusted bias table + ATL override) ──────────────
+function classifyTrend(closes, price, swing_low, swing_high) {
+  if (!closes || closes.length < 5) return { trend:'SIDEWAYS', momentum:0, bias:0.50, isNearATL:false };
+  const ma7  = closes.slice(-7).reduce((a,b)=>a+b,0) / Math.min(7, closes.length);
+  const ma14 = closes.slice(-14).reduce((a,b)=>a+b,0) / Math.min(14, closes.length);
+  const momentum = closes.length >= 4 ? (closes[closes.length-1] - closes[closes.length-4]) / closes[closes.length-4] * 100 : 0;
+  let trend;
+  if (price > ma7 && ma7 > ma14 && momentum > 1.0)      trend = 'UPTREND';
+  else if (price < ma7 && ma7 < ma14 && momentum < -1.0) trend = 'DOWNTREND';
+  else                                                    trend = 'SIDEWAYS';
+  // ATL override: compressed 14d range AND falling momentum
+  const compression = swing_low / swing_high;
+  const isNearATL   = compression < 0.80 && momentum < -3.0;
+  let bias;
+  if (isNearATL) {
+    // Always ride recovery regardless of MA signal
+    bias = 0.28;
+    trend = 'UPTREND';
+  } else {
+    const a = Math.abs(momentum);
+    if (trend === 'UPTREND')
+      bias = a < 3 ? 0.35 : a < 6 ? 0.30 : a < 10 ? 0.30 : 0.22;
+    else if (trend === 'DOWNTREND')
+      bias = a < 3 ? 0.65 : a < 6 ? 0.68 : a < 10 ? 0.70 : 0.72;
+    else
+      bias = 0.50;
   }
+  return { trend, momentum, bias, isNearATL };
+}
 
-  const Pb_ta    = swing_high + (0.5 * ATR);
-  const conflict = Pb_ta > Pb_max_apy * 1.05; // 5% tolerance
-  const Pb_final = conflict ? Pb_max_apy : Pb_ta;
-  if (Pb_final <= Pa || Pb_final <= 0) return null;
+// ── FIND PIVOT HIGHS/LOWS ─────────────────────────────────────────────────────
+function findPivots(window) {
+  const H = window.map(c=>c.high), L = window.map(c=>c.low);
+  const ph = [], pl = [];
+  for (let i = 2; i < H.length - 2; i++) {
+    if (H[i]>H[i-1]&&H[i]>H[i-2]&&H[i]>H[i+1]&&H[i]>H[i+2]) ph.push(H[i]);
+    if (L[i]<L[i-1]&&L[i]<L[i-2]&&L[i]<L[i+1]&&L[i]<L[i+2]) pl.push(L[i]);
+  }
+  return { ph, pl };
+}
 
-  const calcMult  = (pa, pb) => { const k = Math.sqrt(pb / pa); return k / (k - 1); };
-  const width_pct = (Pb_final / Pa - 1) * 100;
-  const apy_final = base_APY * calcMult(Pa, Pb_final);
-  const apy_ta    = conflict ? base_APY * calcMult(Pa, Pb_ta) : null;
+// ── COMPUTE 3-RANGE SUGGESTION ────────────────────────────────────────────────
+// Returns { narrow, medium, wide } — no APY floor constraint, user decides
+function computeSuggestedRange(price, swing_low, swing_high, closes, candles_14d, base_APY) {
+  const ATR = price * 0.025;
+  // Base width = observed 14d range as fraction of price
+  const base_width = Math.max(0.10, (swing_high - swing_low) / price);
+  const { trend, momentum, bias, isNearATL } = classifyTrend(closes, price, swing_low, swing_high);
+  const { ph, pl } = findPivots(candles_14d || []);
+  const pivots_below = pl.filter(p => p < price);
+  const pivots_above = ph.filter(p => p > price);
+  const nearest_low  = pivots_below.length ? Math.max(...pivots_below) : null;
+  const nearest_high = pivots_above.length ? Math.min(...pivots_above) : null;
 
-  return { Pa, Pb_final, Pb_ta, Pb_max_apy, conflict, ATR, width_pct, apy_final, apy_ta, swing_low, swing_high };
+  const calcRange = (W) => {
+    let Pa = price / (1 + bias * W);
+    let Pb = Pa * (1 + W);
+    // Pivot snap ±3%
+    if (nearest_low  && Math.abs(nearest_low  - Pa)/Pa < 0.03) { Pa = nearest_low - 0.5*ATR; Pb = Pa*(1+W); }
+    if (nearest_high && Math.abs(nearest_high - Pb)/Pb < 0.03) { Pb = nearest_high + 0.5*ATR; }
+    // Guardrails
+    Pa = Math.max(Pa, price * 0.50);
+    Pb = Math.min(Pb, price * 2.50);
+    if (Pa >= price) Pa = price * 0.92;
+    if (Pb <= price) Pb = price * 1.08;
+    const actual_W = Pb/Pa - 1;
+    const k = Math.sqrt(Pb/Pa);
+    const est_apy = (base_APY && base_APY > 0.5) ? base_APY * k/(k-1) : null;
+    return { Pa, Pb, width: actual_W, est_apy, pos_pct: (price-Pa)/(Pb-Pa)*100 };
+  };
+
+  const narrow = calcRange(Math.max(0.08, base_width * 0.7));
+  const medium = calcRange(Math.max(0.10, base_width * 1.0));
+  const wide   = calcRange(Math.max(0.12, base_width * 1.4));
+
+  return { narrow, medium, wide, trend, momentum, bias, isNearATL, ATR, swing_low, swing_high, base_width };
 }
 
 function autoTrackOutOfRange(status) {
@@ -571,36 +616,36 @@ function computeState() {
     actionState = (nearBoundary || (hoursOut < 24 && fourHCandles < 2)) ? 'MONITOR' : 'REBALANCE';
   }
 
-  // 8. Suggested range — for REBALANCE and INITIAL when 14d data is available
-  // INITIAL uses apyBase from DeFiLlama as base_APY proxy (pool base yield before CL multiplier)
+  // 8. Suggested ranges (3) — for REBALANCE and INITIAL when 14d data available
+  // base_APY used for APY estimates; for INITIAL falls back to DeFiLlama apyBase
   let suggestedRange = null;
-  const baseApyForSuggestion = actionState === 'INITIAL'
-    ? Math.max(2, state.apy?.apyBase || 7)
-    : base_APY;
+  const baseApyForSuggestion = (base_APY && base_APY > 0.5) ? base_APY
+    : Math.max(2, state.apy?.apyBase || 5);
   if ((actionState === 'REBALANCE' || actionState === 'INITIAL') && bin?.swing_low_14d && bin?.swing_high_14d) {
-    suggestedRange = computeSuggestedRange(price, bin.swing_low_14d, bin.swing_high_14d, baseApyForSuggestion, cfg.minApy || 80);
+    const closes14 = (bin.closes || []);
+    suggestedRange = computeSuggestedRange(
+      price, bin.swing_low_14d, bin.swing_high_14d,
+      closes14, state.binance?.candles14d || [], baseApyForSuggestion
+    );
     if (suggestedRange) {
-      const { Pa, Pb_final } = suggestedRange;
+      // Compute swap amounts for MEDIUM range (reference for rebalance action)
+      const med = suggestedRange.medium;
       let swapDirection = 'no_swap', swapAvaxAmt = 0, swapUsdcAmt = 0;
-      if (price > Pa && price < Pb_final) {
-        const sqrtP  = Math.sqrt(price), sqrtPa = Math.sqrt(Pa), sqrtPb = Math.sqrt(Pb_final);
+      if (price > med.Pa && price < med.Pb) {
+        const sqrtP = Math.sqrt(price), sqrtPa = Math.sqrt(med.Pa), sqrtPb = Math.sqrt(med.Pb);
         const avaxFrac = ((1/sqrtP - 1/sqrtPb) * price) /
                          ((1/sqrtP - 1/sqrtPb) * price + (sqrtP - sqrtPa));
         if (status === 'BELOW_RANGE') {
-          // LP is 100% AVAX → sell excess AVAX
-          const curAvax = lpValue / price;
-          swapAvaxAmt   = Math.max(0, curAvax - (lpValue * avaxFrac / price));
+          swapAvaxAmt   = Math.max(0, (lpValue/price) - (lpValue * avaxFrac / price));
           swapDirection = 'sell_avax';
         } else {
-          // LP is 100% USDC → buy AVAX with the fraction that should be in AVAX
           swapUsdcAmt   = Math.max(0, lpValue * avaxFrac);
           swapDirection = 'buy_avax';
         }
       }
       const swapFee = swapDirection === 'sell_avax'
-        ? swapAvaxAmt * price * 0.0005
-        : swapUsdcAmt * 0.0005;
-      Object.assign(suggestedRange, { swapDirection, swapAvaxAmt, swapUsdcAmt, swapFee });
+        ? swapAvaxAmt * price * 0.0005 : swapUsdcAmt * 0.0005;
+      suggestedRange.swap = { direction: swapDirection, avax: swapAvaxAmt, usdc: swapUsdcAmt, fee: swapFee };
     }
   }
 
@@ -718,11 +763,10 @@ function renderRangeHealth(c) {
     pbEl.innerHTML = `<b>${fmt$(c.lpValueAtPb, 0)}</b> <span class="${d >= 0 ? 'pos' : 'neg'}">(${d >= 0 ? '+' : ''}${fmt$(d, 0)} / ${pct}%)</span>`;
   } else { pbEl.innerHTML = '<span style="color:var(--faint)">Enter range in Setup</span>'; }
 
-  const floor = state.config.minApy || 80;
-  const ok    = c.effectiveAPY >= floor;
-  document.getElementById('rh-apy-check').innerHTML =
-    `APY: <b>${c.effectiveAPY?.toFixed(1)}%</b> vs floor <b>${floor}%</b> <span class="${ok ? 'pos' : 'neg'}">${ok ? '✅' : '⚠ below floor'}</span>` +
-    (c.base_APY ? `<span style="color:var(--faint);font-size:10px"> · base ${c.base_APY.toFixed(2)}%</span>` : '');
+  const bApyEl = document.getElementById('rh-apy-check');
+  if (bApyEl) bApyEl.innerHTML = c.base_APY
+    ? `Base pool APY: <b>${c.base_APY.toFixed(2)}%</b> · Effective (with CL multiplier): <b>${c.effectiveAPY?.toFixed(1)}%</b>`
+    : '';
 }
 
 // ── ACTION BLOCK ───────────────────────────────────────────────────────────────
@@ -760,49 +804,65 @@ function renderAction(c) {
 
   } else if (c.actionState === 'REBALANCE') {
     block.classList.add('action-red');
-    title.innerHTML = '🔴 Rebalance needed';
+    title.innerHTML = '🔴 Rebalance needed — choose range';
     const sr = c.suggestedRange;
     if (sr) {
-      const conflict = sr.conflict
-        ? `<div style="color:var(--amber);font-size:11px;margin-bottom:6px">⚠ TA target $${sr.Pb_ta.toFixed(3)} trimmed → $${sr.Pb_final.toFixed(3)} to meet ${state.config.minApy || 80}% APY floor</div>`
-        : '';
-      const swapLine = sr.swapDirection === 'sell_avax'
-        ? `Swap: sell <b>${sr.swapAvaxAmt?.toFixed(1)} AVAX</b> (~$${(sr.swapFee || 0).toFixed(1)} fee)`
-        : sr.swapDirection === 'buy_avax'
-        ? `Swap: buy AVAX with <b>$${sr.swapUsdcAmt?.toFixed(0)} USDC</b> (~$${(sr.swapFee || 0).toFixed(1)} fee)`
-        : 'Swap: verify split on Pharaoh before deploying';
-      const taNote = sr.conflict && sr.apy_ta
-        ? `<div style="font-size:11px;color:var(--muted);margin-top:5px">Full TA range would yield ~${sr.apy_ta.toFixed(0)}% (below your ${state.config.minApy || 80}% floor)</div>`
-        : '';
-      body.innerHTML =
-        `<div style="font-family:var(--mono);font-size:13px;background:rgba(0,0,0,.06);padding:7px 10px;border-radius:6px;margin-bottom:8px">` +
-        `Pa: <b>$${sr.Pa.toFixed(3)}</b> · Pb: <b>$${sr.Pb_final.toFixed(3)}</b> · ${sr.width_pct.toFixed(1)}% wide · ${sr.apy_final.toFixed(0)}% APY</div>` +
-        conflict + swapLine +
-        `<br><span style="color:var(--faint);font-size:11px">14d: $${sr.swing_low?.toFixed(3)}–$${sr.swing_high?.toFixed(3)} · ATR $${sr.ATR?.toFixed(3)}</span>` +
-        taNote;
+      const sw = sr.swap;
+      const swapLine = sw?.direction === 'sell_avax'
+        ? `Swap (medium): sell <b>${sw.avax?.toFixed(1)} AVAX</b> (~$${(sw.fee||0).toFixed(1)} fee)`
+        : sw?.direction === 'buy_avax'
+        ? `Swap (medium): buy AVAX with <b>$${sw.usdc?.toFixed(0)} USDC</b> (~$${(sw.fee||0).toFixed(1)} fee)`
+        : 'Verify split on Pharaoh after setting range';
+      const fmtRow = (label, r, color) => {
+        const apyStr = r.est_apy ? ` · ~${r.est_apy.toFixed(0)}% APY` : '';
+        const roomUp = ((r.Pb - c.price)/c.price*100).toFixed(1);
+        const roomDn = ((c.price - r.Pa)/c.price*100).toFixed(1);
+        return `<div style="display:flex;align-items:baseline;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:4px;background:rgba(0,0,0,.04)">` +
+          `<span style="font-size:11px;font-weight:700;color:${color};width:52px">${label}</span>` +
+          `<span style="font-family:var(--mono);font-size:12px"><b>$${r.Pa.toFixed(3)}</b> – <b>$${r.Pb.toFixed(3)}</b></span>` +
+          `<span style="font-size:11px;color:var(--muted)">${(r.width*100).toFixed(1)}%${apyStr}</span>` +
+          `<span style="font-size:10px;color:var(--faint)">↑${roomUp}% ↓${roomDn}%</span></div>`;
+      };
+      const atl = sr.isNearATL ? `<div style="font-size:11px;color:var(--amber);margin-bottom:5px">⚠ ATL override — uptrend bias</div>` : '';
+      body.innerHTML = atl +
+        fmtRow('NARROW', sr.narrow, '#16a34a') +
+        fmtRow('MEDIUM', sr.medium, '#2563eb') +
+        fmtRow('WIDE',   sr.wide,   '#7c3aed') +
+        `<div style="margin-top:8px;font-size:12px">${swapLine}</div>` +
+        `<div style="font-size:11px;color:var(--faint);margin-top:4px">` +
+        `14d: $${sr.swing_low.toFixed(3)}–$${sr.swing_high.toFixed(3)} · ATR $${sr.ATR.toFixed(3)} · bias ${(sr.bias*100).toFixed(0)}% from bottom</div>`;
     } else {
-      body.innerHTML = `${c.hoursOut.toFixed(1)}h out of range · <span style="color:var(--faint);font-size:12px">14d data loading — refresh to get range suggestion</span>`;
+      body.innerHTML = `${c.hoursOut.toFixed(1)}h out of range · <span style="color:var(--faint);font-size:12px">14d data loading — refresh to get range suggestions</span>`;
     }
-    sub.innerHTML = `<span>${guard}</span><span>Trend: ${trendStr}</span><span style="color:var(--faint);font-size:11px">After rebalance: update Range in Setup ⚙</span>`;
+    sub.innerHTML = `<span>${guard}</span><span>Trend: ${sr ? sr.trend : trendStr}</span><span style="color:var(--faint);font-size:11px">Update Range in Setup ⚙ after deploying</span>`;
 
   } else if (c.actionState === 'INITIAL') {
     block.classList.add('action-blue');
-    title.innerHTML = '🔵 Set initial range';
+    title.innerHTML = '🔵 Set initial range — choose width';
     const sr = c.suggestedRange;
     if (sr) {
-      const conflict = sr.conflict
-        ? `<div style="color:var(--amber);font-size:11px;margin-bottom:6px">⚠ TA target $${sr.Pb_ta.toFixed(3)} trimmed → $${sr.Pb_final.toFixed(3)} to meet ${state.config.minApy || 80}% APY floor</div>`
-        : '';
-      body.innerHTML =
-        `<div style="font-family:var(--mono);font-size:13px;background:rgba(0,0,0,.06);padding:7px 10px;border-radius:6px;margin-bottom:8px">` +
-        `Pa: <b>$${sr.Pa.toFixed(3)}</b> · Pb: <b>$${sr.Pb_final.toFixed(3)}</b> · ${sr.width_pct.toFixed(1)}% wide · est. ${sr.apy_final.toFixed(0)}% APY</div>` +
-        conflict +
-        `<span style="color:var(--muted);font-size:12px">Based on 14d swing $${sr.swing_low?.toFixed(3)}–$${sr.swing_high?.toFixed(3)} · ATR $${sr.ATR?.toFixed(3)}</span><br>` +
-        `<span style="color:var(--faint);font-size:11px">Enter these in Setup ⚙ → Range Low / Range High → Save</span>`;
+      const fmtRow = (label, r, color) => {
+        const apyStr = r.est_apy ? ` · ~${r.est_apy.toFixed(0)}% APY` : '';
+        const roomUp = ((r.Pb - c.price)/c.price*100).toFixed(1);
+        const roomDn = ((c.price - r.Pa)/c.price*100).toFixed(1);
+        return `<div style="display:flex;align-items:baseline;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:4px;background:rgba(0,0,0,.04)">` +
+          `<span style="font-size:11px;font-weight:700;color:${color};width:52px">${label}</span>` +
+          `<span style="font-family:var(--mono);font-size:12px"><b>$${r.Pa.toFixed(3)}</b> – <b>$${r.Pb.toFixed(3)}</b></span>` +
+          `<span style="font-size:11px;color:var(--muted)">${(r.width*100).toFixed(1)}%${apyStr}</span>` +
+          `<span style="font-size:10px;color:var(--faint)">↑${roomUp}% ↓${roomDn}%</span></div>`;
+      };
+      const atl = sr.isNearATL ? `<div style="font-size:11px;color:var(--amber);margin-bottom:6px">⚠ ATL override active — uptrend bias applied (raw signal: DOWNTREND)</div>` : '';
+      body.innerHTML = atl +
+        fmtRow('NARROW', sr.narrow, '#16a34a') +
+        fmtRow('MEDIUM', sr.medium, '#2563eb') +
+        fmtRow('WIDE',   sr.wide,   '#7c3aed') +
+        `<div style="font-size:11px;color:var(--faint);margin-top:6px">` +
+        `14d: $${sr.swing_low.toFixed(3)}–$${sr.swing_high.toFixed(3)} · ATR $${sr.ATR.toFixed(3)} · ` +
+        `bias ${(sr.bias*100).toFixed(0)}% from bottom · Enter chosen Pa/Pb in Setup ⚙</div>`;
     } else {
-      body.innerHTML = `<span style="color:var(--muted);font-size:13px">Loading 14d data — refresh in a moment to get range suggestion</span>`;
+      body.innerHTML = `<span style="color:var(--muted);font-size:13px">Loading 14d data — refresh to get range suggestions</span>`;
     }
-    sub.innerHTML = `<span>No range set yet</span><span>Trend: ${trendStr}</span>`;
+    sub.innerHTML = `<span>No range set yet</span><span>Trend: ${sr ? sr.trend : trendStr}</span>`;
 
   } else if (c.actionState === 'HOLD') {
     block.classList.add('action-hold');
@@ -817,33 +877,36 @@ function renderAction(c) {
 // REBALANCE → claude-sonnet-4-6, 400 tokens: needs range math + exact swap instructions
 // EARNING / MONITOR / HOLD → claude-haiku-4-5-20251001, 200 tokens: brief status + watch levels
 const SYS = {
-  INITIAL: `You are an LP placement advisor for a Pharaoh AVAX/USDC concentrated liquidity position being deployed for the first time. Respond in exactly this format:
+  INITIAL: `You are an LP placement advisor for a Pharaoh AVAX/USDC concentrated liquidity position being deployed for the first time. Three range options are provided in RANGE_DATA. Respond in exactly this format:
 
-STATUS: [one emoji] [one sentence on current price context and market momentum]
+STATUS: [one emoji] [one sentence on current price context and whether this is a good entry]
 
-ACTION:
-① Set Range Low (Pa) to $X.XXX in Setup ⚙
-② Set Range High (Pb) to $X.XXX in Setup ⚙  
-③ [one sentence on why this range — reference 14d swing high/low from RANGE_DATA]
-④ Check Pharaoh UI to confirm APY estimate before deploying
-
-RISK: [one sentence on key risk at this entry point]
-
-Rules: Use Pa and Pb from RANGE_DATA exactly. Max 130 words. No markdown.`,
-
-  REBALANCE: `You are an LP rebalance advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Respond in exactly this format:
-
-STATUS: [one emoji] [one sentence describing what triggered the rebalance and current price context]
+RECOMMEND: [NARROW or MEDIUM or WIDE] — [one sentence explaining why given current trend and volatility]
 
 ACTION:
-① [new range from RANGE_DATA: Pa $X.XXX → Pb $X.XXX · width% wide · est_apy% APY — note if conflict=true means TA upside was trimmed for APY floor]
-② [exact swap from RANGE_DATA: sell/buy exact amount with approx fee in dollars]
-③ Deploy on Pharaoh with new range Pa and Pb
-④ Open Setup ⚙ → update Range Low and Range High → Save
+① Set Range Low to Pa of your chosen range in Setup ⚙
+② Set Range High to Pb of your chosen range in Setup ⚙
+③ [one sentence: what would cause you to reconsider the width choice]
+④ Check Pharaoh UI APY before deploying — use it to update APY Override in Setup
 
-RISK: [one sentence on the biggest risk in this rebalance]
+RISK: [one sentence on biggest risk at this entry]
 
-Rules: Use numbers from RANGE_DATA exactly. Do not invent numbers. Max 140 words. No markdown.`,
+Rules: Reference exact Pa/Pb numbers from RANGE_DATA for the recommended range. Max 140 words. No markdown.`,
+
+  REBALANCE: `You are an LP rebalance advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Three range options are in RANGE_DATA. Respond in exactly this format:
+
+STATUS: [one emoji] [one sentence on what triggered rebalance and price context]
+
+RECOMMEND: [NARROW or MEDIUM or WIDE] — [one sentence: why this width given current momentum and volatility]
+
+ACTION:
+① Deploy chosen range: Pa $X.XXX → Pb $X.XXX from RANGE_DATA
+② [swap from RANGE_DATA swap_dir/swap_avax/swap_usdc — adjusted proportionally if not using medium range]
+③ Open Setup ⚙ → update Range Low and Range High → Save
+
+RISK: [one sentence on biggest risk in this rebalance]
+
+Rules: Use Pa/Pb/swap numbers from RANGE_DATA exactly for medium; adjust swap proportionally for narrow/wide. Max 140 words. No markdown.`,
 
   EARNING: `You are an LP position monitor. Respond in exactly this format:
 
@@ -898,13 +961,18 @@ function buildPrompt(c) {
     `ATR:${c.ATR?.toFixed(3)}|TREND:${c.trend}|` +
     `7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|CLOSES:${closes}|` +
     `GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}`;
-  if (c.actionState === 'REBALANCE' && c.suggestedRange) {
+  if ((c.actionState === 'REBALANCE' || c.actionState === 'INITIAL') && c.suggestedRange) {
     const sr = c.suggestedRange;
-    p += `|RANGE_DATA:Pa=${sr.Pa.toFixed(3)},Pb=${sr.Pb_final.toFixed(3)},` +
-      `width=${sr.width_pct.toFixed(1)}%,est_apy=${sr.apy_final.toFixed(0)}%,` +
-      `swap_dir=${sr.swapDirection},swap_avax=${sr.swapAvaxAmt?.toFixed(1)},` +
-      `swap_usdc=${sr.swapUsdcAmt?.toFixed(0)},fee=${sr.swapFee?.toFixed(1)},` +
-      `14d=${sr.swing_low?.toFixed(3)}-${sr.swing_high?.toFixed(3)},conflict=${sr.conflict}`;
+    const sw = sr.swap || {};
+    const fmtR = r => `Pa=${r.Pa.toFixed(3)},Pb=${r.Pb.toFixed(3)},w=${(r.width*100).toFixed(1)}%` +
+      (r.est_apy ? `,apy=${r.est_apy.toFixed(0)}%` : '');
+    p += `|RANGE_DATA:` +
+      `narrow(${fmtR(sr.narrow)})|` +
+      `medium(${fmtR(sr.medium)})|` +
+      `wide(${fmtR(sr.wide)})|` +
+      `swap_dir=${sw.direction},swap_avax=${(sw.avax||0).toFixed(1)},swap_usdc=${(sw.usdc||0).toFixed(0)},fee=${(sw.fee||0).toFixed(1)}|` +
+      `14d=${sr.swing_low?.toFixed(3)}-${sr.swing_high?.toFixed(3)}|` +
+      `ATL_override=${sr.isNearATL}|bias=${sr.bias}|trend=${sr.trend}`;
   }
   return p;
 }
@@ -1271,6 +1339,7 @@ function renderDebug() {
   html += row('Initial LP:', cfg.initialLpValue ? `$${cfg.initialLpValue.toFixed(0)}` : 'NOT SET', !!cfg.initialLpValue);
   html += row('Range:', `${cfg.rangeLow || '—'} – ${cfg.rangeHigh || '—'}`, !!(cfg.rangeLow && cfg.rangeHigh));
   html += row('Base APY (calc):', state.computed?.base_APY ? `${state.computed.base_APY.toFixed(2)}%` : '—', null);
+  html += row('ATL override:', state.computed?.suggestedRange?.isNearATL ? 'YES' : 'no', null);
   html += row('Range exit ts:', S.get('range_exit_ts') ? new Date(S.get('range_exit_ts')).toLocaleTimeString() : 'none', null);
   const c = state.computed;
   if (c.price) {
@@ -1283,10 +1352,11 @@ function renderDebug() {
     html += row('ATR:', `$${c.ATR?.toFixed(3)}`, null);
     if (c.suggestedRange) {
       const sr = c.suggestedRange;
-      html += row('Suggested Pa:', `$${sr.Pa.toFixed(3)}`, null);
-      html += row('Suggested Pb:', `$${sr.Pb_final.toFixed(3)} (${sr.conflict ? 'APY-capped' : 'TA'})`, null);
-      html += row('Est APY:', `${sr.apy_final.toFixed(0)}%`, null);
-      html += row('Swap:', `${sr.swapDirection} — AVAX:${sr.swapAvaxAmt?.toFixed(2)} USDC:${sr.swapUsdcAmt?.toFixed(0)}`, null);
+      const sw = sr.swap || {};
+      html += row('Narrow:', `$${sr.narrow.Pa.toFixed(3)}–$${sr.narrow.Pb.toFixed(3)} ${(sr.narrow.width*100).toFixed(1)}%${sr.narrow.est_apy?` ~${sr.narrow.est_apy.toFixed(0)}% APY`:''}`, null);
+      html += row('Medium:', `$${sr.medium.Pa.toFixed(3)}–$${sr.medium.Pb.toFixed(3)} ${(sr.medium.width*100).toFixed(1)}%${sr.medium.est_apy?` ~${sr.medium.est_apy.toFixed(0)}% APY`:''}`, null);
+      html += row('Wide:', `$${sr.wide.Pa.toFixed(3)}–$${sr.wide.Pb.toFixed(3)} ${(sr.wide.width*100).toFixed(1)}%${sr.wide.est_apy?` ~${sr.wide.est_apy.toFixed(0)}% APY`:''}`, null);
+      html += row('Swap (med):', `${sw.direction} AVAX:${(sw.avax||0).toFixed(2)} USDC:${(sw.usdc||0).toFixed(0)}`, null);
     }
   }
   document.getElementById('debug-content').innerHTML = html;
@@ -1327,7 +1397,7 @@ function resetAll() {
   keys.forEach(k => localStorage.removeItem('lpc_' + k));
   state.config = {}; state.computed = {};
   // Clear all form fields
-  ['s-eavax','s-eusdc','s-eprice','s-rlow','s-rhigh','s-apy','s-minapy'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  ['s-eavax','s-eusdc','s-eprice','s-rlow','s-rhigh','s-apy'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('setup-computed').style.display = 'none';
   document.getElementById('analysis-output').style.display = 'none';
   renderLog(); renderCashFlow();
