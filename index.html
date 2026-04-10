@@ -62,6 +62,7 @@ body{font-family:var(--sans);background:var(--bg);color:var(--text);font-size:14
 .action-amber{background:var(--amber-bg);border:1.5px solid var(--amber-b)}
 .action-red{background:var(--red-bg);border:1.5px solid var(--red-b)}
 .action-hold{background:var(--purple-bg);border:1.5px solid var(--purple-b)}
+.action-blue{background:var(--blue-bg);border:1.5px solid var(--blue-b)}
 .action-title{font-size:15px;font-weight:700;margin-bottom:6px}
 .action-body{font-size:13px;line-height:1.75}
 .action-sub{display:flex;gap:16px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(0,0,0,.08);font-size:12px;color:var(--muted);flex-wrap:wrap}
@@ -558,9 +559,11 @@ function computeState() {
     ? (price <= guardFloor ? 'TRIGGERED' : price <= guardFloor * 1.05 ? 'NEAR' : 'OK')
     : 'OK';
 
-  // 7. Action state (4 states)
+  // 7. Action state (5 states)
   let actionState = 'EARNING';
-  if (guardStatus === 'TRIGGERED') {
+  if (!rangeLow || !rangeHigh) {
+    actionState = 'INITIAL';
+  } else if (guardStatus === 'TRIGGERED') {
     actionState = 'HOLD';
   } else if (status !== 'IN_RANGE') {
     const nearBoundary = (status === 'BELOW_RANGE' && (rangeLow - price) < ATR) ||
@@ -568,10 +571,14 @@ function computeState() {
     actionState = (nearBoundary || (hoursOut < 24 && fourHCandles < 2)) ? 'MONITOR' : 'REBALANCE';
   }
 
-  // 8. Suggested range — computed only for REBALANCE and when 14d data is available
+  // 8. Suggested range — for REBALANCE and INITIAL when 14d data is available
+  // INITIAL uses apyBase from DeFiLlama as base_APY proxy (pool base yield before CL multiplier)
   let suggestedRange = null;
-  if (actionState === 'REBALANCE' && bin?.swing_low_14d && bin?.swing_high_14d) {
-    suggestedRange = computeSuggestedRange(price, bin.swing_low_14d, bin.swing_high_14d, base_APY, cfg.minApy || 80);
+  const baseApyForSuggestion = actionState === 'INITIAL'
+    ? Math.max(2, state.apy?.apyBase || 7)
+    : base_APY;
+  if ((actionState === 'REBALANCE' || actionState === 'INITIAL') && bin?.swing_low_14d && bin?.swing_high_14d) {
+    suggestedRange = computeSuggestedRange(price, bin.swing_low_14d, bin.swing_high_14d, baseApyForSuggestion, cfg.minApy || 80);
     if (suggestedRange) {
       const { Pa, Pb_final } = suggestedRange;
       let swapDirection = 'no_swap', swapAvaxAmt = 0, swapUsdcAmt = 0;
@@ -778,6 +785,25 @@ function renderAction(c) {
     }
     sub.innerHTML = `<span>${guard}</span><span>Trend: ${trendStr}</span><span style="color:var(--faint);font-size:11px">After rebalance: update Range in Setup ⚙</span>`;
 
+  } else if (c.actionState === 'INITIAL') {
+    block.classList.add('action-blue');
+    title.innerHTML = '🔵 Set initial range';
+    const sr = c.suggestedRange;
+    if (sr) {
+      const conflict = sr.conflict
+        ? `<div style="color:var(--amber);font-size:11px;margin-bottom:6px">⚠ TA target $${sr.Pb_ta.toFixed(3)} trimmed → $${sr.Pb_final.toFixed(3)} to meet ${state.config.minApy || 80}% APY floor</div>`
+        : '';
+      body.innerHTML =
+        `<div style="font-family:var(--mono);font-size:13px;background:rgba(0,0,0,.06);padding:7px 10px;border-radius:6px;margin-bottom:8px">` +
+        `Pa: <b>$${sr.Pa.toFixed(3)}</b> · Pb: <b>$${sr.Pb_final.toFixed(3)}</b> · ${sr.width_pct.toFixed(1)}% wide · est. ${sr.apy_final.toFixed(0)}% APY</div>` +
+        conflict +
+        `<span style="color:var(--muted);font-size:12px">Based on 14d swing $${sr.swing_low?.toFixed(3)}–$${sr.swing_high?.toFixed(3)} · ATR $${sr.ATR?.toFixed(3)}</span><br>` +
+        `<span style="color:var(--faint);font-size:11px">Enter these in Setup ⚙ → Range Low / Range High → Save</span>`;
+    } else {
+      body.innerHTML = `<span style="color:var(--muted);font-size:13px">Loading 14d data — refresh in a moment to get range suggestion</span>`;
+    }
+    sub.innerHTML = `<span>No range set yet</span><span>Trend: ${trendStr}</span>`;
+
   } else if (c.actionState === 'HOLD') {
     block.classList.add('action-hold');
     title.innerHTML = '🟣 Hold — do not rebalance';
@@ -791,6 +817,20 @@ function renderAction(c) {
 // REBALANCE → claude-sonnet-4-6, 400 tokens: needs range math + exact swap instructions
 // EARNING / MONITOR / HOLD → claude-haiku-4-5-20251001, 200 tokens: brief status + watch levels
 const SYS = {
+  INITIAL: `You are an LP placement advisor for a Pharaoh AVAX/USDC concentrated liquidity position being deployed for the first time. Respond in exactly this format:
+
+STATUS: [one emoji] [one sentence on current price context and market momentum]
+
+ACTION:
+① Set Range Low (Pa) to $X.XXX in Setup ⚙
+② Set Range High (Pb) to $X.XXX in Setup ⚙  
+③ [one sentence on why this range — reference 14d swing high/low from RANGE_DATA]
+④ Check Pharaoh UI to confirm APY estimate before deploying
+
+RISK: [one sentence on key risk at this entry point]
+
+Rules: Use Pa and Pb from RANGE_DATA exactly. Max 130 words. No markdown.`,
+
   REBALANCE: `You are an LP rebalance advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Respond in exactly this format:
 
 STATUS: [one emoji] [one sentence describing what triggered the rebalance and current price context]
@@ -839,12 +879,14 @@ Rules: Max 65 words. No markdown.`
 };
 
 function selectModel(actionState) {
-  // Sonnet for rebalance: needs range reasoning + exact swap instructions
-  // Haiku for monitoring: brief status + watch levels only
+  // Sonnet for rebalance: needs range math + exact swap instructions
+  // Haiku for initial/monitoring: structured placement or brief status
   return actionState === 'REBALANCE' ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
 }
 function selectTokens(actionState) {
-  return actionState === 'REBALANCE' ? 400 : 200;
+  if (actionState === 'REBALANCE') return 400;
+  if (actionState === 'INITIAL')   return 300; // more room for placement rationale
+  return 200;
 }
 
 function buildPrompt(c) {
