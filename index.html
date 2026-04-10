@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AVAX LP — Pharaoh v2.2</title>
+<title>AVAX LP — Pharaoh v2.3</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -90,7 +90,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
 <div class="app-header">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:12px;font-weight:600;color:var(--muted)">AVAX/USDC · Pharaoh CL</span><span style="font-size:10px;font-weight:700;color:var(--faint);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:1px 6px;border-radius:4px">v2.2</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:12px;font-weight:600;color:var(--muted)">AVAX/USDC · Pharaoh CL</span><span style="font-size:10px;font-weight:700;color:var(--faint);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:1px 6px;border-radius:4px">v2.3</span></div>
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="price-big" id="price-display">—</div>
         <div id="price-change" style="font-size:13px;color:var(--muted)">—</div>
@@ -519,10 +519,19 @@ function computeSuggestedRange(price, swing_low, swing_high, closes, candles_14d
     Pb = Math.min(Pb, price * 2.50);
     if (Pa >= price) Pa = price * 0.92;
     if (Pb <= price) Pb = price * 1.08;
-    const actual_W = Pb/Pa - 1;
-    const k = Math.sqrt(Pb/Pa);
-    const est_apy = (base_APY && base_APY > 0.5) ? base_APY * k/(k-1) : null;
-    return { Pa, Pb, width: actual_W, est_apy, pos_pct: (price-Pa)/(Pb-Pa)*100 };
+    const actual_W  = Pb/Pa - 1;
+    const k         = Math.sqrt(Pb/Pa);
+    const est_apy   = (base_APY && base_APY > 0.5) ? base_APY * k/(k-1) : null;
+    const room_up   = (Pb - price) / price * 100;    // % room above before OOR
+    const room_dn   = (price - Pa) / price * 100;    // % room below before OOR
+    const days_oor  = parseFloat((room_up / 2.5).toFixed(1)); // est days at 2.5% daily vol
+    // OOR risk: based on room_up vs ATR multiples
+    const atr_mult  = (Pb - price) / ATR;
+    const oor_risk  = atr_mult < 1.5 ? 'HIGH' : atr_mult < 2.5 ? 'MEDIUM' : 'LOW';
+    // Net monthly yield estimate after rebalance friction ($8/rebal)
+    const gross_mo  = est_apy ? (est_apy/100/12) * (price * 100) : null; // rough per $100 notional
+    return { Pa, Pb, width: actual_W, est_apy, pos_pct: (price-Pa)/(Pb-Pa)*100,
+             room_up, room_dn, days_oor, oor_risk, atr_mult };
   };
 
   const narrow = calcRange(Math.max(0.08, base_width * 0.7));
@@ -828,15 +837,19 @@ function renderAction(c) {
         : 'Verify split on Pharaoh after setting range';
       const apyNote2 = sr.apyReliable
         ? '' : ' <span style="color:var(--amber);font-size:9px">⚠ est</span>';
+      const oorColor2 = risk => risk==='HIGH'?'#dc2626':risk==='MEDIUM'?'#d97706':'#16a34a';
       const fmtRow = (label, r, color) => {
-        const apyStr = r.est_apy ? ` · ~${r.est_apy.toFixed(0)}% APY${apyNote2}` : '';
-        const roomUp = ((r.Pb - c.price)/c.price*100).toFixed(1);
-        const roomDn = ((c.price - r.Pa)/c.price*100).toFixed(1);
-        return `<div style="display:flex;align-items:baseline;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:4px;background:rgba(0,0,0,.04)">` +
-          `<span style="font-size:11px;font-weight:700;color:${color};width:52px">${label}</span>` +
-          `<span style="font-family:var(--mono);font-size:12px"><b>$${r.Pa.toFixed(3)}</b> – <b>$${r.Pb.toFixed(3)}</b></span>` +
-          `<span style="font-size:11px;color:var(--muted)">${(r.width*100).toFixed(1)}%${apyStr}</span>` +
-          `<span style="font-size:10px;color:var(--faint)">↑${roomUp}% ↓${roomDn}%</span></div>`;
+        const apyStr  = r.est_apy ? ` ~${r.est_apy.toFixed(0)}% APY${apyNote2}` : '';
+        const cap     = c.capital || 4700;
+        const gross   = r.est_apy ? (r.est_apy/100/12)*cap : 0;
+        const rebals  = 30 / Math.max(r.days_oor, 0.5);
+        const net_mo  = r.est_apy ? `$${(gross - rebals*8).toFixed(0)}/mo` : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:4px;background:rgba(0,0,0,.04);gap:4px">` +
+          `<span style="font-size:11px;font-weight:700;color:${color};width:52px;flex-shrink:0">${label}</span>` +
+          `<span style="font-family:var(--mono);font-size:12px"><b>$${r.Pa.toFixed(3)}</b>–<b>$${r.Pb.toFixed(3)}</b></span>` +
+          `<span style="font-size:10px;color:var(--muted);text-align:right">${apyStr ? apyStr.trim() : (r.width*100).toFixed(1)+'%'}</span>` +
+          `<span style="font-size:10px;font-weight:600;color:${oorColor2(r.oor_risk)};white-space:nowrap">${r.oor_risk||''} ~${r.days_oor||'?'}d</span>` +
+          `<span style="font-size:10px;color:var(--green);white-space:nowrap">${net_mo}</span></div>`;
       };
       const atlNote2 = sr.isNearATL ? `<div style="font-size:11px;color:var(--amber);margin-bottom:5px">⚠ ATL override — uptrend bias</div>` : '';
       const apyWarning2 = !sr.apyReliable
@@ -861,15 +874,19 @@ function renderAction(c) {
     if (sr) {
       const apyNote = sr.apyReliable
         ? '' : ' <span style="color:var(--amber);font-size:9px">⚠ est</span>';
+      const oorColor = risk => risk==='HIGH'?'#dc2626':risk==='MEDIUM'?'#d97706':'#16a34a';
       const fmtRow = (label, r, color) => {
-        const apyStr = r.est_apy ? ` · ~${r.est_apy.toFixed(0)}% APY${apyNote}` : '';
-        const roomUp = ((r.Pb - c.price)/c.price*100).toFixed(1);
-        const roomDn = ((c.price - r.Pa)/c.price*100).toFixed(1);
-        return `<div style="display:flex;align-items:baseline;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:4px;background:rgba(0,0,0,.04)">` +
-          `<span style="font-size:11px;font-weight:700;color:${color};width:52px">${label}</span>` +
-          `<span style="font-family:var(--mono);font-size:12px"><b>$${r.Pa.toFixed(3)}</b> – <b>$${r.Pb.toFixed(3)}</b></span>` +
-          `<span style="font-size:11px;color:var(--muted)">${(r.width*100).toFixed(1)}%${apyStr}</span>` +
-          `<span style="font-size:10px;color:var(--faint)">↑${roomUp}% ↓${roomDn}%</span></div>`;
+        const apyStr  = r.est_apy ? ` · ~${r.est_apy.toFixed(0)}% APY${apyNote}` : '';
+        const cap     = c.capital || 4700;
+        const gross   = r.est_apy ? (r.est_apy/100/12)*cap : 0;
+        const rebals  = 30 / Math.max(r.days_oor, 0.5);
+        const net_mo  = r.est_apy ? `$${(gross - rebals*8).toFixed(0)}/mo` : '';
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:6px;margin-bottom:4px;background:rgba(0,0,0,.04);gap:4px">` +
+          `<span style="font-size:11px;font-weight:700;color:${color};width:52px;flex-shrink:0">${label}</span>` +
+          `<span style="font-family:var(--mono);font-size:12px"><b>$${r.Pa.toFixed(3)}</b>–<b>$${r.Pb.toFixed(3)}</b></span>` +
+          `<span style="font-size:10px;color:var(--muted);text-align:right">${apyStr ? apyStr.trim() : (r.width*100).toFixed(1)+'%'}</span>` +
+          `<span style="font-size:10px;font-weight:600;color:${oorColor(r.oor_risk)};white-space:nowrap">${r.oor_risk||''} ~${r.days_oor||'?'}d</span>` +
+          `<span style="font-size:10px;color:var(--green);white-space:nowrap">${net_mo}</span></div>`;
       };
       const atlNote = sr.isNearATL ? `<div style="font-size:11px;color:var(--amber);margin-bottom:6px">⚠ ATL override active — uptrend bias applied (raw signal: DOWNTREND)</div>` : '';
       const apyWarning = !sr.apyReliable
@@ -900,36 +917,54 @@ function renderAction(c) {
 // REBALANCE → claude-sonnet-4-6, 400 tokens: needs range math + exact swap instructions
 // EARNING / MONITOR / HOLD → claude-haiku-4-5-20251001, 200 tokens: brief status + watch levels
 const SYS = {
-  INITIAL: `You are an LP placement advisor for a Pharaoh AVAX/USDC concentrated liquidity position being deployed for the first time. Three range options are provided in RANGE_DATA. Respond in exactly this format:
+  INITIAL: `You are an LP placement advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Three range options with OOR risk ratings are in RANGE_DATA. Your job is to recommend the best width balancing yield and staying in range.
 
-STATUS: [one emoji] [one sentence on current price context and whether this is a good entry]
+Key rules for recommendation:
+- oor_risk=HIGH means price exits range in ~1-2 days — avoid unless momentum is FLAT
+- If momentum_signal=ACTIVE_BOUNCE (>8% 4d move), price likely breaks NARROW upper bound soon — prefer MEDIUM or WIDE
+- If momentum_signal=FLAT and trend=SIDEWAYS, NARROW maximises net yield
+- Always compare net_mo (yield after rebalance friction) not gross APY
+- ATL_override=true means recovery expected — bias toward WIDE for runway
 
-RECOMMEND: [NARROW or MEDIUM or WIDE] — [one sentence explaining why given current trend and volatility]
+Respond in exactly this format:
 
-ACTION:
-① Set Range Low to Pa of your chosen range in Setup ⚙
-② Set Range High to Pb of your chosen range in Setup ⚙
-③ [one sentence: what would cause you to reconsider the width choice]
-④ Check Pharaoh UI APY before deploying — use it to update APY Override in Setup
+STATUS: [one emoji] [one sentence: price context and momentum signal]
 
-RISK: [one sentence on biggest risk at this entry]
-
-Rules: Reference exact Pa/Pb numbers from RANGE_DATA for the recommended range. Max 140 words. No markdown.`,
-
-  REBALANCE: `You are an LP rebalance advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Three range options are in RANGE_DATA. Respond in exactly this format:
-
-STATUS: [one emoji] [one sentence on what triggered rebalance and price context]
-
-RECOMMEND: [NARROW or MEDIUM or WIDE] — [one sentence: why this width given current momentum and volatility]
+RECOMMEND: [NARROW or MEDIUM or WIDE] — [one sentence: reference oor_risk and net_mo to justify]
 
 ACTION:
-① Deploy chosen range: Pa $X.XXX → Pb $X.XXX from RANGE_DATA
-② [swap from RANGE_DATA swap_dir/swap_avax/swap_usdc — adjusted proportionally if not using medium range]
+① Set Range Low to $X.XXX in Setup ⚙
+② Set Range High to $X.XXX in Setup ⚙
+③ [condition that would make you switch width — be specific with price level]
+④ Check Pharaoh UI APY → update APY Override in Setup before deploying
+
+RISK: [one sentence]
+
+Rules: Use exact Pa/Pb from RANGE_DATA. State days_oor for chosen range. Max 150 words. No markdown.`,
+
+  REBALANCE: `You are an LP rebalance advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Three range options with OOR risk and net monthly yield are in RANGE_DATA.
+
+Key rules for recommendation:
+- oor_risk=HIGH means rebalancing again in 1-2 days — avoid, pick wider
+- If momentum_signal=ACTIVE_BOUNCE, price is mid-move — MEDIUM or WIDE to avoid immediate OOR
+- If momentum_signal=FLAT, NARROW captures best net_mo if oor_risk is LOW or MEDIUM
+- Compare net_mo across options — sometimes MEDIUM beats NARROW after friction costs
+- ATL_override=true — use WIDE, recovery moves are fast and unpredictable
+
+Respond in exactly this format:
+
+STATUS: [one emoji] [one sentence: what triggered rebalance, direction, momentum context]
+
+RECOMMEND: [NARROW or MEDIUM or WIDE] — [reference oor_risk and net_mo, state days_oor]
+
+ACTION:
+① Deploy: Pa $X.XXX → Pb $X.XXX (from chosen range in RANGE_DATA)
+② [swap from RANGE_DATA — swap_dir/avax/usdc; note if adjusted for non-medium range]
 ③ Open Setup ⚙ → update Range Low and Range High → Save
 
-RISK: [one sentence on biggest risk in this rebalance]
+RISK: [one sentence]
 
-Rules: Use Pa/Pb/swap numbers from RANGE_DATA exactly for medium; adjust swap proportionally for narrow/wide. Max 140 words. No markdown.`,
+Rules: Use exact Pa/Pb numbers. Max 150 words. No markdown.`,
 
   EARNING: `You are an LP position monitor. Respond in exactly this format:
 
@@ -985,17 +1020,31 @@ function buildPrompt(c) {
     `7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|CLOSES:${closes}|` +
     `GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}`;
   if ((c.actionState === 'REBALANCE' || c.actionState === 'INITIAL') && c.suggestedRange) {
-    const sr = c.suggestedRange;
-    const sw = sr.swap || {};
-    const fmtR = r => `Pa=${r.Pa.toFixed(3)},Pb=${r.Pb.toFixed(3)},w=${(r.width*100).toFixed(1)}%` +
-      (r.est_apy ? `,apy=${r.est_apy.toFixed(0)}%` : '');
+    const sr  = c.suggestedRange;
+    const sw  = sr.swap || {};
+    const cap = c.capital || 4700;
+    const fmtR = r => {
+      const apyStr  = r.est_apy ? `,apy=${r.est_apy.toFixed(0)}%` : '';
+      // Net monthly = gross APY monthly − rebalance friction
+      const gross_mo = r.est_apy ? (r.est_apy/100/12) * cap : 0;
+      const rebals_mo = 30 / Math.max(r.days_oor, 0.5);
+      const net_mo   = r.est_apy ? (gross_mo - rebals_mo * 8).toFixed(0) : '?';
+      return `Pa=${r.Pa.toFixed(3)},Pb=${r.Pb.toFixed(3)},w=${(r.width*100).toFixed(1)}%` +
+        apyStr + `,oor_risk=${r.oor_risk},days_oor=~${r.days_oor}d` +
+        `,net_mo=$${net_mo}`;
+    };
+    // Momentum signal for AI context
+    const mom4d     = sr.momentum?.toFixed(1) || '0';
+    const momSignal = Math.abs(sr.momentum || 0) > 8 ? 'ACTIVE_BOUNCE' :
+                      Math.abs(sr.momentum || 0) > 3 ? 'TRENDING' : 'FLAT';
     p += `|RANGE_DATA:` +
       `narrow(${fmtR(sr.narrow)})|` +
       `medium(${fmtR(sr.medium)})|` +
       `wide(${fmtR(sr.wide)})|` +
       `swap_dir=${sw.direction},swap_avax=${(sw.avax||0).toFixed(1)},swap_usdc=${(sw.usdc||0).toFixed(0)},fee=${(sw.fee||0).toFixed(1)}|` +
       `14d=${sr.swing_low?.toFixed(3)}-${sr.swing_high?.toFixed(3)}|` +
-      `ATL_override=${sr.isNearATL}|bias=${sr.bias}|trend=${sr.trend}`;
+      `ATL_override=${sr.isNearATL}|bias=${sr.bias}|trend=${sr.trend}|` +
+      `momentum=${mom4d}%|momentum_signal=${momSignal}|capital=$${cap.toFixed(0)}`;
   }
   return p;
 }
