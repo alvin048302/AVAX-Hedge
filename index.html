@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AVAX LP — Pharaoh v2.3</title>
+<title>AVAX LP — Pharaoh v2.4</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -90,7 +90,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
 <div class="app-header">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:12px;font-weight:600;color:var(--muted)">AVAX/USDC · Pharaoh CL</span><span style="font-size:10px;font-weight:700;color:var(--faint);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:1px 6px;border-radius:4px">v2.3</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:12px;font-weight:600;color:var(--muted)">AVAX/USDC · Pharaoh CL</span><span style="font-size:10px;font-weight:700;color:var(--faint);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:1px 6px;border-radius:4px">v2.4</span></div>
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="price-big" id="price-display">—</div>
         <div id="price-change" style="font-size:13px;color:var(--muted)">—</div>
@@ -806,22 +806,52 @@ function renderAction(c) {
 
   if (c.actionState === 'EARNING') {
     block.classList.add('action-green');
-    title.innerHTML = '✅ Earning yield';
+    const distPa  = c.rangeLow  ? ((c.price - c.rangeLow)  / c.price * 100).toFixed(1) : '?';
+    const distPb  = c.rangeHigh ? ((c.rangeHigh - c.price) / c.price * 100).toFixed(1) : '?';
+    const atrsToPa = c.rangeLow && c.ATR ? ((c.price - c.rangeLow) / c.ATR).toFixed(1) : '?';
+    const atrsToPb = c.rangeHigh && c.ATR ? ((c.rangeHigh - c.price) / c.ATR).toFixed(1) : '?';
+    const nearBound = parseFloat(distPa) < parseFloat(distPb) ? 'Pa' : 'Pb';
+    const nearPrice = nearBound === 'Pa' ? c.rangeLow?.toFixed(3) : c.rangeHigh?.toFixed(3);
+    const nearDist  = nearBound === 'Pa' ? distPa : distPb;
+    const nearATRs  = nearBound === 'Pa' ? atrsToPa : atrsToPb;
+    title.innerHTML = '✅ Earning yield — no action needed';
     body.innerHTML  =
-      `<b>${fmt$(c.dailyYield)}/day</b> · ${c.pctThru?.toFixed(0) || '—'}% through range · ${c.avaxPct?.toFixed(0)}% AVAX<br>
-       <span style="color:var(--muted);font-size:12px">Watch: price approaches <b>$${c.rangeLow?.toFixed(3) || '—'}</b></span>`;
+      `<b>${fmt$(c.dailyYield)}/day</b> · ${c.pctThru?.toFixed(0) || '—'}% through range · <b>${c.avaxPct?.toFixed(0)}% AVAX / ${(100-(c.avaxPct||0)).toFixed(0)}% USDC</b><br>` +
+      `<div style="font-size:12px;color:var(--muted);margin-top:5px">` +
+      `Nearest boundary: <b>$${nearPrice}</b> (${nearBound}) — <b>${nearDist}%</b> away · <b>${nearATRs}×</b> ATR<br>` +
+      `Pa: $${c.rangeLow?.toFixed(3)} (${distPa}% below) · Pb: $${c.rangeHigh?.toFixed(3)} (${distPb}% above)</div>`;
     sub.innerHTML = `<span>${guard}</span><span>Trend: ${trendStr}</span>`;
 
   } else if (c.actionState === 'MONITOR') {
     block.classList.add('action-amber');
-    const dir    = c.status === 'BELOW_RANGE' ? 'below' : 'above';
-    const needed = c.hoursOut < 24
-      ? `${(24 - c.hoursOut).toFixed(1)}h remaining to 24h threshold`
-      : `4H candles: ${c.fourHCandles} of 2 needed`;
-    title.innerHTML = `⚠️ Monitor — ${c.hoursOut.toFixed(1)}h ${dir} range`;
+    const dir      = c.status === 'BELOW_RANGE' ? 'below' : 'above';
+    const oorDist  = c.status === 'BELOW_RANGE' && c.rangeLow
+      ? ((c.rangeLow - c.price)/c.price*100).toFixed(1)
+      : c.status === 'ABOVE_RANGE' && c.rangeHigh
+      ? ((c.price - c.rangeHigh)/c.price*100).toFixed(1) : '?';
+    const hoursLeft    = Math.max(0, 24 - c.hoursOut).toFixed(1);
+    const candlesLeft  = Math.max(0, 2 - c.fourHCandles);
+    const yieldLost    = (c.hoursOut * (c.dailyYield / 24)).toFixed(1);
+    const comp         = c.status === 'BELOW_RANGE' ? '100% AVAX — zero yield' : '100% USDC — zero yield';
+    const reentryPrice = c.rangeLow?.toFixed(3) || '—';
+    const breakdownPx  = c.status === 'BELOW_RANGE' && c.price && c.ATR
+      ? `$${(c.price - c.ATR).toFixed(3)}` : '—';
+    // Trigger countdown — which condition is closer
+    const triggerLine = c.fourHCandles >= 2
+      ? `<span style="color:var(--red);font-weight:700">4H candles: ${c.fourHCandles}/2 — REBALANCE may fire soon</span>`
+      : c.hoursOut >= 24
+      ? `<span style="color:var(--red);font-weight:700">24h threshold met — REBALANCE trigger active</span>`
+      : `<b>${hoursLeft}h</b> to 24h threshold · <b>${candlesLeft}</b> more 4H candle${candlesLeft!==1?'s':''} needed`;
+    title.innerHTML = `⚠️ Monitor — ${c.hoursOut.toFixed(1)}h ${dir} range (${oorDist}%)`;
     body.innerHTML  =
-      `4H closed candles: <b>${c.fourHCandles}</b> · ATR: <b>$${c.ATR?.toFixed(3)}</b><br>
-       <span style="color:var(--muted);font-size:12px">${needed} · rebalance trigger not yet met</span>`;
+      `Composition: <b>${comp}</b><br>` +
+      `4H closed candles: <b>${c.fourHCandles}/2</b> · ATR: <b>$${c.ATR?.toFixed(3)}</b><br>` +
+      `<div style="margin:6px 0;padding:5px 8px;background:rgba(0,0,0,.06);border-radius:5px;font-size:12px">` +
+      `Trigger: ${triggerLine}</div>` +
+      `<div style="font-size:12px;color:var(--muted)">` +
+      `Re-entry if price recovers above <b>$${reentryPrice}</b> · ` +
+      `Breakdown watch: <b>${breakdownPx}</b> (1× ATR further down)<br>` +
+      `Yield lost so far: <b>$${yieldLost}</b> ($${(c.dailyYield/24).toFixed(2)}/hr)</div>`;
     sub.innerHTML = `<span>${guard}</span><span>Trend: ${trendStr}</span>`;
 
   } else if (c.actionState === 'REBALANCE') {
@@ -966,37 +996,49 @@ RISK: [one sentence]
 
 Rules: Use exact Pa/Pb numbers. Max 150 words. No markdown.`,
 
-  EARNING: `You are an LP position monitor. Respond in exactly this format:
+  EARNING: `You are an LP position advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Use the data fields provided. Respond in exactly this format:
 
-STATUS: [one emoji] [one sentence on current yield state]
+STATUS: [one emoji] [one sentence: state current price vs range, yield rate, and how far price is from the boundary nearest to it using DIST_TO_Pa or DIST_TO_Pb]
 
-WATCH: · [$X.XXX — what happens at this price and what action it triggers]
-
-RISK: [one sentence]
-
-Rules: Max 65 words. Be brief and direct. No markdown.`,
-
-  MONITOR: `You are an LP position monitor. Respond in exactly this format:
-
-STATUS: [one emoji] [one sentence — how long out of range and which direction]
+ACTION: Hold position. No action needed. Yield is $DAILY_YIELD per day.
 
 WATCH:
-· [$X.XXX — condition that triggers rebalance]
-· [$X.XXX — structural support/resistance level to watch]
+· [$X.XXX = Pa boundary] — if price drops to here, LP goes out of range. Position becomes 100% AVAX and yield stops. Monitor closely.
+· [$X.XXX = Pb boundary] — if price rises to here, LP goes out of range. Position becomes 100% USDC. Consider widening range if uptrend strengthens.
 
-RISK: [one sentence]
+RISK: [one specific sentence referencing current ATR and how many ATR moves it takes to exit range]
 
-Rules: Max 85 words. No markdown.`,
+Rules: Use exact Pa and Pb numbers from RANGE field. Reference DAILY_YIELD and DIST_TO_Pa/Pb numbers. Max 90 words. No markdown.`,
 
-  HOLD: `You are an LP position advisor. Respond in exactly this format:
+  MONITOR: `You are an LP position advisor for a Pharaoh AVAX/USDC concentrated liquidity position. The position is OUT OF RANGE. Use all data fields precisely. Respond in exactly this format:
 
-STATUS: [one emoji] [one sentence — why holding is the correct action here]
+STATUS: [one emoji] [one sentence: state OOR_DIR (above/below), OOR_DIST%, how long out (HOURS_OUT), current composition — if BELOW_RANGE LP is 100% AVAX earning zero yield; if ABOVE_RANGE LP is 100% USDC earning zero yield]
 
-WATCH: · [$X.XXX — price recovery level that would change the picture]
+DO NOT REBALANCE YET — here is why:
+[one sentence: state exactly what trigger condition has NOT been met — either "HOURS_TO_TRIGGER Xh remaining before 24h threshold" OR "X more 4H candles needed (have Y of 2)" — use HOURS_TO_TRIGGER and 4H_CANDLES_TO_TRIGGER values exactly]
 
-RISK: [one sentence]
+WATCH:
+· [$X.XXX recovery level] — if price recovers above this level before trigger met, LP re-enters range automatically and yield resumes. [state what Pa value is and that this is the re-entry level]
+· [$X.XXX breakdown level] — if price drops another ATR below current (use ATR value), rebalance trigger will accelerate. State the exact price.
 
-Rules: Max 65 words. No markdown.`
+IF REBALANCE TRIGGERS: [one sentence previewing: deploy WIDE range to absorb continued volatility — do not use NARROW in current trend]
+
+RISK: [one specific sentence: reference HOURS_OUT, DAILY_YIELD lost per hour, and total yield already lost = HOURS_OUT × (DAILY_YIELD/24)]
+
+Rules: Use exact numbers from data fields — HOURS_OUT, HOURS_TO_TRIGGER, ATR, DAILY_YIELD, Pa, Pb. Do not give vague advice. Max 120 words. No markdown.`,
+
+  HOLD: `You are an LP position advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Guard floor has triggered. Respond in exactly this format:
+
+STATUS: [one emoji] [one sentence: state current price vs guard floor (GUARD field), confirm LP is 100% AVAX, and that rebalancing is suspended]
+
+DO NOT REBALANCE — reason:
+[one sentence: rebalancing now converts AVAX to USDC at the worst price, permanently locking in the loss. The position is 100% AVAX which recovers fully if price recovers.]
+
+WATCH: · [$X.XXX] — price must close above this level for 2 consecutive daily candles before considering resuming LP operations. [set this at guard floor × 1.15 — calculate and state the exact price]
+
+RISK: [one sentence: state the specific price (guard floor) and what happens to LP value if price falls further]
+
+Rules: Use exact numbers from GUARD field. Max 80 words. No markdown.`
 };
 
 function selectModel(actionState) {
@@ -1006,16 +1048,39 @@ function selectModel(actionState) {
 }
 function selectTokens(actionState) {
   if (actionState === 'REBALANCE') return 400;
-  if (actionState === 'INITIAL')   return 300; // more room for placement rationale
-  return 200;
+  if (actionState === 'INITIAL')   return 300;
+  if (actionState === 'MONITOR')   return 300; // needs specific numbers + trigger countdown
+  if (actionState === 'HOLD')      return 200;
+  return 200; // EARNING
 }
 
 function buildPrompt(c) {
   const closes = (state.binance?.closes || []).map(v => v.toFixed(2)).join(',') || 'N/A';
+  // Compute contextual fields for richer AI advice
+  const distToPa   = c.rangeLow  ? ((c.price - c.rangeLow)  / c.rangeLow  * 100).toFixed(1) : '?';
+  const distToPb   = c.rangeHigh ? ((c.rangeHigh - c.price) / c.rangeHigh * 100).toFixed(1) : '?';
+  const hoursLeft  = c.hoursOut != null ? Math.max(0, 24 - c.hoursOut).toFixed(1) : '?';
+  const candlesLeft= Math.max(0, 2 - (c.fourHCandles || 0));
+  const triggerCond = c.hoursOut >= 24 ? 'HOURS_MET' : c.fourHCandles >= 2 ? 'CANDLES_MET' : 'NOT_MET';
+  const dailyYield = c.dailyYield?.toFixed(2) || '?';
+  const capitalStr = (c.capital || 4700).toFixed(0);
+  // OOR direction and distance
+  const oorDir = c.status === 'BELOW_RANGE' ? 'BELOW' : c.status === 'ABOVE_RANGE' ? 'ABOVE' : 'IN';
+  const oorDist = c.status === 'BELOW_RANGE' && c.rangeLow
+    ? ((c.rangeLow - c.price) / c.price * 100).toFixed(1)
+    : c.status === 'ABOVE_RANGE' && c.rangeHigh
+    ? ((c.price - c.rangeHigh) / c.price * 100).toFixed(1) : '0';
   let p = `AVAX:${c.price?.toFixed(3)}|CHG:${c.change24h?.toFixed(2)}%|STATUS:${c.status}|` +
-    `RANGE:${c.rangeLow?.toFixed(3)}-${c.rangeHigh?.toFixed(3)}|PCT:${c.pctThru?.toFixed(0)}%|` +
-    `VAL:${c.lpValue?.toFixed(0)}|APY:${c.effectiveAPY?.toFixed(1)}%|` +
-    `PNL:${c.lpPnl?.toFixed(0)}|HOURS_OUT:${c.hoursOut?.toFixed(1)}|4H:${c.fourHCandles}|` +
+    `OOR_DIR:${oorDir}|OOR_DIST:${oorDist}%|` +
+    `RANGE:${c.rangeLow?.toFixed(3)}-${c.rangeHigh?.toFixed(3)}|` +
+    `DIST_TO_Pa:${distToPa}%|DIST_TO_Pb:${distToPb}%|` +
+    `PCT_THRU:${c.pctThru?.toFixed(0)}%|` +
+    `LP_VAL:${c.lpValue?.toFixed(0)}|CAPITAL:$${capitalStr}|` +
+    `LP_PNL:${c.lpPnl?.toFixed(0)}|APY:${c.effectiveAPY?.toFixed(1)}%|` +
+    `DAILY_YIELD:$${dailyYield}|` +
+    `HOURS_OUT:${c.hoursOut?.toFixed(1)}|HOURS_TO_TRIGGER:${hoursLeft}h|` +
+    `4H_CANDLES:${c.fourHCandles}|4H_CANDLES_TO_TRIGGER:${candlesLeft}|` +
+    `TRIGGER:${triggerCond}|` +
     `ATR:${c.ATR?.toFixed(3)}|TREND:${c.trend}|` +
     `7D:${c.low7d?.toFixed(2)}-${c.high7d?.toFixed(2)}|CLOSES:${closes}|` +
     `GUARD:${c.guardStatus}@${c.guardFloor?.toFixed(2)}`;
