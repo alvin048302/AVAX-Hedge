@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>AVAX LP — Pharaoh v2.4</title>
+<title>AVAX LP — Pharaoh v2.5</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -90,7 +90,7 @@ hr{border:none;border-top:1px solid var(--border);margin:10px 0}
 <div class="app-header">
   <div style="display:flex;justify-content:space-between;align-items:flex-start">
     <div>
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:12px;font-weight:600;color:var(--muted)">AVAX/USDC · Pharaoh CL</span><span style="font-size:10px;font-weight:700;color:var(--faint);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:1px 6px;border-radius:4px">v2.4</span></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px"><span style="font-size:12px;font-weight:600;color:var(--muted)">AVAX/USDC · Pharaoh CL</span><span style="font-size:10px;font-weight:700;color:var(--faint);font-family:var(--mono);background:var(--surface);border:1px solid var(--border);padding:1px 6px;border-radius:4px">v2.5</span></div>
       <div style="display:flex;align-items:baseline;gap:10px">
         <div class="price-big" id="price-display">—</div>
         <div id="price-change" style="font-size:13px;color:var(--muted)">—</div>
@@ -944,114 +944,159 @@ function renderAction(c) {
 }
 
 // ── AI SYSTEM PROMPTS ──────────────────────────────────────────────────────────
-// REBALANCE → claude-sonnet-4-6, 400 tokens: needs range math + exact swap instructions
-// EARNING / MONITOR / HOLD → claude-haiku-4-5-20251001, 200 tokens: brief status + watch levels
+// Model strategy (v2.5):
+// REBALANCE / INITIAL / MONITOR → claude-sonnet-4-6 (multi-step reasoning required)
+// EARNING / HOLD → claude-haiku-4-5-20251001 (simple status, no decision needed)
+//
+// Reasoning-first architecture: AI receives raw facts, reasons to conclusion.
+// No pre-concluded framing. Format: DECISION → ANALYSIS → ACTION → REASON → RISK
 const SYS = {
-  INITIAL: `You are an LP placement advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Three range options with OOR risk ratings are in RANGE_DATA. Your job is to recommend the best width balancing yield and staying in range.
 
-Key rules for recommendation:
-- oor_risk=HIGH means price exits range in ~1-2 days — avoid unless momentum is FLAT
-- If momentum_signal=ACTIVE_BOUNCE (>8% 4d move), price likely breaks NARROW upper bound soon — prefer MEDIUM or WIDE
-- If momentum_signal=FLAT and trend=SIDEWAYS, NARROW maximises net yield
-- Always compare net_mo (yield after rebalance friction) not gross APY
-- ATL_override=true means recovery expected — bias toward WIDE for runway
+  INITIAL: `You are an expert LP advisor for a Pharaoh AVAX/USDC concentrated liquidity position being deployed for the first time.
 
-Respond in exactly this format:
+Analyse ALL data fields. Reason from data to your recommendation. You choose NARROW, MEDIUM, or WIDE independently — do not default to any option.
 
-STATUS: [one emoji] [one sentence: price context and momentum signal]
-
-RECOMMEND: [NARROW or MEDIUM or WIDE] — [one sentence: reference oor_risk and net_mo to justify]
-
-ACTION:
-① Set Range Low to $X.XXX in Setup ⚙
-② Set Range High to $X.XXX in Setup ⚙
-③ [condition that would make you switch width — be specific with price level]
-④ Check Pharaoh UI APY → update APY Override in Setup before deploying
-
-RISK: [one sentence]
-
-Rules: Use exact Pa/Pb from RANGE_DATA. State days_oor for chosen range. Max 150 words. No markdown.`,
-
-  REBALANCE: `You are an LP rebalance advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Three range options with OOR risk and net monthly yield are in RANGE_DATA.
-
-Key rules for recommendation:
-- oor_risk=HIGH means rebalancing again in 1-2 days — avoid, pick wider
-- If momentum_signal=ACTIVE_BOUNCE, price is mid-move — MEDIUM or WIDE to avoid immediate OOR
-- If momentum_signal=FLAT, NARROW captures best net_mo if oor_risk is LOW or MEDIUM
-- Compare net_mo across options — sometimes MEDIUM beats NARROW after friction costs
-- ATL_override=true — use WIDE, recovery moves are fast and unpredictable
+Reason through:
+- oor_risk per range: HIGH=exits in ~1-2 days — avoid unless momentum FLAT
+- momentum_signal: ACTIVE_BOUNCE(>8%) = NARROW upper boundary breaks fast, prefer MEDIUM/WIDE
+- net_mo (yield after $8/rebalance friction): compare all three, pick best risk-adjusted
+- ATL_override=true = WIDE for recovery runway
+- SIDEWAYS + FLAT = NARROW defensible; TRENDING or ACTIVE_BOUNCE = MEDIUM or WIDE
 
 Respond in exactly this format:
 
-STATUS: [one emoji] [one sentence: what triggered rebalance, direction, momentum context]
+DECISION: [NARROW / MEDIUM / WIDE] — Pa $X.XXX to Pb $X.XXX
 
-RECOMMEND: [NARROW or MEDIUM or WIDE] — [reference oor_risk and net_mo, state days_oor]
+ANALYSIS: [2 sentences: momentum, OOR risk, why this width fits. Reference specific numbers from data.]
 
 ACTION:
-① Deploy: Pa $X.XXX → Pb $X.XXX (from chosen range in RANGE_DATA)
-② [swap from RANGE_DATA — swap_dir/avax/usdc; note if adjusted for non-medium range]
-③ Open Setup ⚙ → update Range Low and Range High → Save
+1. Set Range Low to Pa $X.XXX in Setup
+2. Set Range High to Pb $X.XXX in Setup
+3. [specific condition + exact price that would change your width choice]
+4. Check Pharaoh UI APY and update APY Override in Setup before deploying
 
-RISK: [one sentence]
+REASON: [1 sentence linking net_mo and days_oor of chosen range to decision]
 
-Rules: Use exact Pa/Pb numbers. Max 150 words. No markdown.`,
+RISK: [1 sentence — biggest risk specific to your chosen range given current conditions]
 
-  EARNING: `You are an LP position advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Use the data fields provided. Respond in exactly this format:
+Rules: Use exact Pa/Pb from chosen range in RANGE_DATA. Every number from data. Max 170 words. No markdown.`,
 
-STATUS: [one emoji] [one sentence: state current price vs range, yield rate, and how far price is from the boundary nearest to it using DIST_TO_Pa or DIST_TO_Pb]
+  REBALANCE: `You are an expert LP rebalance advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Rebalance has been triggered. The position is out of range.
 
-ACTION: Hold position. No action needed. Yield is $DAILY_YIELD per day.
+Analyse ALL data fields. Reason independently to your recommendation. Your choice of NARROW, MEDIUM, or WIDE must be driven entirely by data.
+
+Reason through:
+- What triggered: HOURS_OUT vs 24h threshold, 4H_CANDLES count, OOR_DIR and OOR_DIST
+- oor_risk per range: HIGH=avoid unless FLAT. MEDIUM=acceptable. LOW=preferred.
+- momentum_signal: ACTIVE_BOUNCE=avoid NARROW (breaks fast). FLAT=NARROW defensible if oor_risk LOW.
+- net_mo: compare all three — MEDIUM sometimes beats NARROW after friction
+- ATL_override=true = WIDE, recovery moves gap through tight ranges
+- Swap: use swap_dir, swap_avax, swap_usdc from RANGE_DATA (medium); note if adjusted
+
+Respond in exactly this format:
+
+DECISION: [NARROW / MEDIUM / WIDE] — Pa $X.XXX to Pb $X.XXX
+
+ANALYSIS: [2-3 sentences: trigger cause, momentum, why this width handles current conditions. Use HOURS_OUT, OOR_DIST, momentum_signal, trend.]
+
+ACTION:
+1. Withdraw current LP from existing range
+2. Deploy new range: Pa $X.XXX to Pb $X.XXX on Pharaoh
+3. Swap: [state swap direction — buy or sell — exact AVAX or USDC amount and fee from RANGE_DATA]
+4. Open Setup — update Range Low and Range High — Save
+
+REASON: [1-2 sentences: link analysis to width choice using net_mo and days_oor. Explain why alternatives are inferior.]
+
+RISK: [1 sentence: specific scenario that makes chosen range go OOR again, and at what price]
+
+Rules: Use exact Pa/Pb and swap numbers from RANGE_DATA. Every number from data. Max 180 words. No markdown.`,
+
+  EARNING: `You are an LP position monitor for a Pharaoh AVAX/USDC concentrated liquidity position that is earning yield.
+
+No action needed. Give clear status and precise watch levels.
+
+Respond in exactly this format:
+
+DECISION: Hold — earning $[DAILY_YIELD]/day. No action needed.
+
+ANALYSIS: [1 sentence: current price, % through range from PCT_THRU, composition AVAX/USDC, nearest boundary name and distance in % and ATR multiples]
 
 WATCH:
-· [$X.XXX = Pa boundary] — if price drops to here, LP goes out of range. Position becomes 100% AVAX and yield stops. Monitor closely.
-· [$X.XXX = Pb boundary] — if price rises to here, LP goes out of range. Position becomes 100% USDC. Consider widening range if uptrend strengthens.
+- Pa $X.XXX — if price drops here, LP exits range as 100% AVAX and yield stops immediately
+- Pb $X.XXX — if price rises here, LP exits range as 100% USDC; consider widening if uptrend strengthens
 
-RISK: [one specific sentence referencing current ATR and how many ATR moves it takes to exit range]
+REASON: [1 sentence: ATR multiples to nearest boundary and what that implies for range durability]
 
-Rules: Use exact Pa and Pb numbers from RANGE field. Reference DAILY_YIELD and DIST_TO_Pa/Pb numbers. Max 90 words. No markdown.`,
+RISK: [1 sentence: ATR value and exact price representing 1x ATR move toward nearest boundary]
 
-  MONITOR: `You are an LP position advisor for a Pharaoh AVAX/USDC concentrated liquidity position. The position is OUT OF RANGE. Use all data fields precisely. Respond in exactly this format:
+Rules: Use exact Pa, Pb, DAILY_YIELD, DIST_TO_Pa, DIST_TO_Pb, ATR from data. Max 100 words. No markdown.`,
 
-STATUS: [one emoji] [one sentence: state OOR_DIR (above/below), OOR_DIST%, how long out (HOURS_OUT), current composition — if BELOW_RANGE LP is 100% AVAX earning zero yield; if ABOVE_RANGE LP is 100% USDC earning zero yield]
+  MONITOR: `You are an expert LP advisor for a Pharaoh AVAX/USDC concentrated liquidity position that is OUT OF RANGE.
 
-DO NOT REBALANCE YET — here is why:
-[one sentence: state exactly what trigger condition has NOT been met — either "HOURS_TO_TRIGGER Xh remaining before 24h threshold" OR "X more 4H candles needed (have Y of 2)" — use HOURS_TO_TRIGGER and 4H_CANDLES_TO_TRIGGER values exactly]
+Analyse ALL data fields and make a clear recommendation. Your recommendation is entirely data-driven — no defaults.
+
+Reason through:
+- TRIGGER field: NOT_MET means wait. HOURS_MET or CANDLES_MET or BOTH_MET means rebalance now.
+- If NOT_MET: state exactly what is missing — HOURS_TO_TRIGGER hours remaining OR 4H_CANDLES_TO_TRIGGER more candles needed
+- If trigger met: do not say wait. Recommend rebalance with specific range from RANGE_DATA.
+- Composition: BELOW_RANGE = 100% AVAX zero yield. ABOVE_RANGE = 100% USDC zero yield.
+- Yield lost = HOURS_OUT x (DAILY_YIELD divided by 24) — calculate and state this exactly
+- If trigger met and trend DOWN and HOURS_OUT > 48: recommend WIDE to absorb continued selling
+
+Respond in exactly this format:
+
+DECISION: [WAIT Xh | REBALANCE NOW — [NARROW/MEDIUM/WIDE] Pa $X.XXX to Pb $X.XXX]
+
+ANALYSIS: [2 sentences: OOR direction and distance, hours out, candle count, trigger status. Use exact HOURS_OUT, HOURS_TO_TRIGGER, 4H_CANDLES, 4H_CANDLES_TO_TRIGGER values.]
+
+ACTION:
+[If WAIT]:
+1. Monitor recovery above $X.XXX (Pa) — if recovered, yield resumes automatically
+2. Watch $X.XXX (current price minus 1x ATR $X.XXX) — if broken, reassess urgently
+
+[If REBALANCE NOW]:
+1. Withdraw current LP from existing range
+2. Deploy: Pa $X.XXX to Pb $X.XXX on Pharaoh
+3. Open Setup — update Range Low and Range High — Save
+
+REASON: [1-2 sentences: why waiting or acting is correct. If waiting: exact hours or candles remaining. If rebalancing: total yield lost and why acting now is better than waiting.]
+
+RISK: [1 sentence: exact price or event that changes this recommendation]
+
+Rules: TRIGGER field determines wait vs act — follow the data. Yield lost = HOURS_OUT x (DAILY_YIELD/24). Max 160 words. No markdown.`,
+
+  HOLD: `You are an LP position advisor for a Pharaoh AVAX/USDC concentrated liquidity position. The guard floor has triggered — price is below the 30% guard threshold.
+
+Give a clear status and precise recovery levels.
+
+Respond in exactly this format:
+
+DECISION: Hold — do not rebalance. Guard floor at $X.XX triggered.
+
+ANALYSIS: [1-2 sentences: current price vs guard floor from GUARD field, confirm LP is 100% AVAX, explain that rebalancing now permanently converts AVAX to USDC at crash price and eliminates recovery upside]
 
 WATCH:
-· [$X.XXX recovery level] — if price recovers above this level before trigger met, LP re-enters range automatically and yield resumes. [state what Pa value is and that this is the re-entry level]
-· [$X.XXX breakdown level] — if price drops another ATR below current (use ATR value), rebalance trigger will accelerate. State the exact price.
+- $X.XXX — price must close above this for 2 consecutive daily candles before resuming LP operations [calculate: guard_floor x 1.15]
+- Further price decline: LP value falls with AVAX price but no additional LP mechanism risk
 
-IF REBALANCE TRIGGERS: [one sentence previewing: deploy WIDE range to absorb continued volatility — do not use NARROW in current trend]
+REASON: [1 sentence: 100% AVAX composition means full recovery participation if price recovers — rebalancing sacrifices that upside permanently]
 
-RISK: [one specific sentence: reference HOURS_OUT, DAILY_YIELD lost per hour, and total yield already lost = HOURS_OUT × (DAILY_YIELD/24)]
+RISK: [1 sentence: specific scenario that would justify reconsidering, with exact price from GUARD field]
 
-Rules: Use exact numbers from data fields — HOURS_OUT, HOURS_TO_TRIGGER, ATR, DAILY_YIELD, Pa, Pb. Do not give vague advice. Max 120 words. No markdown.`,
-
-  HOLD: `You are an LP position advisor for a Pharaoh AVAX/USDC concentrated liquidity position. Guard floor has triggered. Respond in exactly this format:
-
-STATUS: [one emoji] [one sentence: state current price vs guard floor (GUARD field), confirm LP is 100% AVAX, and that rebalancing is suspended]
-
-DO NOT REBALANCE — reason:
-[one sentence: rebalancing now converts AVAX to USDC at the worst price, permanently locking in the loss. The position is 100% AVAX which recovers fully if price recovers.]
-
-WATCH: · [$X.XXX] — price must close above this level for 2 consecutive daily candles before considering resuming LP operations. [set this at guard floor × 1.15 — calculate and state the exact price]
-
-RISK: [one sentence: state the specific price (guard floor) and what happens to LP value if price falls further]
-
-Rules: Use exact numbers from GUARD field. Max 80 words. No markdown.`
+Rules: Use exact guard floor price from GUARD field. Recovery level = guard_floor x 1.15. Max 90 words. No markdown.`
 };
-
 function selectModel(actionState) {
-  // Sonnet for rebalance: needs range math + exact swap instructions
-  // Haiku for initial/monitoring: structured placement or brief status
-  return actionState === 'REBALANCE' ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
+  // Sonnet for any state requiring multi-step reasoning or a decision
+  // Haiku only for states where answer is obvious (earning/hold)
+  const needsReasoning = ['REBALANCE', 'INITIAL', 'MONITOR'];
+  return needsReasoning.includes(actionState) ? 'claude-sonnet-4-6' : 'claude-haiku-4-5-20251001';
 }
 function selectTokens(actionState) {
-  if (actionState === 'REBALANCE') return 400;
-  if (actionState === 'INITIAL')   return 300;
-  if (actionState === 'MONITOR')   return 300; // needs specific numbers + trigger countdown
-  if (actionState === 'HOLD')      return 200;
-  return 200; // EARNING
+  if (actionState === 'REBALANCE') return 500; // range comparison + swap + justification
+  if (actionState === 'INITIAL')   return 500; // same complexity as rebalance
+  if (actionState === 'MONITOR')   return 450; // conditional reasoning + trigger state
+  if (actionState === 'HOLD')      return 200; // single decision
+  return 200; // EARNING — simple status
 }
 
 function buildPrompt(c) {
@@ -1139,7 +1184,8 @@ async function runAnalysis() {
 
   const model     = selectModel(c.actionState);
   const maxTokens = selectTokens(c.actionState);
-  document.getElementById('model-badge').textContent = model.includes('haiku') ? 'haiku-4-5' : 'sonnet-4-6';
+  const modelLabel = model.includes('haiku') ? 'haiku-4-5' : 'sonnet-4-6';
+    document.getElementById('model-badge').textContent = modelLabel + ' · ' + actionState.toLowerCase();
 
   try {
     let resp;
